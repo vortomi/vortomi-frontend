@@ -1,0 +1,132 @@
+@if (row(); as r) {
+  <header class="page-top">
+    <a class="back" routerLink="/platform/tenants" aria-label="Volver a empresas"><app-icon name="back" /></a>
+    <app-avatar class="logo" size="md" [name]="r.tenant.name" [seed]="r.tenant.id" />
+    <div>
+      <h1>{{ r.tenant.name }}</h1>
+      <span class="sub">{{ r.tenant.industry }} · {{ r.tenant.city }}</span>
+    </div>
+    <app-pill [tone]="labels.status[r.tenant.status].tone">{{ labels.status[r.tenant.status].text }}</app-pill>
+    <span class="spacer"></span>
+    @if (r.tenant.status === 'active') {
+      @if (confirmingSuspend()) {
+        <span class="confirm">¿Suspender? Nadie de la empresa podrá entrar.</span>
+        <button type="button" class="btn" (click)="confirmingSuspend.set(false)">Cancelar</button>
+        <button type="button" class="btn btn--danger" (click)="suspend()">Sí, suspender</button>
+      } @else {
+        <button type="button" class="btn" (click)="confirmingSuspend.set(true)">Suspender</button>
+      }
+    } @else if (r.tenant.status === 'suspended') {
+      <button type="button" class="btn btn--success" (click)="reactivate()"><app-icon name="check" />Reactivar</button>
+    }
+  </header>
+
+  <div class="page-body">
+    <div class="grid">
+      <section class="card box">
+        <h2>Datos</h2>
+        <dl>
+          <dt>Plan</dt><dd>{{ labels.plan[r.tenant.plan].text }} <span class="muted">· {{ labels.plan[r.tenant.plan].detail }}</span></dd>
+          <dt>Razón social</dt><dd>{{ r.tenant.legalName }}</dd>
+          <dt>RIF</dt><dd class="mono">{{ r.tenant.taxId }}</dd>
+          <dt>Dirección fiscal</dt><dd>{{ r.tenant.fiscalAddress }}</dd>
+          <dt>Zona horaria</dt><dd>{{ r.tenant.timezone }}</dd>
+          <dt>Identificador</dt><dd class="mono">{{ r.tenant.slug }}</dd>
+          <dt>Alta</dt><dd>{{ date(r.tenant.createdAt) }}</dd>
+        </dl>
+      </section>
+
+      <section class="card box">
+        <h2>Consumo de octubre</h2>
+        @if (usage(); as u) {
+          <dl>
+            <dt>Mensajes entrantes y salientes</dt><dd>{{ u.total }}</dd>
+            <dt>Respuestas a clientes</dt><dd>{{ u.service }} de {{ u.free }} gratis</dd>
+            <dt>Plantillas enviadas</dt><dd>{{ u.templates }}</dd>
+          </dl>
+          <div class="track"><i [style.width.%]="u.percent" [class.over]="u.over"></i></div>
+          <p class="field-hint">
+            @if (u.charged) {
+              Paga a Meta unos <b>{{ u.cost }}</b> este mes (estimado){{ u.over ? ', porque un número pasó sus 1.000 respuestas gratis' : ' por las plantillas' }}. Lo paga la empresa con su método de pago.
+            } @else {
+              Dentro de las respuestas gratis del mes y sin plantillas cobradas.
+            }
+          </p>
+        } @else {
+          <p class="muted">Todavía sin consumo.</p>
+        }
+      </section>
+    </div>
+
+    <h2 class="section-title">Números</h2>
+    <div class="card table-card">
+      <table class="data-table">
+        <thead><tr><th>Número</th><th>Estado</th><th>Calidad</th><th>Clientes nuevos por día</th><th>Acceso a Meta vence</th><th></th></tr></thead>
+        <tbody>
+          @for (channel of r.channels; track channel.id) {
+            <tr>
+              <td><b>{{ channel.label }}</b><span class="muted number">{{ channel.displayNumber }}</span></td>
+              <td><app-pill [tone]="labels.channel[channel.status].tone">{{ labels.channel[channel.status].text }}</app-pill></td>
+              <td><app-pill [tone]="labels.quality[channel.qualityRating].tone">{{ labels.quality[channel.qualityRating].text }}</app-pill></td>
+              <td>{{ channel.messagingTier }}</td>
+              <td>{{ channel.accessExpiresAt ? date(channel.accessExpiresAt) : 'Sin acceso' }}</td>
+              <td class="actions-cell">
+                @if (channel.status === 'disconnected') {
+                  <button type="button" class="btn" (click)="requestReconnect(channel)">Pedir reconexión</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="muted">Sin números conectados.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid">
+      <section>
+        <h2 class="section-title">Equipo</h2>
+        <div class="card list">
+          @for (member of members(); track member.user.id) {
+            <div class="person">
+              <app-avatar [name]="member.user.name" [seed]="member.user.id" />
+              <div class="who">
+                <b>{{ member.user.name }}</b>
+                <span>{{ member.user.email }} · {{ labels.role[member.membership.role] }}</span>
+              </div>
+              @if (member.membership.status === 'active') {
+                <app-pill tone="green">Activo</app-pill>
+              } @else {
+                @if (invitationFor(member.user.email); as invitation) {
+                  <span class="muted small">Vence {{ date(invitation.expiresAt) }}</span>
+                  <button type="button" class="btn" (click)="resend(invitation)">Reenviar</button>
+                } @else {
+                  <app-pill tone="amber">Invitación pendiente</app-pill>
+                }
+              }
+            </div>
+          }
+          <p class="note"><app-icon name="lock" />Desde aquí se ve quién tiene acceso, no lo que escriben.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="section-title">Registro de auditoría</h2>
+        <div class="card list">
+          @for (entry of audit(); track entry.id) {
+            <div class="event">
+              <span class="when">{{ date(entry.createdAt) }}</span>
+              <span><b>{{ actorName(entry.actorUserId) }}</b> · {{ entry.detail }}</span>
+            </div>
+          } @empty {
+            <p class="muted pad">Sin eventos registrados.</p>
+          }
+        </div>
+      </section>
+    </div>
+  </div>
+} @else {
+  <div class="page-body">
+    <p class="muted">Esa empresa no existe. <a class="link" routerLink="/platform/tenants">Volver a empresas</a></p>
+  </div>
+}

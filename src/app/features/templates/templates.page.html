@@ -1,0 +1,61 @@
+<header class="page-top">
+  <h1>Plantillas</h1>
+  <span class="sub">Mensajes aprobados por Meta para escribir fuera de la ventana de 24 h</span>
+  <span class="spacer"></span>
+  <div class="seg" role="tablist">
+    @for (f of filters; track f.id) {
+      <button type="button" role="tab" [class.on]="filter() === f.id" (click)="filter.set(f.id)">{{ f.label }} · {{ count(f.id) }}</button>
+    }
+  </div>
+  @if (session.isTenantAdmin()) {
+    <a class="btn btn--primary" routerLink="/templates/new"><app-icon name="plus" />Nueva plantilla</a>
+  }
+</header>
+
+<div class="page-body">
+  <div class="layout">
+    <div class="card list">
+      @for (template of list(); track template.id) {
+        <button type="button" class="item" [class.on]="selected()?.id === template.id" (click)="pick(template)">
+          <span class="name">{{ template.name }}</span>
+          <span class="meta">
+            <app-pill tone="blue">{{ labels.category[template.category].text }}</app-pill>
+            <app-pill [tone]="labels.status[template.status].tone">{{ labels.status[template.status].text }}</app-pill>
+          </span>
+          <span class="body">{{ template.body }}</span>
+        </button>
+      } @empty {
+        <p class="muted pad">No hay plantillas en este estado.</p>
+      }
+    </div>
+
+    @if (selected(); as t) {
+      <section class="card detail">
+        <div class="detail-head">
+          <h2>{{ t.name }}</h2>
+          <app-pill [tone]="labels.status[t.status].tone">{{ labels.status[t.status].text }}</app-pill>
+        </div>
+        @if (t.status === 'rejected') {
+          <div class="form-alert">
+            <app-icon name="alert" />
+            <span><b>Meta la rechazó:</b> {{ t.rejectionReason }}</span>
+          </div>
+          @if (session.isTenantAdmin()) {
+            <button type="button" class="btn" (click)="fixRejected(t)">Crear una versión corregida</button>
+          }
+        } @else if (t.status === 'pending') {
+          <div class="form-alert warn"><app-icon name="clock" />Meta la está revisando. Suele tardar de minutos a un día.</div>
+        }
+        <div class="detail-grid">
+          <app-template-preview [text]="t.body" [businessName]="session.tenant()?.name ?? ''" />
+          <dl>
+            <dt>Categoría</dt><dd>{{ labels.category[t.category].text }}</dd>
+            <dt>Idioma</dt><dd>Español</dd>
+            <dt>Costo</dt><dd>Se cobra cada envío entregado, desde el primero</dd>
+          </dl>
+          <p class="field-hint">{{ labels.category[t.category].detail }}</p>
+        </div>
+      </section>
+    }
+  </div>
+</div>

@@ -1,0 +1,129 @@
+<form class="step-body" id="channel-form" (submit)="connect($event)" novalidate>
+  <div class="col">
+    <section class="card sec">
+      <h2><span class="k">A</span>Lo hace el cliente, en su Meta Business</h2>
+      <p class="d">Le comparte su cuenta de WhatsApp a nuestra empresa. Su contraseña de Facebook nunca pasa por nosotros.</p>
+      <ol class="olist">
+        <li>
+          <span>Si el número todavía no está en su cuenta, lo agrega en <b>WhatsApp Manager</b> y lo verifica con el código que le llega por SMS o llamada. Ahí mismo escribe el <b>nombre visible</b>.</span>
+        </li>
+        <li>
+          <span>En <b>Configuración → Cuentas → Cuentas de WhatsApp</b> elige la suya, pulsa <b>Asignar socio</b>, pega nuestro identificador y activa <b>control total</b>:<br />
+            <span class="idbox"><span class="mono">{{ businessId }}</span>
+              <button type="button" class="btn" (click)="copyBusinessId()"><app-icon name="copy" />Copiar</button></span>
+          </span>
+        </li>
+        <li><span>Nos dicta el identificador de esa cuenta de WhatsApp, que aparece en la misma pantalla.</span></li>
+      </ol>
+    </section>
+
+    <section class="card sec">
+      <h2><span class="k">B</span>Lo hacemos nosotros</h2>
+      <p class="d">Con el acceso ya compartido, la consola busca la cuenta y sus números en Meta.</p>
+      <div class="search-row">
+        <div class="field">
+          <label for="waba">Identificador de la cuenta de WhatsApp</label>
+          <input id="waba" class="input mono" inputmode="numeric" [formField]="connectForm.wabaId" />
+          <app-field-error [state]="connectForm.wabaId()" />
+        </div>
+        <button type="button" class="btn" (click)="search()" [disabled]="searching() || state.connected()">
+          {{ searching() ? 'Buscando…' : 'Buscar cuenta' }}
+        </button>
+      </div>
+
+      @if (lookup()?.status === 'not_found') {
+        <div class="form-alert" role="alert" style="margin-top: 12px">
+          <app-icon name="alert" />No encontramos esa cuenta o todavía no nos dio acceso. Revisa el identificador con el cliente.
+        </div>
+      }
+
+      @if (numbers().length) {
+        <p class="found" style="margin-top: 10px">Cuenta encontrada. Números disponibles en Meta:</p>
+        <div class="numbers" role="radiogroup" aria-label="Número que va a usar" style="margin-top: 8px">
+          @for (number of numbers(); track number.phoneNumberId) {
+            <button type="button" class="num" role="radio" [class.taken]="!!number.takenBy" [class.on]="selected()?.phoneNumberId === number.phoneNumberId"
+              [attr.aria-checked]="selected()?.phoneNumberId === number.phoneNumberId" [disabled]="!!number.takenBy || state.connected()"
+              (click)="choose(number)">
+              <span class="rd"></span>
+              <span><b>{{ number.displayNumber }}</b><small>Nombre visible: {{ number.verifiedName }} · {{ nameStatus[number.nameStatus] }}</small></span>
+              @if (number.takenBy) {
+                <app-pill tone="red">Es de {{ number.takenBy }}</app-pill>
+              } @else {
+                <app-pill tone="green">Disponible</app-pill>
+              }
+            </button>
+          }
+        </div>
+        <app-field-error [state]="connectForm.phoneNumberId()" />
+
+        @if (!allTaken()) {
+          <div class="g2" style="margin-top: 12px">
+            <div class="field">
+              <label for="pin">PIN de seguridad de 6 dígitos</label>
+              <input id="pin" class="input mono" type="password" inputmode="numeric" autocomplete="off"
+                [formField]="connectForm.pin" />
+              <p class="field-hint">Lo escribe el cliente. Si el número ya tenía verificación en dos pasos, es ese PIN; si no, elige uno nuevo y lo guarda. Protege el número si alguien intenta registrarlo en otro lado.</p>
+              <app-field-error [state]="connectForm.pin()" />
+            </div>
+            <div class="field">
+              <label for="label">Nombre interno del número</label>
+              <input id="label" class="input" [formField]="connectForm.label" />
+              <p class="field-hint">Así lo verá el equipo en la bandeja. Los clientes no lo ven.</p>
+              <app-field-error [state]="connectForm.label()" />
+            </div>
+          </div>
+
+          <h3 class="sub-title">Perfil de WhatsApp de este número</h3>
+          <p class="d">Lo que ven sus clientes al abrir el chat. Se envía a Meta al conectar.</p>
+          <app-whatsapp-profile [profile]="connectForm.profile" [locked]="state.connected()" />
+        }
+      }
+
+      <div class="demo-box" style="margin-top: 14px">
+        <b>Prototipo · respuestas simuladas de Meta</b>
+        <span class="mono">{{ demoWaba }}</span> cuenta nueva con un número libre ·
+        <span class="mono">200000000000001</span> números que ya son de otra empresa · cualquier otro: no existe.
+      </div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="card sec">
+      <h2>Verificaciones</h2>
+      <p class="d">La consola las corre sola al conectar.</p>
+      @if (state.checks().length) {
+        <div class="checks">
+          @for (check of state.checks(); track check.title) {
+            <div class="chk" [class]="check.status">
+              <span class="ic"><app-icon [name]="check.status === 'warn' ? 'alert' : 'check'" [stroke]="2.6" /></span>
+              <span><b>{{ check.title }}</b><span>{{ check.detail }}</span></span>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="field-hint">Aparecen aquí cuando pulses «Conectar y verificar».</p>
+      }
+    </section>
+
+    @if (allTaken()) {
+      <section class="card sec" style="border-color: #f3b9b1">
+        <div class="form-alert" role="alert">
+          <app-icon name="x" />
+          <span><b>No se puede conectar este número.</b> Ya pertenece a otra empresa de la plataforma y un número solo puede estar en una. Primero hay que darlo de baja allá.</span>
+        </div>
+      </section>
+    }
+  </div>
+</form>
+
+<footer class="step-foot">
+  <span class="count">Paso 2 de 4</span>
+  <button type="button" class="btn" (click)="state.goTo(0)" [disabled]="connecting()">Atrás</button>
+  @if (state.connected()) {
+    <button type="button" class="btn btn--primary" (click)="state.goTo(2)">Siguiente: probar<app-icon name="arrow" /></button>
+  } @else {
+    <button type="submit" form="channel-form" class="btn btn--primary" [disabled]="connecting() || !selected() || allTaken()">
+      {{ connecting() ? 'Verificando…' : 'Conectar y verificar' }}
+    </button>
+  }
+</footer>

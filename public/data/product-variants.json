@@ -1,0 +1,21 @@
+[
+  { "id": "var_brake_bosch", "tenantId": "ten_ra", "productId": "prd_brake_pads", "name": "Bosch", "sku": "FRN-BOS-COR15", "priceCents": 3800, "onHand": 6, "reserved": 1, "available": true, "lowStockThreshold": 2 },
+  { "id": "var_brake_generic", "tenantId": "ten_ra", "productId": "prd_brake_pads", "name": "Genéricas", "sku": "FRN-GEN-COR15", "priceCents": 2200, "onHand": 14, "reserved": 0, "available": true, "lowStockThreshold": 3 },
+  { "id": "var_filter_aveo", "tenantId": "ten_ra", "productId": "prd_oil_filter", "name": "Aveo 1.6", "sku": "FLT-ACE-AVE16", "priceCents": 800, "onHand": 2, "reserved": 0, "available": true, "lowStockThreshold": 3 },
+  { "id": "var_filter_corolla", "tenantId": "ten_ra", "productId": "prd_oil_filter", "name": "Corolla 1.8", "sku": "FLT-ACE-COR18", "priceCents": 900, "onHand": 0, "reserved": 0, "available": true, "lowStockThreshold": 3 },
+  { "id": "var_battery_duncan", "tenantId": "ten_ra", "productId": "prd_battery", "name": "Duncan", "sku": "BAT-DUN-45", "priceCents": 9500, "onHand": 4, "reserved": 0, "available": true, "lowStockThreshold": 1 },
+  { "id": "var_plugs_ngk", "tenantId": "ten_ra", "productId": "prd_spark_plugs", "name": "NGK estándar", "sku": "BUJ-NGK-4", "priceCents": 1800, "onHand": 20, "reserved": 0, "available": true, "lowStockThreshold": 4 },
+  { "id": "var_alternator_spark", "tenantId": "ten_ra", "productId": "prd_alternator", "name": "Spark 1.0", "sku": "ALT-SPK-REC", "priceCents": 4500, "onHand": 1, "reserved": 1, "available": true, "lowStockThreshold": 1 },
+  { "id": "var_oil_15w40", "tenantId": "ten_ra", "productId": "prd_engine_oil", "name": "Mineral", "sku": "ACE-15W40-GAL", "priceCents": 2400, "onHand": 30, "reserved": 0, "available": true, "lowStockThreshold": 6 },
+  { "id": "var_diagnostic", "tenantId": "ten_ra", "productId": "prd_diagnostic", "name": "Estándar", "sku": "SRV-DIAG", "priceCents": 1500, "onHand": 0, "reserved": 0, "available": true, "lowStockThreshold": 0 },
+  { "id": "var_shock_fiesta", "tenantId": "ten_ra", "productId": "prd_shock", "name": "Monroe", "sku": "AMO-FIE-TRA", "priceCents": 3200, "onHand": 0, "reserved": 0, "available": true, "lowStockThreshold": 1 },
+  { "id": "var_v_chair_natural", "tenantId": "ten_valle", "productId": "prd_v_chair", "name": "Madera natural", "sku": "VAL-SIL-MIL-NAT", "priceCents": 4500, "onHand": 24, "reserved": 4, "available": true, "lowStockThreshold": 6 },
+  { "id": "var_v_chair_wenge", "tenantId": "ten_valle", "productId": "prd_v_chair", "name": "Wengué", "sku": "VAL-SIL-MIL-WEN", "priceCents": 4500, "onHand": 3, "reserved": 0, "available": true, "lowStockThreshold": 6 },
+  { "id": "var_v_mattress_single", "tenantId": "ten_valle", "productId": "prd_v_mattress", "name": "Individual", "sku": "VAL-COL-IND", "priceCents": 12000, "onHand": 8, "reserved": 0, "available": true, "lowStockThreshold": 2 },
+  { "id": "var_v_mattress_double", "tenantId": "ten_valle", "productId": "prd_v_mattress", "name": "Matrimonial", "sku": "VAL-COL-MAT", "priceCents": 16500, "onHand": 5, "reserved": 1, "available": true, "lowStockThreshold": 2 },
+  { "id": "var_v_mattress_queen", "tenantId": "ten_valle", "productId": "prd_v_mattress", "name": "Queen", "sku": "VAL-COL-QUE", "priceCents": 21000, "onHand": 0, "reserved": 0, "available": true, "lowStockThreshold": 1 },
+  { "id": "var_v_sofa_grey", "tenantId": "ten_valle", "productId": "prd_v_sofa", "name": "Gris", "sku": "VAL-SOF-LIS-GRI", "priceCents": 38000, "onHand": 2, "reserved": 1, "available": true, "lowStockThreshold": 1 },
+  { "id": "var_v_dining_6", "tenantId": "ten_valle", "productId": "prd_v_dining", "name": "6 puestos", "sku": "VAL-COM-MED-6", "priceCents": 68000, "onHand": 0, "reserved": 0, "available": true, "lowStockThreshold": 0 },
+  { "id": "var_v_dining_8", "tenantId": "ten_valle", "productId": "prd_v_dining", "name": "8 puestos", "sku": "VAL-COM-MED-8", "priceCents": 89000, "onHand": 0, "reserved": 0, "available": true, "lowStockThreshold": 0 },
+  { "id": "var_v_closet_meter", "tenantId": "ten_valle", "productId": "prd_v_closet", "name": "Metro lineal", "sku": "VAL-CLO-MED-ML", "priceCents": 15000, "onHand": 0, "reserved": 0, "available": false, "lowStockThreshold": 0 }
+]

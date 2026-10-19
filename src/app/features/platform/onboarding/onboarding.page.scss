@@ -1,0 +1,95 @@
+@use 'mixins';
+
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.steps {
+  display: flex;
+  align-items: center;
+  padding: 13px 26px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  list-style: none;
+  flex-shrink: 0;
+}
+
+.stp {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .c {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--color-border-strong);
+    color: var(--color-text-faint);
+    background: var(--color-surface);
+    font-weight: 700;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    --icon-size: 15px;
+  }
+
+  &.done .c {
+    background: var(--color-success);
+    border-color: var(--color-success);
+    color: #fff;
+  }
+
+  &.on .c {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+    box-shadow: 0 0 0 4px var(--color-primary-soft);
+  }
+
+  b {
+    display: block;
+    font-size: 13.5px;
+  }
+
+  small {
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+
+  &.todo b {
+    color: var(--color-text-faint);
+  }
+}
+
+.ln {
+  flex: 1;
+  height: 2px;
+  background: var(--color-border);
+  margin: 0 16px;
+  min-width: 24px;
+
+  &.done {
+    background: var(--color-success);
+  }
+}
+
+@include mixins.below-tablet {
+  .stp small {
+    display: none;
+  }
+}
+
+@include mixins.phone {
+  .stp span:last-child {
+    display: none;
+  }
+
+  .stp.on span:last-child {
+    display: block;
+  }
+}

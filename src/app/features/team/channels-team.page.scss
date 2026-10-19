@@ -1,0 +1,178 @@
+@use 'mixins';
+
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.sec-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 12px;
+  flex-wrap: wrap;
+
+  h2 {
+    font-size: 15.5px;
+  }
+
+  .spacer {
+    flex: 1;
+  }
+}
+
+.sm {
+  font-size: 12.5px;
+}
+
+.numbers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.num {
+  padding: 15px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  b {
+    display: block;
+    font-size: 14.5px;
+  }
+
+  span {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+  }
+
+  app-pill {
+    margin-left: auto;
+  }
+}
+
+.ic {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --icon-size: 20px;
+}
+
+.edit {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  input[type='color'] {
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    background: var(--color-surface);
+  }
+}
+
+dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 12px;
+  font-size: 12.8px;
+}
+
+dt {
+  color: var(--color-text-muted);
+}
+
+dd {
+  font-weight: 600;
+  text-align: right;
+}
+
+.add {
+  border: 2px dashed #c9d1fb;
+  background: var(--color-primary-softer);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  padding: 18px;
+  color: var(--color-primary-strong);
+  --icon-size: 26px;
+
+  span {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+    max-width: 260px;
+  }
+}
+
+.table-card {
+  overflow-x: auto;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  b {
+    display: block;
+  }
+
+  span {
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+}
+
+.chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: var(--radius-pill);
+
+  &:not(.on) {
+    opacity: 0.4;
+  }
+}
+
+.actions {
+  white-space: nowrap;
+  text-align: right;
+
+  .link + .link {
+    margin-left: 10px;
+  }
+}
+
+.danger {
+  color: #b42318;
+}
+
+.foot {
+  margin-top: 10px;
+}

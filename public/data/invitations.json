@@ -1,0 +1,5 @@
+[
+  { "id": "inv_jesus", "tenantId": "ten_ra", "email": "jesus@repuestosandinos.com", "name": "Jesús Pérez", "role": "agent", "invitedByUserId": "usr_laura", "demoToken": "demo-jesus", "expiresAt": "2026-10-11T10:55:00-04:00", "acceptedAt": null, "createdAt": "2026-10-08T10:55:00-04:00" },
+  { "id": "inv_beatriz", "tenantId": "ten_ra", "email": "beatriz@repuestosandinos.com", "name": "Beatriz Lugo", "role": "agent", "invitedByUserId": "usr_laura", "demoToken": "demo-expired", "expiresAt": "2026-10-03T09:00:00-04:00", "acceptedAt": null, "createdAt": "2026-09-30T09:00:00-04:00" },
+  { "id": "inv_andrea", "tenantId": "ten_ra", "email": "andrea@repuestosandinos.com", "name": "Andrea Núñez", "role": "agent", "invitedByUserId": "usr_laura", "demoToken": "demo-used", "expiresAt": "2026-08-10T09:00:00-04:00", "acceptedAt": "2026-08-08T15:20:00-04:00", "createdAt": "2026-08-07T09:00:00-04:00" }
+]

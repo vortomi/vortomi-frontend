@@ -1,0 +1,132 @@
+<header class="page-top">
+  <h1>Contactos</h1>
+  <span class="sub">{{ rows().length }} de {{ data.visible().length }} contactos</span>
+  <span class="spacer"></span>
+  <label class="search">
+    <app-icon name="search" />
+    <span class="visually-hidden">Buscar contacto</span>
+    <input type="search" placeholder="Buscar nombre o teléfono" [value]="filters().search" (input)="setFilter('search', $event)" />
+  </label>
+  @if (session.isTenantAdmin()) {
+    <button type="button" class="btn" (click)="importing.set(true)"><app-icon name="clip" />Importar</button>
+    <button type="button" class="btn" (click)="exportCsv(false)"><app-icon name="down" />Exportar</button>
+  }
+  <a class="btn btn--primary" routerLink="/contacts/new"><app-icon name="plus" />Nuevo contacto</a>
+</header>
+
+<div class="filters">
+  <select class="select" aria-label="Número" (change)="setFilter('channelId', $event)">
+    <option value="">Todos los números</option>
+    @for (channel of workspace.channels(); track channel.id) {
+      <option [value]="channel.id">{{ channel.label }}</option>
+    }
+  </select>
+  @if (workspace.sells()) {
+    <select class="select" aria-label="Etapa" (change)="setFilter('stageId', $event)">
+      <option value="">Todas las etapas</option>
+      @for (stage of workspace.stages(); track stage.id) {
+        <option [value]="stage.id">{{ stage.name }}</option>
+      }
+    </select>
+  }
+  <select class="select" aria-label="Etiqueta" (change)="setFilter('tagId', $event)">
+    <option value="">Todas las etiquetas</option>
+    @for (tag of workspace.tags(); track tag.id) {
+      <option [value]="tag.id">{{ tag.name }}</option>
+    }
+  </select>
+  <select class="select" aria-label="Responsable" (change)="setFilter('ownerId', $event)">
+    <option value="">Cualquier responsable</option>
+    <option value="none">Sin responsable</option>
+    @for (member of workspace.activeTeam(); track member.user.id) {
+      <option [value]="member.user.id">{{ member.user.name }}</option>
+    }
+  </select>
+</div>
+
+@if (selected().size && session.isTenantAdmin()) {
+  <div class="bulk" role="region" aria-label="Acciones en grupo">
+    <b>{{ selected().size }} seleccionados</b>
+    <select class="select" aria-label="Asignar responsable" (change)="bulkOwner($event)">
+      <option value="">Asignar responsable…</option>
+      <option value="none">Sin responsable</option>
+      @for (member of workspace.activeTeam(); track member.user.id) {
+        <option [value]="member.user.id">{{ member.user.name }}</option>
+      }
+    </select>
+    <select class="select" aria-label="Agregar etiqueta" (change)="bulkTag($event)">
+      <option value="">Agregar etiqueta…</option>
+      @for (tag of workspace.tags(); track tag.id) {
+        <option [value]="tag.id">{{ tag.name }}</option>
+      }
+    </select>
+    <button type="button" class="btn" (click)="exportCsv(true)">Exportar seleccionados</button>
+    <button type="button" class="link" (click)="clearSelection()">Quitar selección</button>
+  </div>
+}
+
+<div class="page-body">
+  <div class="card table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          @if (session.isTenantAdmin()) {
+            <th class="check"><input type="checkbox" aria-label="Seleccionar todos" [checked]="allSelected()" (change)="toggleAll()" /></th>
+          }
+          <th>Contacto</th><th>Número</th>@if (workspace.sells()) { <th>Etapa</th> }<th>Etiquetas</th><th>Responsable</th><th>Compras</th><th>Último mensaje</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (contact of rows(); track contact.id) {
+          @let stage = contact.stageId ? workspace.stageById().get(contact.stageId) : undefined;
+          @let channel = workspace.channelById().get(contact.channelAccountId);
+          <tr class="clickable" tabindex="0" (click)="open(contact)" (keydown.enter)="open(contact)">
+            @if (session.isTenantAdmin()) {
+              <td class="check" (click)="toggle(contact.id, $event)">
+                <input type="checkbox" [attr.aria-label]="'Seleccionar ' + contact.name" [checked]="selected().has(contact.id)" />
+              </td>
+            }
+            <td>
+              <div class="who">
+                <app-avatar [name]="contact.name" [seed]="contact.id" />
+                <div><b>{{ contact.name }}</b><span>{{ contact.phone }}</span></div>
+              </div>
+            </td>
+            <td>@if (channel) { <app-channel-badge [channel]="channel" /> }</td>
+            @if (workspace.sells()) {
+              <td>
+                @if (stage) {
+                  <span class="stage"><i [style.background]="stage.color"></i>{{ stage.name }}</span>
+                } @else {
+                  <span class="muted">—</span>
+                }
+              </td>
+            }
+            <td>
+              <div class="tags">
+                @for (tagId of contact.tagIds; track tagId) {
+                  @if (workspace.tagById().get(tagId); as tag) {
+                    <app-pill [tone]="tag.tone">{{ tag.name }}</app-pill>
+                  }
+                }
+              </div>
+            </td>
+            <td>
+              @if (contact.ownerUserId) {
+                <span class="owner"><app-avatar size="sm" [name]="userName(contact.ownerUserId)" [seed]="contact.ownerUserId" />{{ userName(contact.ownerUserId) }}</span>
+              } @else {
+                <span class="muted">Sin responsable</span>
+              }
+            </td>
+            <td>{{ purchases(contact) }}</td>
+            <td class="muted">{{ lastActivity(contact) }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="8" class="muted empty">Ningún contacto coincide con los filtros.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<app-contact-import-dialog [open]="importing()" (closed)="importing.set(false)" />

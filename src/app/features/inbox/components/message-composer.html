@@ -1,0 +1,85 @@
+@if (suggestions().length) {
+  <div class="replies" role="listbox" aria-label="Respuestas rápidas">
+    <h5>Respuestas rápidas · escribe /</h5>
+    @for (reply of suggestions(); track reply.id; let first = $first) {
+      <button type="button" role="option" [class.first]="first" (click)="pick(reply)">
+        <span><code>/{{ reply.shortcut }}</code> {{ reply.title }}</span>
+        <small>{{ reply.body }}</small>
+      </button>
+    }
+  </div>
+}
+
+<div class="tabs" role="tablist">
+  <button type="button" role="tab" [class.on]="mode() === 'reply'" (click)="mode.set('reply')">Responder</button>
+  <button type="button" role="tab" [class.on]="mode() === 'note'" (click)="mode.set('note')">Nota interna</button>
+  <button type="button" role="tab" [class.on]="mode() === 'template'" (click)="mode.set('template')">Plantilla</button>
+  @if (products().length) {
+    <button type="button" role="tab" [class.on]="mode() === 'product'" (click)="mode.set('product')">Producto</button>
+  }
+</div>
+
+@switch (mode()) {
+  @case ('product') {
+    <div class="products">
+      @if (!windowOpen()) {
+        <p class="hint warn-text">La ventana de 24 h está cerrada: una ficha de producto es un mensaje libre. Primero escríbele con una plantilla.</p>
+      }
+      <input class="input" type="search" placeholder="Buscar producto o SKU" aria-label="Buscar producto" [value]="productQuery()" (input)="onProductQuery($event)" />
+      @for (option of productMatches(); track option.variantId) {
+        <div class="tpl">
+          <div class="tpl-text">
+            <b class="plain">{{ option.title }}</b>
+            <app-pill [tone]="option.tone">{{ option.statusText }}</app-pill>
+            <p>{{ option.detail }} · <strong>{{ option.price }}</strong></p>
+          </div>
+          <button type="button" class="btn btn--primary" [disabled]="!windowOpen() || !option.sendable" (click)="sendProduct(option)">Enviar</button>
+        </div>
+      } @empty {
+        <p class="hint">Ningún producto coincide.</p>
+      }
+    </div>
+  }
+  @case ('template') {
+    <div class="templates">
+      @for (tpl of approvedTemplates(); track tpl.id) {
+        <div class="tpl">
+          <div class="tpl-text">
+            <b>{{ tpl.name }}</b>
+            <app-pill tone="blue">{{ categoryLabel[tpl.category] }}</app-pill>
+            <p>{{ tpl.body }}</p>
+          </div>
+          <button type="button" class="btn btn--primary" (click)="sendTemplate(tpl)">Enviar</button>
+        </div>
+      } @empty {
+        <p class="hint">Esta empresa no tiene plantillas aprobadas por Meta.</p>
+      }
+      <p class="hint">Las plantillas se cobran desde el primer envío, aunque la ventana esté abierta.</p>
+    </div>
+  }
+  @default {
+    @if (mode() === 'reply' && !windowOpen()) {
+      <div class="closed">
+        <app-icon name="clock" />
+        <span>La ventana de 24 h está cerrada. Para escribirle hay que usar una plantilla aprobada.</span>
+        <button type="button" class="btn" (click)="mode.set('template')">Elegir plantilla</button>
+      </div>
+    } @else {
+      <div class="box" [class.note]="mode() === 'note'">
+        <app-icon name="clip" class="tool" />
+        <app-icon name="bolt" class="tool" />
+        <textarea
+          rows="1"
+          [value]="text()"
+          (input)="onInput($event)"
+          (keydown.enter)="onEnter($event)"
+          [attr.aria-label]="mode() === 'note' ? 'Nota interna' : 'Respuesta'"
+          [placeholder]="mode() === 'note' ? 'Nota para el equipo. El cliente no la ve.' : 'Escribe un mensaje o usa / para respuestas rápidas'"
+        ></textarea>
+        <button type="button" class="send" [disabled]="!canSend()" (click)="submit()" aria-label="Enviar">
+          <app-icon name="send" />
+        </button>
+      </div>
+    }
+  }
+}

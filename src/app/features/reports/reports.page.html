@@ -1,0 +1,125 @@
+<header class="page-top">
+  <h1>Reportes</h1>
+  <span class="sub">Cómo atiende el equipo y cuánto se gasta en WhatsApp</span>
+  <span class="spacer"></span>
+  <div class="periods" role="group" aria-label="Período">
+    @for (p of periods(); track p.id) {
+      <button type="button" [class.on]="period() === p.id" [attr.aria-pressed]="period() === p.id" (click)="period.set(p.id)">
+        {{ p.label }}
+      </button>
+    }
+  </div>
+  <button type="button" class="btn" (click)="exportCsv()"><app-icon name="down" />Exportar</button>
+</header>
+
+<div class="page-body">
+  @if (!data.ready()) {
+    <p class="muted">Cargando reportes…</p>
+  } @else {
+    <section class="kpis">
+      <article class="card kpi">
+        <h2>Conversaciones</h2>
+        <strong>{{ count(totals().conversations) }}</strong>
+        @let growth = conversationsChange();
+        @if (growth !== null) {
+          <span [class]="growth >= 0 ? 'up' : 'down'">{{ growth >= 0 ? '▲' : '▼' }} {{ growth >= 0 ? growth : -growth }} % frente a {{ comparedTo() }}</span>
+        } @else {
+          <span class="muted">Sin datos para comparar</span>
+        }
+      </article>
+
+      <article class="card kpi">
+        <h2>Primera respuesta (mediana)</h2>
+        <strong>{{ duration(totals().medianSec) }}</strong>
+        @let faster = medianChange();
+        @if (faster === null) {
+          <span class="muted">Sin datos para comparar</span>
+        } @else if (faster < 0) {
+          <span class="up">▼ {{ -faster }} min más rápido</span>
+        } @else if (faster > 0) {
+          <span class="down">▲ {{ faster }} min más lento</span>
+        } @else {
+          <span class="muted">Igual que {{ comparedTo() }}</span>
+        }
+      </article>
+
+      @if (sells()) {
+        <article class="card kpi">
+          <h2>Ventas ganadas</h2>
+          <strong>{{ money(totals().wonCents) }}</strong>
+          <span class="muted">
+            {{ totals().wonCount }} {{ totals().wonCount === 1 ? 'venta' : 'ventas' }}
+            @if (totals().wonCount) { · ticket promedio {{ money(averageTicketCents()) }} }
+          </span>
+        </article>
+      } @else {
+        <article class="card kpi">
+          <h2>Respondidas a tiempo</h2>
+          <strong>{{ onTimePercent() }} %</strong>
+          <span class="muted">en menos de 15 minutos</span>
+        </article>
+      }
+
+      <article class="card kpi">
+        <h2>Sin respuesta ahora</h2>
+        <strong [class.alert]="waiting().count > 0">{{ waiting().count }}</strong>
+        @if (waiting().long) {
+          <span class="down">{{ waiting().long }} {{ waiting().long === 1 ? 'lleva' : 'llevan' }} más de 2 h</span>
+        } @else if (waiting().count) {
+          <span class="muted">Ninguno pasa de 2 h</span>
+        } @else {
+          <span class="up">Nadie esperando</span>
+        }
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="card chart-card">
+        <header>
+          <h2>Conversaciones por día</h2>
+          <span class="legend"><i class="received"></i>recibidas <i class="on-time"></i>respondidas en menos de 15 min</span>
+        </header>
+        <app-daily-chart [bars]="bars()" />
+      </article>
+
+      <app-meta-spend-card class="card" [spend]="spend()" [month]="spendMonth()" />
+
+      <article class="card table-card agents">
+        <header><h2>Por persona</h2></header>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Persona</th><th>Atendidas</th><th>1.ª respuesta</th><th>A tiempo</th>
+              @if (sells()) { <th>Ventas</th> }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of agents(); track row.id) {
+              <tr [class.nobody]="row.id === null">
+                <td>
+                  <span class="who">
+                    @if (row.id) { <app-avatar [name]="row.name" [seed]="row.id" size="sm" /> }
+                    @else { <span class="nobody-ico"><app-icon name="alert" /></span> }
+                    {{ row.name }}
+                  </span>
+                </td>
+                <td>{{ count(row.totals.conversations) }}</td>
+                <td>{{ duration(row.totals.medianSec) }}</td>
+                <td>
+                  @if (row.id) {
+                    <span class="rate"><span class="track"><i [style.width.%]="row.rate"></i></span>{{ row.rate }} %</span>
+                  } @else {
+                    <span class="muted">Nadie las contestó</span>
+                  }
+                </td>
+                @if (sells()) { <td>{{ row.id ? money(row.totals.wonCents) : '—' }}</td> }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </article>
+
+      <app-number-health class="card" [channels]="workspace.channels()" [usage]="workspace.usage()" />
+    </section>
+  }
+</div>

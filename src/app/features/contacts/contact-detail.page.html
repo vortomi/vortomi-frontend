@@ -1,0 +1,127 @@
+<header class="page-top">
+  <a class="back" routerLink="/contacts" aria-label="Volver a contactos"><app-icon name="back" /></a>
+  @if (contact(); as c) {
+    <app-avatar size="md" [name]="c.name" [seed]="c.id" />
+    <div><h1>{{ c.name }}</h1><span class="sub">{{ c.phone }}</span></div>
+  } @else {
+    <h1>{{ isNew() ? 'Nuevo contacto' : 'Contacto no encontrado' }}</h1>
+  }
+  <span class="spacer"></span>
+  @if (isNew() || contact()) {
+    <button type="submit" form="contact-form" class="btn btn--primary"><app-icon name="check" />Guardar</button>
+  }
+</header>
+
+@if (isNew() || contact()) {
+  <div class="page-body">
+    <div class="grid">
+      <form id="contact-form" class="card box" (submit)="save($event)" novalidate>
+        <h2>Datos</h2>
+        @if (duplicate(); as existing) {
+          <div class="form-alert" role="alert">
+            <app-icon name="alert" />
+            <span>Ese teléfono ya está registrado en este número como <a class="link" [routerLink]="['/contacts', existing.id]">{{ existing.name }}</a>.</span>
+          </div>
+        }
+        <div class="g2">
+          <div class="field">
+            <label for="name">Nombre</label>
+            <input id="name" class="input" [formField]="contactForm.name" />
+            <app-field-error [state]="contactForm.name()" />
+          </div>
+          <div class="field">
+            <label for="phone">Teléfono</label>
+            <input id="phone" class="input" type="tel" placeholder="0414-555-0187" [formField]="contactForm.phone" />
+            <app-field-error [state]="contactForm.phone()" />
+          </div>
+          <div class="field">
+            <label for="channel">Número de la empresa</label>
+            <select id="channel" class="input" [formField]="contactForm.channelAccountId">
+              @for (channel of workspace.channels(); track channel.id) {
+                <option [value]="channel.id">{{ channel.label }} · {{ channel.displayNumber }}</option>
+              }
+            </select>
+            @if (!isNew()) {
+              <p class="field-hint">El teléfono y el número no se cambian: identifican la conversación en WhatsApp.</p>
+            }
+          </div>
+          <div class="field">
+            <label for="owner">Responsable</label>
+            <select id="owner" class="input" [formField]="contactForm.ownerUserId">
+              <option value="">Sin responsable</option>
+              @for (member of workspace.activeTeam(); track member.user.id) {
+                <option [value]="member.user.id">{{ member.user.name }}</option>
+              }
+            </select>
+          </div>
+          @if (workspace.sells()) {
+          <div class="field">
+            <label for="stage">Etapa</label>
+            <select id="stage" class="input" [formField]="contactForm.stageId">
+              <option value="">Sin etapa</option>
+              @for (stage of workspace.stages(); track stage.id) {
+                <option [value]="stage.id">{{ stage.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label for="quote">Monto de la oportunidad (USD)</label>
+            <input id="quote" class="input" inputmode="decimal" placeholder="43,00" [formField]="contactForm.quote" />
+            <app-field-error [state]="contactForm.quote()" />
+          </div>
+          }
+        </div>
+
+        <div class="field">
+          <span class="label">Etiquetas</span>
+          <div class="tag-picker">
+            @for (tag of workspace.tags(); track tag.id) {
+              <button type="button" class="tag" [class.on]="tagIds().includes(tag.id)" [attr.aria-pressed]="tagIds().includes(tag.id)" (click)="toggleTag(tag.id)">
+                <app-pill [tone]="tagIds().includes(tag.id) ? tag.tone : 'neutral'">{{ tag.name }}</app-pill>
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="label">Campos de la empresa</span>
+          @for (attribute of attributes(); track attribute.key; let i = $index) {
+            <div class="attr">
+              <label [for]="'attr-' + i">{{ attribute.label }}</label>
+              <input [id]="'attr-' + i" class="input" [value]="attribute.value" (input)="setAttribute(i, $event)" />
+              <button type="button" class="link danger" (click)="removeAttribute(i)">Quitar</button>
+            </div>
+          }
+          <div class="attr add">
+            <input class="input" placeholder="Nuevo campo, p. ej. Dirección" aria-label="Nombre del campo nuevo" [value]="newFieldLabel()" (input)="onNewFieldLabel($event)" />
+            <button type="button" class="btn" (click)="addAttribute()"><app-icon name="plus" />Agregar campo</button>
+          </div>
+        </div>
+      </form>
+
+      @if (contact(); as c) {
+        <aside class="side-col">
+          <section class="card box">
+            <h2>Conversación</h2>
+            @if (conversation(); as conv) {
+              <p class="preview">{{ conv.lastMessagePreview }}</p>
+              <p class="field-hint">Último mensaje {{ stamp(conv.lastMessageAt) }} · {{ conv.status === 'open' ? 'abierta' : 'resuelta' }}</p>
+              <a class="btn" [routerLink]="['/inbox', conv.id]"><app-icon name="inbox" />Abrir en la bandeja</a>
+            } @else {
+              <p class="muted">Sin conversación visible para ti.</p>
+            }
+          </section>
+          <section class="card box">
+            <h2>Historial</h2>
+            <dl>
+              <dt>Cliente desde</dt><dd>{{ since(c) }}</dd>
+              <dt>Compras</dt><dd>{{ purchases(c) }}</dd>
+            </dl>
+          </section>
+        </aside>
+      }
+    </div>
+  </div>
+} @else {
+  <div class="page-body"><p class="muted">Ese contacto no existe o no tienes permiso para verlo. <a class="link" routerLink="/contacts">Volver</a></p></div>
+}

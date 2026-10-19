@@ -1,0 +1,45 @@
+<aside class="side">
+  <div class="brand">
+    <div class="logo">{{ brand.initial }}</div>
+    <div>
+      <p>{{ brand.name }}</p>
+      <span>{{ brand.tagline }}</span>
+    </div>
+  </div>
+
+  <app-tenant-switcher />
+
+  <nav class="nav" aria-label="Menú principal">
+    @for (group of groups(); track group.title) {
+      <h6>{{ group.title }}</h6>
+      @for (item of group.items; track item.path) {
+        <a [routerLink]="item.path" routerLinkActive="on">
+          <app-icon [name]="item.icon" />{{ item.label }}
+          @if (badge(item.badge); as count) {
+            <span class="count" [class.warn]="item.badge !== 'unread'">{{ count }}</span>
+          }
+        </a>
+      }
+    }
+  </nav>
+
+  <app-usage-meter class="meter" />
+
+  <app-user-menu area="tenant" />
+</aside>
+
+<main class="main">
+  <app-channel-banner />
+  <router-outlet />
+</main>
+
+<nav class="tabbar" aria-label="Menú">
+  @for (item of mobileItems(); track item.path) {
+    <a [routerLink]="item.path" routerLinkActive="on">
+      <app-icon [name]="item.icon" />{{ item.label }}
+      @if (badge(item.badge); as count) {
+        <span class="count">{{ count }}</span>
+      }
+    </a>
+  }
+</nav>

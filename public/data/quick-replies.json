@@ -1,0 +1,14 @@
+[
+  { "id": "qr_payment", "tenantId": "ten_ra", "shortcut": "pago", "title": "Formas de pago", "body": "Aceptamos Pago Móvil, Zelle y efectivo. Si eliges Pago Móvil te enviamos los datos por aquí." },
+  { "id": "qr_shipping", "tenantId": "ten_ra", "shortcut": "envio", "title": "Costo de envío por zona", "body": "Caracas 3 $, Los Teques y Guarenas 5 $, interior por encomienda." },
+  { "id": "qr_hours", "tenantId": "ten_ra", "shortcut": "horario", "title": "Horario de la tienda", "body": "Lunes a viernes de 8 am a 5 pm y sábados de 8 am a 1 pm." },
+  { "id": "qr_warranty", "tenantId": "ten_ra", "shortcut": "garantia", "title": "Garantía", "body": "Todos los repuestos tienen 3 meses de garantía presentando la factura." },
+  { "id": "qr_v_deposit", "tenantId": "ten_valle", "shortcut": "abono", "title": "Abono para apartar", "body": "Para apartar tu pedido pedimos el 50 % de abono por Pago Móvil, Zelle o en tienda. El resto se paga al recibir." },
+  { "id": "qr_v_delivery", "tenantId": "ten_valle", "shortcut": "despacho", "title": "Despachos", "body": "En Caracas el despacho es gratis. Al interior enviamos por encomienda y el flete lo paga quien recibe." },
+  { "id": "qr_v_measures", "tenantId": "ten_valle", "shortcut": "medidas", "title": "Toma de medidas", "body": "Para muebles a medida vamos a tu casa a tomar las medidas sin costo, de lunes a viernes." },
+  { "id": "qr_v_warranty", "tenantId": "ten_valle", "shortcut": "garantia", "title": "Garantía", "body": "Todos nuestros muebles tienen 1 año de garantía de fabricación." },
+  { "id": "qr_s_address", "tenantId": "ten_sonrisa", "shortcut": "direccion", "title": "Dirección", "body": "Estamos en la Av. Bolívar Norte, Torre Banaven, piso 2, en Valencia. Hay estacionamiento." },
+  { "id": "qr_s_hours", "tenantId": "ten_sonrisa", "shortcut": "horario", "title": "Horario", "body": "Atendemos de lunes a viernes de 8 am a 5 pm y los sábados de 8 am a 12 m." },
+  { "id": "qr_s_insurance", "tenantId": "ten_sonrisa", "shortcut": "seguros", "title": "Seguros", "body": "Trabajamos con Seguros Caracas, Mercantil y La Previsora. Trae tu carnet y la cédula." },
+  { "id": "qr_s_cleaning", "tenantId": "ten_sonrisa", "shortcut": "limpieza", "title": "Limpieza", "body": "La limpieza cuesta 35 $ e incluye revisión. Dura unos 40 minutos." }
+]

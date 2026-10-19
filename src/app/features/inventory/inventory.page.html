@@ -1,0 +1,96 @@
+<header class="page-top">
+  <h1>Inventario</h1>
+  <span class="sub">{{ data.items().length }} productos</span>
+  @if (counts().out) { <app-pill tone="red">{{ counts().out }} {{ counts().out === 1 ? 'agotado' : 'agotados' }}</app-pill> }
+  @if (counts().low) { <app-pill tone="amber">{{ counts().low }} con pocas unidades</app-pill> }
+  <span class="spacer"></span>
+  <label class="search">
+    <app-icon name="search" />
+    <span class="visually-hidden">Buscar producto</span>
+    <input type="search" placeholder="Buscar producto o SKU" [value]="search()" (input)="search.set(value($event))" />
+  </label>
+  @if (session.isTenantAdmin()) {
+    <button type="button" class="btn" (click)="importing.set(true)"><app-icon name="clip" />Importar</button>
+    <button type="button" class="btn" (click)="exportCsv()"><app-icon name="down" />Exportar</button>
+    <a class="btn btn--primary" routerLink="/inventory/new"><app-icon name="plus" />Nuevo producto</a>
+  }
+</header>
+
+<div class="filters">
+  <select class="select" aria-label="Categoría" (change)="category.set(value($event))">
+    <option value="">Todas las categorías</option>
+    @for (c of data.categories(); track c) { <option [value]="c">{{ c }}</option> }
+  </select>
+  <select class="select" aria-label="Estado" (change)="status.set($any(value($event)))">
+    <option value="">Cualquier estado</option>
+    <option value="available">Disponible</option>
+    <option value="low">Quedan pocas</option>
+    <option value="out">Agotado</option>
+    <option value="unavailable">No disponible hoy</option>
+    <option value="inactive">Inactivo</option>
+  </select>
+  @if (rate(); as r) {
+    <span class="rate">Tasa de la empresa: {{ rateLabel(r) }} Bs por $ · <span class="muted">se cambia en Ajustes</span></span>
+  }
+</div>
+
+<div class="page-body">
+  <div class="card table-card">
+    <table class="data-table">
+      <thead><tr><th>Producto</th><th>Variantes</th><th>Precio</th><th>Existencia</th><th>Estado</th></tr></thead>
+      <tbody>
+        @for (item of rows(); track item.product.id) {
+          <tr class="clickable" tabindex="0" [class.inactive]="!item.product.active" (click)="open(item)" (keydown.enter)="open(item)">
+            <td>
+              <div class="prod">
+                @if (item.product.photoDataUrl; as photo) {
+                  <img [src]="photo" alt="" />
+                } @else {
+                  <span class="ph"><app-icon name="tag" /></span>
+                }
+                <div><b>{{ item.product.name }}</b><span>{{ item.product.category }}</span></div>
+              </div>
+            </td>
+            <td>
+              <div class="variants">
+                @for (v of item.variants; track v.id) { <span class="variant">{{ v.name }}</span> }
+              </div>
+            </td>
+            <td>
+              <b>{{ price(item) }}</b>
+              @if (priceVes(item); as ves) { <span class="ves">{{ ves }}</span> }
+            </td>
+            <td (click)="$event.stopPropagation()">
+              @if (item.product.stockMode === 'availability') {
+                @for (v of item.variants; track v.id) {
+                  <span class="avail">
+                    <app-switch [label]="'Disponible hoy: ' + item.product.name" [checked]="v.available" (toggled)="data.setAvailable(v.id, $event)" />
+                    {{ v.available ? 'Disponible hoy' : 'No hoy' }}
+                  </span>
+                }
+              } @else {
+                {{ item.freeUnits }} {{ item.freeUnits === 1 ? 'unidad' : 'unidades' }}
+              }
+            </td>
+            <td><app-pill [tone]="statusLabel[item.status].tone">{{ statusLabel[item.status].text }}</app-pill></td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="muted empty">
+              @if (data.items().length) {
+                Ningún producto coincide con los filtros.
+              } @else if (session.isTenantAdmin()) {
+                Todavía no hay productos. Crea el primero con «Nuevo producto» o importa tu lista en CSV.
+              } @else {
+                Esta empresa todavía no cargó productos.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="field-hint foot">Existencia = unidades en el estante menos las apartadas para cotizaciones sin pagar.</p>
+</div>
+
+<app-product-import-dialog [open]="importing()" (closed)="importing.set(false)" />

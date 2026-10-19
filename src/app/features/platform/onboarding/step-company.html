@@ -1,0 +1,137 @@
+<form class="step-body" id="company-form" (submit)="next($event)" novalidate>
+  <div class="col">
+    <section class="card sec">
+      <h2><span class="k">1</span>Datos de la empresa</h2>
+      <p class="d">Lo que verá su equipo en el panel. Se puede cambiar después.</p>
+      <div class="g2">
+        <div class="field">
+          <label for="name">Nombre comercial</label>
+          <input id="name" class="input" [formField]="companyForm.name" />
+          <app-field-error [state]="companyForm.name()" />
+        </div>
+        <div class="field">
+          <label for="industry">Rubro</label>
+          <select id="industry" class="input" [formField]="companyForm.industry">
+            <option value="">Elige uno</option>
+            @for (industry of industries; track industry) {
+              <option [value]="industry">{{ industry }}</option>
+            }
+          </select>
+          <app-field-error [state]="companyForm.industry()" />
+        </div>
+        <div class="field">
+          <label for="city">Ciudad</label>
+          <input id="city" class="input" [formField]="companyForm.city" />
+          <app-field-error [state]="companyForm.city()" />
+        </div>
+        <div class="field">
+          <label for="tz">Zona horaria</label>
+          <select id="tz" class="input" [formField]="companyForm.timezone">
+            @for (tz of timezones; track tz[0]) {
+              <option [value]="tz[0]">{{ tz[1] }}</option>
+            }
+          </select>
+          <p class="field-hint">Define los horarios de los reportes y de la ventana de 24 h.</p>
+        </div>
+      </div>
+      <div class="field" style="margin-top: 12px">
+        <span class="label">Plan</span>
+        <div class="plans" role="radiogroup" aria-label="Plan">
+          @for (plan of plans; track plan[0]) {
+            <button type="button" class="plan" role="radio" [class.on]="companyForm.plan().value() === plan[0]"
+              [attr.aria-checked]="companyForm.plan().value() === plan[0]" (click)="setPlan(plan[0])">
+              <b>{{ plan[1].text }}</b><span>{{ plan[1].detail }}</span>
+            </button>
+          }
+        </div>
+        <p class="field-hint">Los precios dependen del modelo de cobro, que sigue abierto. Por ahora el plan solo fija los límites.</p>
+      </div>
+    </section>
+
+    <section class="card sec">
+      <h2><span class="k">2</span>Datos fiscales</h2>
+      <p class="d">Para sus facturas. Deben ser los mismos que use para verificar su negocio en Meta.</p>
+      <div class="g2">
+        <div class="field">
+          <label for="legal-name">Razón social</label>
+          <input id="legal-name" class="input" [formField]="companyForm.legalName" />
+          <app-field-error [state]="companyForm.legalName()" />
+        </div>
+        <div class="field">
+          <label for="tax-id">RIF</label>
+          <input id="tax-id" class="input mono" placeholder="J-41234567-8" autocomplete="off" [formField]="companyForm.taxId" />
+          <app-field-error [state]="companyForm.taxId()" />
+        </div>
+      </div>
+      <div class="g2" style="margin-top: 12px">
+        <div class="field">
+          <label for="fiscal-address">Dirección fiscal</label>
+          <input id="fiscal-address" class="input" [formField]="companyForm.fiscalAddress" />
+          <p class="field-hint">También se propone como dirección de su perfil de WhatsApp.</p>
+          <app-field-error [state]="companyForm.fiscalAddress()" />
+        </div>
+        <div class="field">
+          <label for="website">Sitio web o Instagram <span class="opt">opcional</span></label>
+          <input id="website" class="input" type="url" placeholder="https://" [formField]="companyForm.website" />
+          <app-field-error [state]="companyForm.website()" />
+        </div>
+      </div>
+    </section>
+
+    <section class="card sec">
+      <h2><span class="k">3</span>Administrador de la empresa</h2>
+      <p class="d">La persona del cliente que conecta el canal, invita al resto del equipo y ve todas las conversaciones.</p>
+      <div class="g3">
+        <div class="field">
+          <label for="admin-name">Nombre</label>
+          <input id="admin-name" class="input" autocomplete="off" [formField]="companyForm.adminName" />
+          <app-field-error [state]="companyForm.adminName()" />
+        </div>
+        <div class="field">
+          <label for="admin-email">Correo</label>
+          <input id="admin-email" class="input" type="email" autocomplete="off" [formField]="companyForm.adminEmail" />
+          <app-field-error [state]="companyForm.adminEmail()" />
+        </div>
+        <div class="field">
+          <label for="admin-phone">Teléfono de contacto</label>
+          <input id="admin-phone" class="input" type="tel" autocomplete="off" [formField]="companyForm.adminPhone" />
+        </div>
+      </div>
+      <div class="form-alert info" style="margin-top: 12px">
+        <app-icon name="lock" />
+        <span>Al activar la empresa le llega una <b>invitación de un solo uso que vence en 72 horas</b>. Esa persona crea su contraseña: nosotros nunca la vemos ni la escribimos.</span>
+      </div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="card sec">
+      <h2>Antes de empezar, el cliente necesita</h2>
+      <p class="d">Si falta algo, se guarda como borrador y se sigue otro día.</p>
+      <ol class="olist">
+        <li><span>Una cuenta de <b>Meta Business</b> a nombre de su negocio, y entrar a ella como administrador.</span></li>
+        <li><span>Su <b>RIF y razón social</b>. Mejor si ya verificó su negocio en Meta: sin eso puede escribir primero a solo 250 clientes por día.</span></li>
+        <li><span>El número que va a usar. Si hoy está en la app de WhatsApp, <b>hay que sacarlo de la app</b>: usar los dos a la vez llega en la fase 2. Debe poder recibir un <b>SMS o una llamada</b> con el código de verificación.</span></li>
+        <li><span>El <b>nombre visible</b> que quiere mostrar. Meta lo revisa: debe parecerse al nombre del negocio.</span></li>
+        <li><span>Un <b>logo cuadrado</b> y una frase corta sobre el negocio, para su perfil de WhatsApp.</span></li>
+        <li><span>Un <b>método de pago en su Meta</b>. Lo que gaste en mensajes lo paga directo a Meta, no a nosotros.</span></li>
+        <li><span>Entre 30 y 60 minutos con nosotros, en llamada o en persona.</span></li>
+      </ol>
+    </section>
+    <section class="card sec">
+      <h2>Estado de la empresa</h2>
+      <p class="d">Avanza solo a medida que se completan los pasos.</p>
+      <div class="flow">
+        <app-pill tone="blue">Borrador</app-pill><app-icon name="arrow" />
+        <app-pill tone="neutral">Esperando canal</app-pill><app-icon name="arrow" />
+        <app-pill tone="neutral">Activa</app-pill>
+      </div>
+    </section>
+  </div>
+</form>
+
+<footer class="step-foot">
+  <span class="count">Paso 1 de 4</span>
+  <button type="button" class="btn" (click)="saveDraft()">Guardar borrador</button>
+  <button type="submit" form="company-form" class="btn btn--primary">Siguiente: conectar WhatsApp<app-icon name="arrow" /></button>
+</footer>

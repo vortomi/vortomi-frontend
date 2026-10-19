@@ -1,0 +1,70 @@
+<header class="page-top">
+  <a class="back" routerLink="/templates" aria-label="Volver a plantillas"><app-icon name="back" /></a>
+  <h1>Nueva plantilla</h1>
+  <span class="sub">Meta la revisa antes de poder usarla</span>
+  <span class="spacer"></span>
+  <button type="submit" form="template-form" class="btn btn--primary"><app-icon name="send" />Enviar a revisión</button>
+</header>
+
+<div class="page-body">
+  <div class="layout">
+    <form id="template-form" class="card box" (submit)="send($event)" novalidate>
+      <div class="g2">
+        <div class="field">
+          <label for="tpl-name">Nombre</label>
+          <input id="tpl-name" class="input" placeholder="pedido_enviado" autocomplete="off" [formField]="editor.name" />
+          <p class="field-hint">Solo minúsculas, números y guion bajo. No se ve en el chat.</p>
+        </div>
+        <div class="field">
+          <label for="tpl-category">Categoría</label>
+          <select id="tpl-category" class="input" [formField]="editor.category">
+            @for (category of categories; track category[0]) {
+              <option [value]="category[0]">{{ category[1].text }}</option>
+            }
+          </select>
+          @for (category of categories; track category[0]) {
+            @if (editor.category().value() === category[0]) {
+              <p class="field-hint">{{ category[1].detail }}</p>
+            }
+          }
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="tpl-body">Texto</label>
+        <textarea id="tpl-body" class="input" rows="5" placeholder="Hola {{ '{{1}}' }}, tu pedido {{ '{{2}}' }} salió hoy." [formField]="editor.body"></textarea>
+        <p class="field-hint count">{{ editor.body().value().length }} / {{ maxLength }}</p>
+        <p class="field-hint">Usa {{ '{{1}}' }}, {{ '{{2}}' }}… donde va un dato que cambia en cada envío (nombre, número de pedido).</p>
+      </div>
+
+      @if (variables().length) {
+        <div class="field">
+          <span class="label">Ejemplos para la revisión de Meta</span>
+          <div class="g2">
+            @for (n of variables(); track n) {
+              <label class="field">
+                <span class="field-hint">Valor de ejemplo para {{ '{{' + n + '}}' }}</span>
+                <input class="input" [value]="examples()[n - 1] ?? ''" (input)="setExample(n, $event)" />
+              </label>
+            }
+          </div>
+        </div>
+      }
+
+      @if (showIssues() || editor.body().value()) {
+        <div class="issues">
+          @for (issue of issues(); track issue.text) {
+            <div class="form-alert" [class.warn]="issue.level === 'warning'"><app-icon name="alert" />{{ issue.text }}</div>
+          } @empty {
+            <div class="form-alert ok"><app-icon name="check" />Lista para enviar a Meta.</div>
+          }
+        </div>
+      }
+    </form>
+
+    <div class="preview-col">
+      <span class="field-hint">Así la verá el cliente</span>
+      <app-template-preview [text]="preview()" [businessName]="session.tenant()?.name ?? ''" />
+    </div>
+  </div>
+</div>

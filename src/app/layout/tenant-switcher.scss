@@ -1,0 +1,85 @@
+@use 'mixins';
+
+:host {
+  display: block;
+  position: relative;
+  margin: 0 2px 14px;
+}
+
+.chip {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-side-2);
+  border: 1px solid var(--color-side-border);
+  border-radius: var(--radius-md);
+  padding: 9px 10px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--color-side-muted);
+  --icon-size: 16px;
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.logo {
+  object-fit: cover;
+  border-radius: 7px;
+  width: 28px;
+  height: 28px;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+
+  b {
+    font-size: 13px;
+    color: #fff;
+    font-weight: 600;
+    @include mixins.ellipsis;
+  }
+
+  small {
+    font-size: 11.5px;
+  }
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  list-style: none;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+  padding: 6px;
+  z-index: 20;
+
+  button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px;
+    border: 0;
+    background: none;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    // The host inherits the sidebar's light text; the menu is white.
+    color: var(--color-text);
+    text-align: left;
+    cursor: pointer;
+
+    &.on,
+    &:hover {
+      background: var(--color-primary-soft);
+    }
+  }
+}

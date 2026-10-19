@@ -1,0 +1,73 @@
+<header class="page-top">
+  <h1>Pipeline</h1>
+  <span class="sub">{{ boardTotal() }} en oportunidades abiertas</span>
+  <span class="spacer"></span>
+  <label class="search">
+    <app-icon name="search" />
+    <span class="visually-hidden">Buscar</span>
+    <input type="search" placeholder="Buscar cliente" [value]="search()" (input)="search.set(value($event))" />
+  </label>
+  <select class="select" aria-label="Número" (change)="channelId.set(value($event))">
+    <option value="">Todos los números</option>
+    @for (channel of workspace.channels(); track channel.id) { <option [value]="channel.id">{{ channel.label }}</option> }
+  </select>
+  <select class="select" aria-label="Responsable" (change)="ownerId.set(value($event))">
+    <option value="">Cualquier responsable</option>
+    @for (member of workspace.activeTeam(); track member.user.id) { <option [value]="member.user.id">{{ member.user.name }}</option> }
+  </select>
+</header>
+
+<div class="board">
+  @for (column of columns(); track column.stage.id) {
+    <section class="column" [class.drop]="dropTarget() === column.stage.id" (dragover)="onDragOver(column.stage, $event)"
+      (dragleave)="dropTarget.set(null)" (drop)="onDrop(column.stage, $event)" [attr.aria-label]="column.stage.name">
+      <header [style.--stage]="column.stage.color">
+        <i></i><b>{{ column.stage.name }}</b><span class="n">{{ column.cards.length }}</span>
+        <span class="total">{{ money(column.total) }}</span>
+      </header>
+      <div class="cards">
+        @for (card of column.cards; track card.contact.id) {
+          @let contact = card.contact;
+          @let channel = workspace.channelById().get(contact.channelAccountId);
+          <article class="card-item" draggable="true" [class.dragging]="dragging() === contact.id" tabindex="0"
+            (dragstart)="onDragStart(contact, $event)" (dragend)="dragging.set(null)" (click)="open(contact)" (keydown.enter)="open(contact)">
+            <div class="top">
+              <app-avatar size="sm" [name]="contact.name" [seed]="contact.id" />
+              <b>{{ contact.name }}</b>
+              @if (contact.quoteCents) { <span class="amount">{{ money(contact.quoteCents) }}</span> }
+            </div>
+            @if (card.conversation) { <p class="preview">{{ card.conversation.lastMessagePreview }}</p> }
+            @if (card.level !== 'none') {
+              <p class="wait" [class.late]="card.level === 'late'"><app-icon name="clock" />Esperando respuesta hace {{ card.waitLabel }}</p>
+            }
+            <div class="bottom">
+              @if (channel) { <app-channel-badge [channel]="channel" /> }
+              @if (contact.ownerUserId) { <app-avatar size="sm" [name]="userName(contact.ownerUserId)" [seed]="contact.ownerUserId" /> }
+              <span class="spacer"></span>
+              @if (card.conversation) {
+                <a class="chat" [routerLink]="['/inbox', card.conversation.id]" (click)="$event.stopPropagation()" aria-label="Abrir conversación"><app-icon name="inbox" /></a>
+              }
+              <select class="move" [attr.aria-label]="'Mover a ' + contact.name" (click)="$event.stopPropagation()" (change)="moveFromMenu(contact, $event)">
+                @for (stage of workspace.stages(); track stage.id) {
+                  <option [value]="stage.id" [selected]="stage.id === contact.stageId">{{ stage.name }}</option>
+                }
+              </select>
+            </div>
+          </article>
+        } @empty {
+          <p class="empty">Arrastra un cliente aquí</p>
+        }
+      </div>
+    </section>
+  } @empty {
+    <div class="no-stages card">
+      <app-icon name="kanban" />
+      <b>Esta empresa todavía no usa el pipeline</b>
+      @if (session.isTenantAdmin()) {
+        <span>Crea sus etapas en <a class="link" routerLink="/settings">Ajustes → Etapas del pipeline</a> y aquí aparecerán los clientes.</span>
+      } @else {
+        <span>La administración de la empresa puede crear las etapas en Ajustes.</span>
+      }
+    </div>
+  }
+</div>

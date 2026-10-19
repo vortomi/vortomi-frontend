@@ -1,0 +1,75 @@
+<header class="head">
+  <a class="back" routerLink="/inbox" aria-label="Volver a la lista"><app-icon name="back" /></a>
+  <app-avatar [name]="contact().name" [seed]="contact().id" size="md" />
+  <div class="who">
+    <b>{{ contact().name }}</b>
+    @if (channel(); as ch) {
+      <span>Escribió a la línea de <strong [style.color]="ch.color">{{ ch.label }}</strong></span>
+    }
+  </div>
+  <div class="actions">
+    <label class="assign">
+      <span class="visually-hidden">Asignar a</span>
+      <select class="select" (change)="onAssign($event)">
+        <option value="" [selected]="!conversation().assignedUserId">Sin asignar</option>
+        @for (member of attendants(); track member.user.id) {
+          <option [value]="member.user.id" [selected]="conversation().assignedUserId === member.user.id">
+            {{ member.user.name }}
+          </option>
+        }
+      </select>
+    </label>
+    @if (conversation().status === 'open') {
+      <button type="button" class="btn btn--success" (click)="toggleResolved()"><app-icon name="check" />Resolver</button>
+    } @else {
+      <button type="button" class="btn" (click)="toggleResolved()">Reabrir</button>
+    }
+  </div>
+</header>
+
+<div class="timeline" #scroller>
+  <div class="window" [class.closed]="!window().isOpen">
+    <app-icon name="clock" />
+    @if (window().isOpen) {
+      Ventana de 24 h abierta · quedan {{ remaining() }}
+    } @else {
+      Ventana de 24 h cerrada · solo se puede escribir con plantilla
+    }
+  </div>
+
+  @for (group of groups(); track group.day) {
+    <div class="day"><span>{{ group.label }}</span></div>
+    @for (entry of group.entries; track entryId(entry)) {
+      @switch (entry.kind) {
+        @case ('note') {
+          <div class="note">
+            <b>
+              <app-icon name="note" />Nota interna · {{ firstName(entry.note.authorUserId) }}
+              @if (entry.note.mentionUserId) {
+                → {{ firstName(entry.note.mentionUserId) }}
+              }
+              · solo la ve el equipo
+            </b>
+            <p>{{ entry.note.body }}</p>
+            <small>{{ time(entry.note.createdAt) }}</small>
+          </div>
+        }
+        @case ('message') {
+          <app-message-bubble [message]="entry.message" [author]="authorOf(entry.message)" [timezone]="timezone()" />
+        }
+      }
+    }
+  }
+</div>
+
+<app-message-composer
+  [conversationId]="conversation().id"
+  [windowOpen]="window().isOpen"
+  [quickReplies]="workspace.quickReplies()"
+  [templates]="workspace.templates()"
+  (reply)="onReply($event)"
+  (note)="onNote($event)"
+  [products]="productOptions()"
+  (template)="onTemplate($event)"
+  (product)="onProduct($event)"
+/>

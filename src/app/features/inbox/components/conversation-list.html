@@ -1,0 +1,61 @@
+<div class="toolbar">
+  <div class="seg" role="tablist" aria-label="Vista de la bandeja">
+    @for (view of views; track view.id) {
+      <button type="button" role="tab" [class.on]="filters().view === view.id" [attr.aria-selected]="filters().view === view.id"
+        (click)="setView(view.id)">
+        {{ view.label }} · {{ counts()[view.id] }}
+      </button>
+    }
+  </div>
+  <div class="selects">
+    <select class="select" aria-label="Filtrar por número" (change)="setChannel($event)">
+      <option value="" [selected]="!filters().channelId">Todos los números</option>
+      @for (channel of workspace.channels(); track channel.id) {
+        <option [value]="channel.id" [selected]="filters().channelId === channel.id">{{ channel.label }}</option>
+      }
+    </select>
+    <select class="select" aria-label="Filtrar por etiqueta" (change)="setTag($event)">
+      <option value="" [selected]="!filters().tagId">Etiquetas</option>
+      @for (tag of workspace.tags(); track tag.id) {
+        <option [value]="tag.id" [selected]="filters().tagId === tag.id">{{ tag.name }}</option>
+      }
+    </select>
+  </div>
+</div>
+
+<ul class="list">
+  @for (item of items(); track item.conversation.id) {
+    @let conversation = item.conversation;
+    @let channel = workspace.channelById().get(conversation.channelAccountId);
+    <li>
+      <a class="row" [routerLink]="['/inbox', conversation.id]" [class.on]="conversation.id === selectedId()"
+        [class.unread]="conversation.unreadCount > 0">
+        <app-avatar [name]="item.contact.name" [seed]="item.contact.id" size="md" />
+        <div class="body">
+          <div class="l1">
+            <b>{{ item.contact.name }}</b>
+            <span>{{ stamp(conversation.lastMessageAt) }}</span>
+          </div>
+          <p class="l2">{{ conversation.lastMessagePreview }}</p>
+          <div class="l3">
+            @if (channel) {
+              <app-channel-badge [channel]="channel" />
+            }
+            @if (conversation.status === 'resolved') {
+              <app-pill tone="green">Resuelta</app-pill>
+            } @else if (conversation.assignedUserId) {
+              <app-avatar size="sm" [name]="userName(conversation.assignedUserId)" [seed]="conversation.assignedUserId" />
+            } @else {
+              <app-pill tone="amber">Sin asignar</app-pill>
+            }
+            @if (conversation.unreadCount) {
+              <span class="badge" [attr.aria-label]="conversation.unreadCount + ' sin leer'">{{ conversation.unreadCount }}</span>
+            }
+          </div>
+        </div>
+      </a>
+    </li>
+  } @empty {
+    <li class="empty">No hay conversaciones con estos filtros.</li>
+  }
+</ul>

@@ -1,0 +1,31 @@
+<header class="top">
+  <h1>Bandeja</h1>
+  <span class="sub">Todas las conversaciones de la empresa, de todos sus números</span>
+  <label class="search">
+    <app-icon name="search" />
+    <span class="visually-hidden">Buscar</span>
+    <input type="search" placeholder="Buscar nombre, teléfono o mensaje" [value]="filters().search" (input)="onSearch($event)" />
+  </label>
+</header>
+
+@if (data.ready()) {
+  <div class="columns">
+    <app-conversation-list class="list" [items]="list()" [counts]="counts()" [selectedId]="conversationId()" [(filters)]="filters" />
+
+    @if (selected(); as item) {
+      <app-chat-panel class="chat" [item]="item" />
+      <app-contact-panel class="contact" [contact]="item.contact" />
+    } @else {
+      <div class="placeholder">
+        @if (conversationId()) {
+          <p>Esta conversación no existe o no tienes permiso para verla.</p>
+        } @else {
+          <app-icon name="inbox" />
+          <p>Elige una conversación para empezar.</p>
+        }
+      </div>
+    }
+  </div>
+} @else {
+  <p class="loading">Cargando la bandeja…</p>
+}

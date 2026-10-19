@@ -1,0 +1,63 @@
+// Design tokens taken from the approved mockups (project-0/graphics-fuentes/base.css).
+// Components read them as CSS custom properties so a future theme only touches this file.
+:root {
+  // Typography
+  --font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --font-mono: Consolas, 'Cascadia Mono', monospace;
+
+  // Brand
+  --color-primary: #3b4fd8;
+  --color-primary-strong: #2b3fc4;
+  --color-primary-soft: #e6eafd;
+  --color-primary-softer: #f6f7ff;
+  --color-success: #10a37f;
+  --color-warning: #e8743b;
+  --color-danger: #a8231a;
+
+  // Surfaces and text
+  --color-page: #e7e9ee;
+  --color-canvas: #f7f8fb;
+  --color-surface: #ffffff;
+  --color-surface-muted: #fafbfc;
+  --color-border: #e3e6ec;
+  --color-border-soft: #f1f2f5;
+  --color-border-strong: #d3d8e0;
+  --color-text: #17202e;
+  --color-text-2: #283142;
+  --color-text-muted: #6b7585;
+  --color-text-faint: #8a93a3;
+
+  // Tenant panel sidebar
+  --color-side: #161b2e;
+  --color-side-2: #222941;
+  --color-side-3: #1d2338;
+  --color-side-border: #2e3653;
+  --color-side-text: #c9cee0;
+  --color-side-muted: #8b93ad;
+  --color-side-heading: #6c7493;
+  --color-side-active: #2b3352;
+  --color-side-icon: #9aa2bd;
+
+  // Platform console sidebar
+  --color-console-side: #0c1222;
+  --color-console-badge-bg: #2a1a12;
+  --color-console-badge-border: #5a3420;
+  --color-console-badge-text: #f6b48c;
+
+  // Chat
+  --color-chat-bg: #efeae2;
+  --color-bubble-out: #d9fdd3;
+  --color-bubble-meta: #667781;
+  --color-note-bg: #fff7e0;
+  --color-note-border: #e9c46a;
+  --color-note-text: #6d4a07;
+  --color-window-bg: #dff5f1;
+  --color-window-text: #0f6e5c;
+
+  // Shape
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-pill: 99px;
+  --shadow-pop: 0 6px 18px rgba(20, 30, 50, 0.14);
+}

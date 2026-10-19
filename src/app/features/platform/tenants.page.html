@@ -1,0 +1,74 @@
+<header class="page-top">
+  <h1>Empresas</h1>
+  <span class="sub">Cada empresa con sus números, sus usuarios y sus datos aislados</span>
+  <span class="spacer"></span>
+  <label class="search">
+    <app-icon name="search" />
+    <span class="visually-hidden">Buscar empresa</span>
+    <input type="search" placeholder="Buscar empresa" [value]="search()" (input)="onSearch($event)" />
+  </label>
+  <a class="btn btn--primary" routerLink="/platform/tenants/new"><app-icon name="plus" />Nueva empresa</a>
+</header>
+
+<div class="page-body">
+  <div class="kpis">
+    <div class="card kpi"><p>Empresas activas</p><b>{{ data.kpis().activeTenants }}</b></div>
+    <div class="card kpi"><p>Números conectados</p><b>{{ data.kpis().connectedNumbers }}</b></div>
+    <div class="card kpi"><p>Mensajes este mes</p><b>{{ count(data.kpis().monthMessages) }}</b></div>
+    <div class="card kpi"><p>Alertas abiertas</p><b [class.warn]="data.kpis().openAlerts > 0">{{ data.kpis().openAlerts }}</b></div>
+  </div>
+
+  <div class="split">
+    <div class="card table-card">
+      <table class="data-table">
+        <thead>
+          <tr><th>Empresa</th><th>Plan</th><th>Números</th><th>Usuarios</th><th>Mensajes oct.</th><th>Canal</th><th>Calidad</th></tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.tenant.id) {
+            <tr class="clickable" tabindex="0" (click)="open(row)" (keydown.enter)="open(row)">
+              <td>
+                <div class="company">
+                  <app-avatar class="logo" [name]="row.tenant.name" [seed]="row.tenant.id" />
+                  <div>
+                    <p>{{ row.tenant.name }}</p>
+                    <span>{{ row.tenant.industry }} · {{ row.tenant.city }}</span>
+                  </div>
+                  @if (row.tenant.status !== 'active') {
+                    <app-pill [tone]="labels.status[row.tenant.status].tone">{{ labels.status[row.tenant.status].text }}</app-pill>
+                  }
+                </div>
+              </td>
+              <td>{{ labels.plan[row.tenant.plan].text }}</td>
+              <td>{{ row.channels.length }}</td>
+              <td>{{ row.memberCount }}</td>
+              <td>{{ count(row.usage?.totalMessages ?? 0) }}</td>
+              <td>
+                @if (row.channelStatus; as status) {
+                  <app-pill [tone]="labels.channel[status].tone">{{ labels.channel[status].text }}</app-pill>
+                } @else {
+                  <span class="muted">Sin número</span>
+                }
+              </td>
+              <td>
+                @if (row.channelStatus === 'disconnected' || !row.worstQuality) {
+                  <span class="muted">—</span>
+                } @else {
+                  <app-pill [tone]="labels.quality[row.worstQuality].tone">{{ labels.quality[row.worstQuality].text }}</app-pill>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="muted">Ninguna empresa coincide con la búsqueda.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <aside class="card alerts">
+      <h3>Alertas</h3>
+      <app-alert-list [alerts]="data.alerts()" />
+      <p class="rule"><app-icon name="shield" />Cada número pertenece a una sola empresa. Un mensaje nunca se entrega a otra.</p>
+    </aside>
+  </div>
+</div>

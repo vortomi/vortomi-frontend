@@ -1,0 +1,122 @@
+<header class="page-top">
+  <h1>Canales y equipo</h1>
+  <span class="sub">Los números de WhatsApp de la empresa y quién los atiende</span>
+</header>
+
+<div class="page-body">
+  <div class="sec-title"><h2>Números conectados</h2><span class="muted sm">Cada número es de la empresa y lo paga ella a Meta</span></div>
+  <div class="numbers">
+    @for (channel of workspace.channels(); track channel.id) {
+      <section class="card num">
+        <div class="head">
+          <span class="ic" [style.background]="channel.color + '1f'" [style.color]="channel.color"><app-icon name="phone" /></span>
+          <div><b>{{ channel.label }}</b><span>{{ channel.displayNumber }}</span></div>
+          <app-pill [tone]="labels.channel[channel.status].tone">{{ labels.channel[channel.status].text }}</app-pill>
+        </div>
+        @if (editingChannel() === channel.id) {
+          <div class="edit">
+            <input #label class="input" aria-label="Nombre interno" [value]="channel.label" />
+            <input #color type="color" aria-label="Color" [value]="channel.color" />
+            <button type="button" class="btn btn--primary" (click)="saveChannel(channel, label.value, color.value)">Guardar</button>
+          </div>
+        }
+        <dl>
+          <dt>Calidad según Meta</dt><dd><app-pill [tone]="labels.quality[channel.qualityRating].tone">{{ labels.quality[channel.qualityRating].text }}</app-pill></dd>
+          <dt>Clientes nuevos por día</dt><dd>{{ channel.messagingTier }}</dd>
+          <dt>También en la app del teléfono</dt><dd>{{ channel.coexistence ? 'Sí (coexistencia)' : 'No' }}</dd>
+          <dt>Plantillas aprobadas</dt><dd>{{ approvedTemplates() }}</dd>
+        </dl>
+        @if (channel.qualityRating !== 'high') {
+          <div class="form-alert warn"><app-icon name="alert" />Algunos clientes bloquearon este número. Si sigue bajando, Meta limita los envíos: revisa las plantillas de esta semana.</div>
+        }
+        @if (session.isTenantAdmin() && editingChannel() !== channel.id) {
+          <button type="button" class="link" (click)="editingChannel.set(channel.id)">Cambiar nombre o color</button>
+        }
+      </section>
+    }
+    <section class="add">
+      <app-icon name="plus" />
+      <b>¿Otro número?</b>
+      <span>Por ahora lo conectamos nosotros contigo, en unos 30 minutos. Escríbenos a soporte y coordinamos.</span>
+    </section>
+  </div>
+
+  <div class="sec-title">
+    <h2>Equipo</h2>
+    <span class="muted sm">{{ seats().used }} de {{ seats().total }} usuarios del plan</span>
+    <span class="spacer"></span>
+    @if (session.isTenantAdmin()) {
+      <button type="button" class="btn btn--primary" [disabled]="seats().used >= seats().total" (click)="inviting.set(true)">
+        <app-icon name="plus" />Invitar persona
+      </button>
+    }
+  </div>
+  <div class="card table-card">
+    <table class="data-table">
+      <thead><tr><th>Persona</th><th>Rol</th><th>Números que atiende</th><th>Ve las de otros</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+        @for (row of rows(); track row.user.id) {
+          <tr>
+            <td>
+              <div class="who">
+                <app-avatar [name]="row.user.name" [seed]="row.user.id" />
+                <div><b>{{ row.user.name }}</b><span>{{ row.user.email }}</span></div>
+              </div>
+            </td>
+            <td>
+              @if (session.isTenantAdmin()) {
+                <select class="select" [attr.aria-label]="'Rol de ' + row.user.name" (change)="setRole(row.membership, $event)">
+                  <option value="agent" [selected]="row.membership.role === 'agent'">Agente</option>
+                  <option value="admin" [selected]="row.membership.role === 'admin'">Administración</option>
+                </select>
+              } @else {
+                {{ labels.role[row.membership.role] }}
+              }
+            </td>
+            <td>
+              <div class="chips">
+                @for (channel of workspace.channels(); track channel.id) {
+                  @if (session.isTenantAdmin() && row.membership.role === 'agent') {
+                    <button type="button" class="chip" [class.on]="row.membership.channelAccountIds.includes(channel.id)"
+                      [attr.aria-pressed]="row.membership.channelAccountIds.includes(channel.id)" (click)="toggleChannel(row.membership, channel.id)">
+                      <app-channel-badge [channel]="channel" />
+                    </button>
+                  } @else if (row.membership.role === 'admin' || row.membership.channelAccountIds.includes(channel.id)) {
+                    <app-channel-badge [channel]="channel" />
+                  }
+                }
+              </div>
+            </td>
+            <td>
+              <app-switch [label]="'Ve las conversaciones de otros: ' + row.user.name" [checked]="row.membership.canSeeOthers"
+                [disabled]="!session.isTenantAdmin() || row.membership.role === 'admin'" (toggled)="setSeeOthers(row.membership, $event)" />
+            </td>
+            <td>
+              @if (row.membership.status === 'active') {
+                <app-pill tone="green">Activo</app-pill>
+              } @else {
+                <app-pill tone="amber">Invitación pendiente</app-pill>
+              }
+            </td>
+            <td class="actions">
+              @if (session.isTenantAdmin()) {
+                @if (row.invitation; as invitation) {
+                  <button type="button" class="link" (click)="resend(invitation.id)">Reenviar</button>
+                }
+                @if (confirmRemove() === row.user.id) {
+                  <button type="button" class="link danger" (click)="remove(row.user.id)">Sí, quitar</button>
+                  <button type="button" class="link" (click)="confirmRemove.set(null)">No</button>
+                } @else if (row.user.id !== session.user()?.id) {
+                  <button type="button" class="link danger" (click)="confirmRemove.set(row.user.id)">Quitar</button>
+                }
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="field-hint foot">Administración ve todas las conversaciones. Un agente ve las suyas y las sin asignar de sus números, y las de otros solo si lo activas.</p>
+</div>
+
+<app-invite-dialog [open]="inviting()" (closed)="inviting.set(false)" />

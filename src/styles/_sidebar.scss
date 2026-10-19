@@ -1,0 +1,100 @@
+// Sidebar pieces shared by the company panel and the platform console, so both stay identical.
+
+@mixin panel($background) {
+  width: 236px;
+  background: $background;
+  color: var(--color-side-text);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+@mixin brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 16px;
+
+  .logo {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #4f63f0, #2b3fc4);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+  }
+
+  p {
+    font-weight: 600;
+    font-size: 14px;
+    color: #fff;
+  }
+
+  span {
+    font-size: 12px;
+    color: var(--color-side-muted);
+  }
+}
+
+@mixin nav {
+  h6 {
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--color-side-heading);
+    font-weight: 600;
+    padding: 14px 10px 6px;
+  }
+
+  a {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 10px;
+    border-radius: var(--radius-sm);
+    color: var(--color-side-text);
+    font-size: 14px;
+    margin-bottom: 2px;
+    --icon-size: 18px;
+
+    app-icon {
+      color: var(--color-side-icon);
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    &.on {
+      background: var(--color-side-active);
+      color: #fff;
+      font-weight: 600;
+
+      app-icon {
+        color: #fff;
+      }
+    }
+  }
+
+  .count {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 600;
+    background: #4f63f0;
+    color: #fff;
+    border-radius: var(--radius-pill);
+    padding: 1px 8px;
+
+    &.warn {
+      background: var(--color-warning);
+    }
+  }
+}
+
+

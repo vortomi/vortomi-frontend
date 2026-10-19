@@ -1,0 +1,63 @@
+<header class="page-top">
+  <h1>Mi perfil</h1>
+  <span class="sub">Tus datos y la seguridad de tu cuenta</span>
+  <span class="spacer"></span>
+  <button type="button" class="btn" (click)="signOut()"><app-icon name="back" />Cerrar sesión</button>
+</header>
+
+<div class="page-body">
+  @if (session.user(); as user) {
+    <div class="grid">
+      <section class="card">
+        <h2>Datos</h2>
+        <form (submit)="saveName($event)" novalidate>
+          <div class="field">
+            <label for="name">Nombre</label>
+            <input id="name" class="input" autocomplete="name" [formField]="nameForm.name" />
+            <app-field-error [state]="nameForm.name()" />
+          </div>
+          <div class="field">
+            <label for="email">Correo</label>
+            <input id="email" class="input" [value]="user.email" readonly />
+            <p class="field-hint">Para cambiarlo, pídeselo a quien administra tu empresa.</p>
+          </div>
+          <div class="actions"><button type="submit" class="btn btn--primary">Guardar</button></div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Contraseña</h2>
+        <form (submit)="changePassword($event)" novalidate>
+          <div class="field">
+            <label for="current">Contraseña actual</label>
+            <input id="current" class="input" type="password" autocomplete="current-password" [formField]="passwordForm.current" />
+            <app-field-error [state]="passwordForm.current()" />
+          </div>
+          <div class="field">
+            <label for="next">Contraseña nueva</label>
+            <input id="next" class="input" type="password" autocomplete="new-password" [formField]="passwordForm.next.password" />
+            <app-password-meter [password]="passwordForm.next.password().value()" />
+            <app-field-error [state]="passwordForm.next.password()" />
+          </div>
+          <div class="field">
+            <label for="confirm">Repítela</label>
+            <input id="confirm" class="input" type="password" autocomplete="new-password" [formField]="passwordForm.next.confirm" />
+            <app-field-error [state]="passwordForm.next.confirm()" />
+          </div>
+          <div class="actions"><button type="submit" class="btn btn--primary">Cambiar contraseña</button></div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Verificación en dos pasos</h2>
+        @if (session.isSuperAdmin()) {
+          <div class="muted-row"><span>Código de aplicación de autenticación</span><app-pill tone="green">Activada · obligatoria</app-pill></div>
+          <p class="field-hint">Es obligatoria para nuestro equipo porque la consola tiene acceso a todas las empresas.</p>
+        } @else {
+          <div class="muted-row"><span>Código de aplicación de autenticación</span><app-pill tone="neutral">Desactivada</app-pill></div>
+          <p class="field-hint">Opcional para las empresas. Se podrá activar en una próxima versión.</p>
+        }
+      </section>
+    </div>
+  }
+</div>

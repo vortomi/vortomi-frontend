@@ -1,0 +1,17 @@
+[
+  { "id": "tag_toyota", "tenantId": "ten_ra", "name": "Toyota", "tone": "blue" },
+  { "id": "tag_frequent", "tenantId": "ten_ra", "name": "Cliente frecuente", "tone": "teal" },
+  { "id": "tag_los_teques", "tenantId": "ten_ra", "name": "Los Teques", "tone": "neutral" },
+  { "id": "tag_wholesale", "tenantId": "ten_ra", "name": "Mayorista", "tone": "violet" },
+  { "id": "tag_warranty", "tenantId": "ten_ra", "name": "Garantía", "tone": "amber" },
+  { "id": "tag_v_custom", "tenantId": "ten_valle", "name": "A medida", "tone": "violet" },
+  { "id": "tag_v_caracas", "tenantId": "ten_valle", "name": "Caracas", "tone": "blue" },
+  { "id": "tag_v_interior", "tenantId": "ten_valle", "name": "Interior", "tone": "teal" },
+  { "id": "tag_v_deposit", "tenantId": "ten_valle", "name": "Abonó", "tone": "green" },
+  { "id": "tag_v_claim", "tenantId": "ten_valle", "name": "Reclamo", "tone": "red" },
+  { "id": "tag_s_ortho", "tenantId": "ten_sonrisa", "name": "Ortodoncia", "tone": "violet" },
+  { "id": "tag_s_cleaning", "tenantId": "ten_sonrisa", "name": "Limpieza", "tone": "teal" },
+  { "id": "tag_s_urgent", "tenantId": "ten_sonrisa", "name": "Urgencia", "tone": "red" },
+  { "id": "tag_s_insurance", "tenantId": "ten_sonrisa", "name": "Seguro", "tone": "blue" },
+  { "id": "tag_s_kids", "tenantId": "ten_sonrisa", "name": "Niños", "tone": "pink" }
+]

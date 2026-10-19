@@ -1,0 +1,9 @@
+[
+  { "id": "aud_1", "tenantId": "ten_ra", "actorUserId": "usr_yornel", "action": "tenant.created", "detail": "Alta manual con plan Equipo", "createdAt": "2026-08-04T09:00:00-04:00" },
+  { "id": "aud_2", "tenantId": "ten_ra", "actorUserId": "usr_yornel", "action": "channel.connected", "detail": "Número 0412-555-0101 (Ventas)", "createdAt": "2026-08-04T09:40:00-04:00" },
+  { "id": "aud_3", "tenantId": "ten_ra", "actorUserId": "usr_yornel", "action": "tenant.activated", "detail": "Prueba de ida y vuelta superada", "createdAt": "2026-08-04T09:52:00-04:00" },
+  { "id": "aud_4", "tenantId": "ten_ra", "actorUserId": "usr_laura", "action": "channel.connected", "detail": "Número 0414-555-0102 (Taller)", "createdAt": "2026-08-20T11:10:00-04:00" },
+  { "id": "aud_5", "tenantId": "ten_ra", "actorUserId": "usr_laura", "action": "invitation.sent", "detail": "Invitación a jesus@repuestosandinos.com", "createdAt": "2026-10-08T10:55:00-04:00" },
+  { "id": "aud_6", "tenantId": "ten_sonrisa", "actorUserId": "usr_yornel", "action": "tenant.created", "detail": "Alta manual con plan Equipo", "createdAt": "2026-08-18T09:00:00-04:00" },
+  { "id": "aud_7", "tenantId": "ten_sonrisa", "actorUserId": "usr_yornel", "action": "tenant.activated", "detail": "Prueba de ida y vuelta superada", "createdAt": "2026-08-18T10:05:00-04:00" }
+]

@@ -1,0 +1,11 @@
+[
+  { "tenantId": "ten_ra", "channelAccountId": "ch_ra_sales", "month": "2026-10", "totalMessages": 1520, "serviceMessages": 742, "utilityMessages": 268, "marketingMessages": 0, "freeEntryMessages": 96 },
+  { "tenantId": "ten_ra", "channelAccountId": "ch_ra_workshop", "month": "2026-10", "totalMessages": 620, "serviceMessages": 318, "utilityMessages": 124, "marketingMessages": 0, "freeEntryMessages": 0 },
+  { "tenantId": "ten_sonrisa", "channelAccountId": "ch_sonrisa_main", "month": "2026-10", "totalMessages": 3870, "serviceMessages": 1310, "utilityMessages": 640, "marketingMessages": 0, "freeEntryMessages": 0 },
+  { "tenantId": "ten_vision", "channelAccountId": "ch_vision_main", "month": "2026-10", "totalMessages": 960, "serviceMessages": 402, "utilityMessages": 80, "marketingMessages": 120, "freeEntryMessages": 40 },
+  { "tenantId": "ten_ortiz", "channelAccountId": "ch_ortiz_main", "month": "2026-10", "totalMessages": 412, "serviceMessages": 160, "utilityMessages": 30, "marketingMessages": 0, "freeEntryMessages": 0 },
+  { "tenantId": "ten_valle", "channelAccountId": "ch_valle_store", "month": "2026-10", "totalMessages": 3410, "serviceMessages": 1240, "utilityMessages": 310, "marketingMessages": 180, "freeEntryMessages": 220 },
+  { "tenantId": "ten_valle", "channelAccountId": "ch_valle_delivery", "month": "2026-10", "totalMessages": 1820, "serviceMessages": 665, "utilityMessages": 420, "marketingMessages": 0, "freeEntryMessages": 0 },
+  { "tenantId": "ten_popular", "channelAccountId": "ch_popular_main", "month": "2026-10", "totalMessages": 1180, "serviceMessages": 488, "utilityMessages": 90, "marketingMessages": 0, "freeEntryMessages": 0 },
+  { "tenantId": "ten_vortomi", "channelAccountId": "ch_vortomi_support", "month": "2026-10", "totalMessages": 640, "serviceMessages": 210, "utilityMessages": 40, "marketingMessages": 0, "freeEntryMessages": 0 }
+]

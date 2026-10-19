@@ -1,0 +1,12 @@
+[
+  { "id": "stg_new", "tenantId": "ten_ra", "name": "Nuevo", "color": "#8a93a3", "position": 1 },
+  { "id": "stg_interested", "tenantId": "ten_ra", "name": "Interesado", "color": "#3b4fd8", "position": 2 },
+  { "id": "stg_quoted", "tenantId": "ten_ra", "name": "Cotizado", "color": "#e8743b", "position": 3 },
+  { "id": "stg_awaiting_payment", "tenantId": "ten_ra", "name": "Esperando pago", "color": "#7c3aed", "position": 4 },
+  { "id": "stg_won", "tenantId": "ten_ra", "name": "Ganado", "color": "#10a37f", "position": 5 },
+  { "id": "stg_v_inquiry", "tenantId": "ten_valle", "name": "Consulta", "color": "#8a93a3", "position": 1 },
+  { "id": "stg_v_quoted", "tenantId": "ten_valle", "name": "Cotizado", "color": "#e8743b", "position": 2 },
+  { "id": "stg_v_deposit", "tenantId": "ten_valle", "name": "Abono recibido", "color": "#7c3aed", "position": 3 },
+  { "id": "stg_v_production", "tenantId": "ten_valle", "name": "En fabricación", "color": "#3b4fd8", "position": 4 },
+  { "id": "stg_v_delivered", "tenantId": "ten_valle", "name": "Entregado", "color": "#10a37f", "position": 5 }
+]

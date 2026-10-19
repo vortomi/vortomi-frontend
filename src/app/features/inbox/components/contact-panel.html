@@ -1,0 +1,57 @@
+<div class="who">
+  <app-avatar [name]="contact().name" [seed]="contact().id" size="lg" />
+  <b>{{ contact().name }}</b>
+  <span>{{ contact().phone }}</span>
+  <span>Cliente desde {{ since() }}</span>
+</div>
+
+@if (workspace.sells()) {
+<section>
+  <h4>Etapa</h4>
+  <div class="stage" [style.--stage-color]="stage()?.color ?? '#c9ced6'">
+    <i class="dot"></i>
+    <select class="select" aria-label="Etapa" (change)="onStage($event)">
+      <option value="" [selected]="!contact().stageId">Sin etapa</option>
+      @for (s of workspace.stages(); track s.id) {
+        <option [value]="s.id" [selected]="contact().stageId === s.id">{{ s.name }}</option>
+      }
+    </select>
+  </div>
+</section>
+}
+
+<section>
+  <h4>Etiquetas</h4>
+  <div class="tags">
+    @for (tag of tags(); track tag.id) {
+      <app-pill [tone]="tag.tone">
+        {{ tag.name }}
+        <button type="button" class="remove" (click)="removeTag(tag)" [attr.aria-label]="'Quitar ' + tag.name">
+          <app-icon name="x" [stroke]="2.4" />
+        </button>
+      </app-pill>
+    }
+    @if (availableTags().length) {
+      <select class="add" aria-label="Añadir etiqueta" (change)="onAddTag($event)">
+        <option value="">+ Añadir</option>
+        @for (tag of availableTags(); track tag.id) {
+          <option [value]="tag.id">{{ tag.name }}</option>
+        }
+      </select>
+    }
+  </div>
+</section>
+
+<section>
+  <h4>Datos</h4>
+  <dl>
+    <dt>Responsable</dt>
+    <dd>{{ owner() }}</dd>
+    <dt>Compras</dt>
+    <dd>{{ purchases() }}</dd>
+    @for (field of contact().attributes; track field.key) {
+      <dt>{{ field.label }}</dt>
+      <dd>{{ field.value }}</dd>
+    }
+  </dl>
+</section>

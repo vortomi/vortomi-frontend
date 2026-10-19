@@ -1,0 +1,6 @@
+[
+  { "id": "note_j1", "tenantId": "ten_ra", "conversationId": "cnv_jose", "authorUserId": "usr_laura", "mentionUserId": "usr_carlos", "body": "El motorizado sale a Los Teques a las 2 pm. Si confirma antes de la 1, llega hoy.", "createdAt": "2026-10-09T10:17:00-04:00" },
+  { "id": "note_v_hotel", "tenantId": "ten_valle", "conversationId": "cnv_v_hotel", "authorUserId": "usr_elena", "mentionUserId": "usr_ramon", "body": "Ramón, aparta el camión grande para el martes 20 en la mañana.", "createdAt": "2026-10-08T16:10:00-04:00" },
+  { "id": "note_v_yusmary", "tenantId": "ten_valle", "conversationId": "cnv_v_yusmary", "authorUserId": "usr_valeria", "mentionUserId": "usr_elena", "body": "Elena, ¿le cambiamos la silla o mandamos al tapicero? Es su primera compra.", "createdAt": "2026-10-09T08:30:00-04:00" },
+  { "id": "note_s_patricia", "tenantId": "ten_sonrisa", "conversationId": "cnv_s_patricia", "authorUserId": "usr_gabriela", "mentionUserId": "usr_hector", "body": "El viernes en la mañana la agenda del Dr. Salas está llena. Ofrécele las 2:00 pm.", "createdAt": "2026-10-08T17:50:00-04:00" }
+]

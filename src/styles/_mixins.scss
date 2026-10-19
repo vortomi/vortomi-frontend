@@ -1,0 +1,29 @@
+// Breakpoints shared by every screen. The panel must work from a phone (decision D3).
+$bp-phone: 760px;
+$bp-tablet: 1200px;
+
+@mixin phone {
+  @media (max-width: $bp-phone) {
+    @content;
+  }
+}
+
+@mixin below-tablet {
+  @media (max-width: $bp-tablet) {
+    @content;
+  }
+}
+
+@mixin ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@mixin section-label {
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+  font-weight: 600;
+}

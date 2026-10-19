@@ -1,0 +1,110 @@
+@use 'mixins';
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px 20px;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 3px;
+
+  app-avatar {
+    margin-bottom: 8px;
+  }
+
+  b {
+    font-size: 16px;
+  }
+
+  span {
+    font-size: 13px;
+    color: var(--color-text-muted);
+  }
+}
+
+h4 {
+  @include mixins.section-label;
+  margin-bottom: 8px;
+}
+
+.stage {
+  position: relative;
+
+  .dot {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    width: 9px;
+    height: 9px;
+    margin-top: -4.5px;
+    border-radius: 50%;
+    background: var(--stage-color);
+    pointer-events: none;
+  }
+
+  select {
+    width: 100%;
+    height: 40px;
+    padding-left: 28px;
+    font-weight: 600;
+  }
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.remove {
+  border: 0;
+  background: none;
+  padding: 0;
+  display: inline-flex;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  --icon-size: 11px;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.add {
+  border: 0;
+  background: #eef0f3;
+  color: #4b5565;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 9px 12px;
+  font-size: 13px;
+}
+
+dt {
+  color: var(--color-text-muted);
+}
+
+dd {
+  text-align: right;
+  font-weight: 600;
+}

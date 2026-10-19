@@ -1,0 +1,205 @@
+@use 'mixins';
+
+// Layout shared by the four sign-up steps (ported from graphics-fuentes/alta.css).
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.step-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 26px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+  align-content: start;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.step-foot {
+  height: 62px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 26px;
+  flex-shrink: 0;
+
+  .count {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+    margin-right: auto;
+  }
+}
+
+.sec {
+  padding: 16px 20px 18px;
+
+  h2 {
+    font-size: 15.5px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .k {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: var(--color-primary-soft);
+    color: var(--color-primary-strong);
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .d {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+    margin: 3px 0 14px;
+    line-height: 1.45;
+  }
+}
+
+.g2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
+.g3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
+.olist {
+  counter-reset: o;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  list-style: none;
+
+  li {
+    display: flex;
+    gap: 10px;
+    font-size: 13px;
+    line-height: 1.45;
+
+    &::before {
+      counter-increment: o;
+      content: counter(o);
+      width: 21px;
+      height: 21px;
+      border-radius: 50%;
+      background: #eef0f3;
+      color: #4b5565;
+      font-size: 11.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+  }
+}
+
+.checks {
+  display: flex;
+  flex-direction: column;
+}
+
+.chk {
+  display: flex;
+  gap: 11px;
+  padding: 9px 0;
+  border-top: 1px solid var(--color-border-soft);
+  font-size: 13px;
+  line-height: 1.35;
+
+  &:first-child {
+    border-top: 0;
+  }
+
+  .ic {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #eef0f3;
+    color: var(--color-text-faint);
+    --icon-size: 13px;
+  }
+
+  &.ok .ic {
+    background: #e3f6ea;
+    color: #166534;
+  }
+
+  &.warn .ic {
+    background: #fdf0d8;
+    color: #b45309;
+  }
+
+  &.running .ic {
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    animation: pulse 0.8s ease-in-out infinite alternate;
+  }
+
+  &.pending {
+    opacity: 0.55;
+  }
+
+  b {
+    display: block;
+  }
+
+  span {
+    color: var(--color-text-muted);
+    font-size: 12.3px;
+  }
+}
+
+@keyframes pulse {
+  to {
+    opacity: 0.4;
+  }
+}
+
+.mono {
+  font-family: var(--font-mono);
+  letter-spacing: 0.3px;
+}
+
+@include mixins.below-tablet {
+  .step-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+@include mixins.phone {
+  .step-body {
+    padding: 12px 14px;
+  }
+
+  .g2,
+  .g3 {
+    grid-template-columns: 1fr;
+  }
+}

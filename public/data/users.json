@@ -1,0 +1,23 @@
+[
+  { "id": "usr_laura", "name": "Laura Méndez", "email": "laura@repuestosandinos.com", "platformRole": null },
+  { "id": "usr_carlos", "name": "Carlos Ruiz", "email": "carlos@repuestosandinos.com", "platformRole": null },
+  { "id": "usr_andrea", "name": "Andrea Núñez", "email": "andrea@repuestosandinos.com", "platformRole": null },
+  { "id": "usr_jesus", "name": "Jesús Pérez", "email": "jesus@repuestosandinos.com", "platformRole": null },
+  { "id": "usr_gabriela", "name": "Gabriela Torres", "email": "gabriela@dentalsonrisa.com", "platformRole": null },
+  { "id": "usr_hector", "name": "Héctor Salas", "email": "hector@dentalsonrisa.com", "platformRole": null },
+  { "id": "usr_paola", "name": "Paola Ríos", "email": "paola@dentalsonrisa.com", "platformRole": null },
+  { "id": "usr_miguel", "name": "Miguel Rojas", "email": "miguel@dentalsonrisa.com", "platformRole": null },
+  { "id": "usr_rafael", "name": "Rafael Ortega", "email": "rafael@opticavision.com", "platformRole": null },
+  { "id": "usr_lucia", "name": "Lucía Peña", "email": "lucia@opticavision.com", "platformRole": null },
+  { "id": "usr_jorge", "name": "Jorge Ortiz", "email": "jorge@tallerortiz.com", "platformRole": null },
+  { "id": "usr_elena", "name": "Elena Valle", "email": "elena@muebleriavalle.com", "platformRole": null },
+  { "id": "usr_andres", "name": "Andrés Mejía", "email": "andres@muebleriavalle.com", "platformRole": null },
+  { "id": "usr_sofia", "name": "Sofía Castro", "email": "sofia@muebleriavalle.com", "platformRole": null },
+  { "id": "usr_ramon", "name": "Ramón Díaz", "email": "ramon@muebleriavalle.com", "platformRole": null },
+  { "id": "usr_valeria", "name": "Valeria Gil", "email": "valeria.gil@gmail.com", "platformRole": null },
+  { "id": "usr_ernesto", "name": "Ernesto Lara", "email": "ernesto@farmaciapopular.com", "platformRole": null },
+  { "id": "usr_carmen", "name": "Carmen Vivas", "email": "carmen@farmaciapopular.com", "platformRole": null },
+  { "id": "usr_yornel", "name": "Yornel Marval", "email": "yornel@vortomi.com", "platformRole": "super_admin" },
+  { "id": "usr_mariana", "name": "Mariana Soto", "email": "mariana@vortomi.com", "platformRole": null },
+  { "id": "usr_daniel_f", "name": "Daniel Ferrer", "email": "daniel@vortomi.com", "platformRole": null }
+]

@@ -1,0 +1,106 @@
+@let company = state.company();
+@let channel = state.channel();
+
+@if (state.invitationToken(); as token) {
+  <div class="step-body">
+    <section class="card done">
+      <span class="big"><app-icon name="check" [stroke]="3" /></span>
+      <h2>{{ company.name }} está activa</h2>
+      <p>Enviamos la invitación a {{ company.adminEmail }}. Lo que escriban sus clientes al {{ channel?.number?.displayNumber }} ya entra en su bandeja.</p>
+      <div class="actions">
+        <a class="btn" [routerLink]="['/platform/tenants', state.tenantId()]">Ver la empresa</a>
+        <a class="btn" routerLink="/platform/tenants">Volver a empresas</a>
+        <a class="btn btn--primary" [routerLink]="['/invitation', token]">Prototipo: abrir la invitación</a>
+      </div>
+    </section>
+  </div>
+} @else {
+  <div class="step-body">
+    <div class="col">
+      <section class="card sec">
+        <h2>Resumen del alta</h2>
+        <p class="d">Revisa antes de activar. Después todo se puede cambiar desde la ficha de la empresa.</p>
+        <table>
+          <tr><td>Empresa</td><td><b>{{ company.name }}</b><span class="x">{{ company.industry }} · {{ company.city }} · {{ company.timezone }}</span></td></tr>
+          <tr><td>Datos fiscales</td><td>{{ company.legalName }} · <span class="mono">{{ company.taxId }}</span><span class="x">{{ company.fiscalAddress }}</span></td></tr>
+          <tr><td>Plan</td><td>{{ planLabel().text }}<span class="x">{{ planLabel().detail }}</span></td></tr>
+          <tr><td>Administración</td><td>{{ company.adminName }}<span class="x">{{ company.adminEmail }}</span></td></tr>
+          <tr><td>Número de WhatsApp</td><td>{{ channel?.number?.displayNumber }} · «{{ channel?.label }}»<span class="x">Registrado con su PIN · avisos suscritos · acceso cifrado</span></td></tr>
+          <tr>
+            <td>Nombre visible</td>
+            <td>
+              «{{ channel?.number?.verifiedName }}»
+              @if (channel?.number?.nameStatus === 'approved') { <app-pill class="after-text" tone="green">Aprobado</app-pill> }
+              @else if (channel?.number?.nameStatus === 'pending_review') { <app-pill class="after-text" tone="amber">En revisión</app-pill><span class="x">Meta nos avisa cuando lo apruebe y se aplica solo.</span> }
+              @else { <app-pill class="after-text" tone="red">Rechazado</app-pill><span class="x">Hay que proponer otro en su WhatsApp Manager.</span> }
+            </td>
+          </tr>
+          <tr>
+            <td>Perfil de WhatsApp</td>
+            <td>
+              <span class="profile-line">
+                @if (channel?.profile?.photoDataUrl; as photo) { <img class="avatar" [src]="photo" alt="" /> }
+                <span>{{ channel?.profile?.about }}<span class="x">{{ profileDetail() }}</span></span>
+              </span>
+            </td>
+          </tr>
+          <tr><td>Prueba de ida y vuelta</td><td><app-pill tone="green">Superada</app-pill></td></tr>
+          <tr>
+            <td>Verificación del negocio</td>
+            <td>
+              @if (channel?.account?.businessVerified) { <app-pill tone="green">Verificado</app-pill> }
+              @else { <app-pill tone="amber">Sin verificar</app-pill><span class="x">Puede activarse. Escribe primero a hasta {{ unverifiedLimit }} clientes por día entre todos sus números hasta que verifique su negocio con el RIF.</span> }
+            </td>
+          </tr>
+          <tr>
+            <td>Método de pago en Meta</td>
+            <td>
+              @if (channel?.account?.hasPaymentMethod) { <app-pill tone="green">Listo</app-pill> }
+              @else { <app-pill tone="amber">Falta</app-pill><span class="x">Puede activarse igual. Se le recordará en su panel hasta que lo agregue.</span> }
+            </td>
+          </tr>
+        </table>
+      </section>
+      <section class="card sec">
+        <h2>Al activar pasa esto</h2>
+        <ol class="olist" style="margin-top: 10px">
+          <li><span>La empresa pasa a <b>Activa</b> y aparece en la lista de empresas.</span></li>
+          <li><span>Le llega la invitación a {{ firstName() }}. Si no la usa en 72 horas, se puede reenviar.</span></li>
+          <li><span>Lo que escriban sus clientes a ese número empieza a entrar en su bandeja.</span></li>
+          <li><span>Queda anotado quién la activó y cuándo, en el registro de auditoría.</span></li>
+        </ol>
+      </section>
+      <section class="card sec">
+        <h2>Lo completa {{ firstName() || 'el administrador' }} al entrar</h2>
+        <p class="d">No hace falta para activar: lo conoce mejor el negocio. Su panel se lo va a ir pidiendo.</p>
+        <ol class="olist" style="margin-top: 10px">
+          <li><span><b>Horario de atención</b> y mensaje de ausencia, en Ajustes.</span></li>
+          <li><span><b>Tasa del día</b> en bolívares, si vende con precios en dólares.</span></li>
+          <li><span>Invitar a su <b>equipo</b> y elegir qué números atiende cada uno.</span></li>
+          <li><span>Sus <b>plantillas</b> para escribir primero (recordatorios, pedidos), que Meta revisa.</span></li>
+          <li><span>Etiquetas, respuestas rápidas y, si vende, las etapas del pipeline y sus productos.</span></li>
+        </ol>
+      </section>
+    </div>
+    <div class="col">
+      <div>
+        <p class="tag">Vista previa de la invitación</p>
+        <div class="mail">
+          <div class="hd">De: <b>{{ brand.name }}</b> &lt;{{ brand.noReplyEmail }}&gt;<br />Para: {{ company.adminEmail }}<br />Asunto: <b>Te invitaron a administrar {{ company.name }}</b></div>
+          <div class="bd">
+            <h3>Hola, {{ firstName() }}</h3>
+            Tu empresa ya está lista para atender su WhatsApp desde {{ brand.name }}. Entraste como <b>administración</b>: podrás invitar a tu equipo y ver todas las conversaciones.<br />
+            <span class="cta">Aceptar invitación</span><br />
+            Al entrar vas a crear tu propia contraseña.
+            <div class="fine">Este enlace sirve una sola vez y vence en 72 horas. Si no esperabas este correo, ignóralo: nadie podrá entrar con él.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer class="step-foot">
+    <span class="count">Paso 4 de 4</span>
+    <button type="button" class="btn" (click)="state.goTo(2)">Atrás</button>
+    <button type="button" class="btn btn--success" (click)="state.activate()"><app-icon name="check" />Activar empresa</button>
+  </footer>
+}

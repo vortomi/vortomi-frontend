@@ -1,0 +1,72 @@
+<app-dialog title="Importar contactos" [open]="open()" (closed)="close()">
+  <div class="field">
+    <label for="import-channel">Número al que pertenecen</label>
+    <select id="import-channel" class="input" (change)="setChannel($event)">
+      @for (channel of workspace.channels(); track channel.id) {
+        <option [value]="channel.id" [selected]="channel.id === targetChannel()">{{ channel.label }} · {{ channel.displayNumber }}</option>
+      }
+    </select>
+    <p class="field-hint">Un mismo teléfono en dos números de la empresa son dos contactos distintos.</p>
+  </div>
+
+  <div class="drop">
+    <b>Archivo CSV</b>
+    <input type="file" accept=".csv,text/csv" (change)="onFile($event)" aria-label="Archivo CSV" />
+    <span class="field-hint">Columnas: nombre, teléfono y, si quieres, etiquetas separadas por coma. Hasta 2.000 filas.
+      <button type="button" class="link" (click)="downloadTemplate()">Descargar plantilla</button></span>
+  </div>
+
+  @if (fileError(); as message) {
+    <div class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</div>
+  }
+
+  @if (header().length) {
+    <div class="field">
+      <span class="label">Qué hay en cada columna de {{ fileName() }}</span>
+      <div class="mapping">
+        @for (title of header(); track $index) {
+          <label class="field">
+            <span class="field-hint">«{{ title }}»</span>
+            <select class="input" (change)="setMapping($index, $event)">
+              @for (field of fields; track field) {
+                <option [value]="field" [selected]="mapping()[$index] === field">{{ fieldLabels[field] }}</option>
+              }
+            </select>
+          </label>
+        }
+      </div>
+    </div>
+
+    @if (missingColumns()) {
+      <div class="form-alert warn"><app-icon name="alert" />Indica qué columna tiene el nombre y cuál el teléfono.</div>
+    } @else {
+      <div class="summary">
+        <app-pill tone="green">{{ counts().new }} nuevos</app-pill>
+        <app-pill tone="blue">{{ counts().update }} ya existen</app-pill>
+        <app-pill [tone]="counts().error ? 'red' : 'neutral'">{{ counts().error }} con errores (no se importan)</app-pill>
+      </div>
+      <div class="preview">
+        <table class="data-table">
+          <thead><tr><th>Línea</th><th>Nombre</th><th>Teléfono</th><th>Resultado</th></tr></thead>
+          <tbody>
+            @for (row of analysis(); track row.line) {
+              <tr [class.row-error]="row.status === 'error'">
+                <td>{{ row.line }}</td>
+                <td>{{ row.name || '—' }}</td>
+                <td>{{ row.waId ?? '—' }}</td>
+                <td class="msg">{{ row.message }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  <div dialog-actions class="dialog-actions">
+    <button type="button" class="btn" (click)="close()">Cancelar</button>
+    <button type="button" class="btn btn--primary" [disabled]="missingColumns() || !(counts().new + counts().update)" (click)="confirm()">
+      Importar {{ counts().new + counts().update }}
+    </button>
+  </div>
+</app-dialog>
