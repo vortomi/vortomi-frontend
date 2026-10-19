@@ -175,7 +175,8 @@ export interface QuickReply {
 }
 
 export type TemplateCategory = 'utility' | 'marketing' | 'authentication';
-export type TemplateStatus = 'approved' | 'pending' | 'rejected';
+/** Meta's review. draft: stored but not accepted by Meta yet (or its submission failed). */
+export type TemplateStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'paused' | 'disabled';
 
 export interface MessageTemplate {
   id: Id;

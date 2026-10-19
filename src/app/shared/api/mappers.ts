@@ -1,0 +1,222 @@
+// Server shapes (contract.ts) -> the models the screens already use (models.ts).
+// The only place that knows both: screens never see the server's field names.
+// Fields the server does not provide yet get explicit neutral values, marked "not on the server yet".
+import { formatWaId } from '../format/phone';
+import type {
+  ApiContact,
+  ApiConversation,
+  ApiMessage,
+  ApiMessageType,
+  ApiMovement,
+  ApiNote,
+  ApiProduct,
+  ApiQuickReply,
+  ApiSettings,
+  ApiStage,
+  ApiTag,
+  ApiTeamMember,
+  ApiTemplate,
+  ApiUsageRow,
+  ApiVariant,
+} from './contract';
+import type {
+  Contact,
+  Conversation,
+  Id,
+  Membership,
+  Message,
+  MessageTemplate,
+  Note,
+  PipelineStage,
+  Product,
+  ProductVariant,
+  QuickReply,
+  StockMovement,
+  Tag,
+  TenantSettings,
+  UsageMonth,
+  User,
+} from './models';
+
+/** How each kind of message reads in a one-line preview. */
+const PREVIEW_LABEL: Record<ApiMessageType, string> = {
+  text: 'Mensaje',
+  image: 'Foto',
+  audio: 'Audio',
+  video: 'Video',
+  document: 'Documento',
+  sticker: 'Sticker',
+  location: 'Ubicación',
+  contacts: 'Contacto compartido',
+  interactive: 'Respuesta',
+  button: 'Respuesta',
+  reaction: 'Reacción',
+  template: 'Plantilla',
+  unsupported: 'Mensaje que WhatsApp no deja mostrar aquí',
+};
+
+/** One line for the conversation list: the text, or what kind of message it was. */
+export function previewOf(type: ApiMessageType, body: string | null): string {
+  if (type === 'template') return `Plantilla: ${body ?? ''}`.trim();
+  return body?.trim() ? body : PREVIEW_LABEL[type];
+}
+
+/** Name to show: the one the team gave, else WhatsApp's profile name, else the number. */
+export function contactName(contact: { waId: string; name: string | null; displayName: string | null }): string {
+  return contact.name ?? contact.displayName ?? formatWaId(contact.waId);
+}
+
+export function toConversation(tenantId: Id, row: ApiConversation): Conversation {
+  return {
+    id: row.id,
+    tenantId,
+    channelAccountId: row.channelAccountId,
+    contactId: row.contact.id,
+    assignedUserId: row.assignedUserId,
+    status: row.status,
+    lastMessageAt: row.lastMessage?.createdAt ?? row.lastActivityAt,
+    lastMessagePreview: row.lastMessage ? previewOf(row.lastMessage.type, row.lastMessage.body) : '',
+    unreadCount: row.unreadCount,
+    serviceWindowExpiresAt: row.serviceWindowExpiresAt,
+  };
+}
+
+export function toContact(tenantId: Id, row: ApiContact): Contact {
+  return {
+    id: row.id,
+    tenantId,
+    channelAccountId: row.channelAccountId,
+    waId: row.waId,
+    name: contactName(row),
+    phone: formatWaId(row.waId),
+    stageId: row.stageId,
+    tagIds: row.tagIds,
+    quoteCents: row.quoteCents,
+    createdAt: row.createdAt,
+    // Not on the server yet (documentations/08, B.2).
+    ownerUserId: null,
+    purchasesCount: 0,
+    purchasesTotalCents: 0,
+    attributes: [],
+  };
+}
+
+/** The panel shows text, images, templates and product cards; other kinds read as text. */
+export function toMessage(tenantId: Id, conversationId: Id, row: ApiMessage): Message {
+  const shown = row.type === 'image' || row.type === 'template' ? row.type : 'text';
+  return {
+    id: String(row.id),
+    tenantId,
+    conversationId,
+    direction: row.direction === 'in' ? 'inbound' : 'outbound',
+    type: shown,
+    body: shown === 'text' && row.type !== 'text' ? previewOf(row.type, row.body) : (row.body ?? ''),
+    authorUserId: row.authorUserId,
+    templateId: row.templateId,
+    status: row.status,
+    createdAt: row.createdAt,
+  };
+}
+
+export function toNote(tenantId: Id, conversationId: Id, row: ApiNote): Note {
+  return { id: row.id, tenantId, conversationId, authorUserId: row.authorUserId, mentionUserId: row.mentionUserId, body: row.body, createdAt: row.createdAt };
+}
+
+export const toTag = (tenantId: Id, row: ApiTag): Tag => ({ id: row.id, tenantId, name: row.name, tone: row.tone });
+
+export const toQuickReply = (tenantId: Id, row: ApiQuickReply): QuickReply => ({ id: row.id, tenantId, shortcut: row.shortcut, title: row.title, body: row.body });
+
+export const toStage = (tenantId: Id, row: ApiStage): PipelineStage => ({ id: row.id, tenantId, name: row.name, color: row.color, position: row.position });
+
+export function toTemplate(tenantId: Id, row: ApiTemplate): MessageTemplate {
+  return {
+    id: row.id,
+    tenantId,
+    name: row.name,
+    category: row.category,
+    language: row.language,
+    status: row.status,
+    // A submission that never reached Meta explains itself the same way a rejection does.
+    rejectionReason: row.rejectionReason ?? row.submitError,
+    body: row.body,
+  };
+}
+
+export function toSettings(tenantId: Id, row: ApiSettings): TenantSettings {
+  return {
+    id: `settings_${tenantId}`,
+    tenantId,
+    workMode: row.workMode,
+    businessHours: row.businessHours,
+    awayMessage: row.awayMessage,
+    exchangeRateVes: row.exchangeRateVes,
+    // Not on the server yet (needs file storage).
+    logoDataUrl: null,
+  };
+}
+
+/** A team row becomes the User and Membership pair the screens work with. */
+export function toTeamMember(tenantId: Id, row: ApiTeamMember): { user: User; membership: Membership } {
+  return {
+    user: { id: row.userId, name: row.name, email: row.email ?? '', platformRole: null },
+    membership: {
+      tenantId,
+      userId: row.userId,
+      role: row.role,
+      // Disabled people are not listed by the server.
+      status: row.status === 'invited' ? 'invited' : 'active',
+      channelAccountIds: row.channelAccountIds,
+      canSeeOthers: row.canSeeOthers,
+    },
+  };
+}
+
+export function toProduct(tenantId: Id, row: ApiProduct): { product: Product; variants: ProductVariant[] } {
+  return {
+    product: {
+      id: row.id,
+      tenantId,
+      name: row.name,
+      category: row.category,
+      description: row.description,
+      stockMode: row.stockMode,
+      active: row.active,
+      // Not on the server yet (needs file storage).
+      photoDataUrl: null,
+      createdAt: row.createdAt,
+    },
+    variants: row.variants.map((variant) => toVariant(tenantId, variant)),
+  };
+}
+
+export function toVariant(tenantId: Id, row: ApiVariant): ProductVariant {
+  return {
+    id: row.id,
+    tenantId,
+    productId: row.productId,
+    name: row.name,
+    sku: row.sku,
+    priceCents: row.priceCents,
+    onHand: row.onHand,
+    reserved: row.reserved,
+    available: row.available,
+    lowStockThreshold: row.lowStockThreshold,
+  };
+}
+
+export function toMovement(tenantId: Id, variantId: Id, row: ApiMovement): StockMovement {
+  return { id: String(row.id), tenantId, variantId, kind: row.kind, quantity: row.quantity, reason: row.reason, userId: row.userId, createdAt: row.createdAt };
+}
+
+export function toUsage(row: ApiUsageRow): UsageMonth {
+  return {
+    tenantId: row.tenantId,
+    channelAccountId: row.channelAccountId,
+    month: row.month,
+    totalMessages: row.totalMessages,
+    serviceMessages: row.serviceMessages,
+    utilityMessages: row.utilityMessages,
+    marketingMessages: row.marketingMessages,
+    freeEntryMessages: row.freeEntryMessages,
+  };
+}

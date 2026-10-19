@@ -59,6 +59,23 @@ node scripts/generate-report-days.mjs    # public/data/report-days.json (daily a
 Meta usage (`usage.json`) is stored **per number**: Meta gives 1,000 free replies a month to each
 number, not to each company (`shared/billing/meta-pricing.ts`).
 
+## Data source: prototype or server
+
+`core/api/api-config.ts` decides where data comes from: `mock` (the JSON in
+`public/data`, today) or `api` (vortomi-backend). The server layer is ready and tested:
+
+| File | Job |
+|---|---|
+| `core/api/api-client.ts` | Calls to `/api`; every failure becomes an `ApiFailure` with a Spanish message |
+| `core/api/auth.interceptor.ts` | Adds the session token to calls to our API only, never elsewhere |
+| `core/api/access-token.ts` | Port for the session token; the Supabase adapter replaces it |
+| `core/api/error-messages.ts` | Spanish sentence for every error code the server sends |
+| `shared/api/contract.ts` | Shapes the server answers with |
+| `shared/api/mappers.ts` | Server shapes -> the models the screens use |
+
+`ng serve` proxies `/api` to `http://localhost:3000` (`proxy.conf.json`). Moving each
+store to `api` mode goes together with Supabase sign-in (documentations/08, phase G).
+
 ## Structure
 
 ```

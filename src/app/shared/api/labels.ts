@@ -49,9 +49,12 @@ export const TEMPLATE_CATEGORY: Record<TemplateCategory, { text: string; detail:
 };
 
 export const TEMPLATE_STATUS: Record<TemplateStatus, Label> = {
-  approved: { text: 'Aprobada', tone: 'green' },
+  draft: { text: 'Borrador', tone: 'neutral' },
   pending: { text: 'En revisión', tone: 'amber' },
+  approved: { text: 'Aprobada', tone: 'green' },
   rejected: { text: 'Rechazada', tone: 'red' },
+  paused: { text: 'Pausada por Meta', tone: 'amber' },
+  disabled: { text: 'Deshabilitada por Meta', tone: 'red' },
 };
 
 export const ROLE: Record<TenantRole, string> = {
