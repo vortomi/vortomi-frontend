@@ -1,5 +1,5 @@
 import { httpResource } from '@angular/common/http';
-import { Injectable, computed, linkedSignal } from '@angular/core';
+import { Injectable, computed, inject, linkedSignal, signal } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { filter, firstValueFrom } from 'rxjs';
 import type {
@@ -12,7 +12,8 @@ import type {
   UsageMonth,
   User,
 } from '../shared/api/models';
-import { allLoaded, mockTableUrl } from '../shared/api/mock-db';
+import { type MockTable, allLoaded, mockTableUrl } from '../shared/api/mock-db';
+import { API_CONFIG } from './api/api-config';
 
 const replaceWhere = <T>(rows: T[], match: (row: T) => boolean, patch: Partial<T>): T[] =>
   rows.map((row) => (match(row) ? { ...row, ...patch } : row));
@@ -24,19 +25,24 @@ const replaceWhere = <T>(rows: T[], match: (row: T) => boolean, patch: Partial<T
  */
 @Injectable({ providedIn: 'root' })
 export class Directory {
-  private readonly tenantRows = httpResource<Tenant[]>(() => mockTableUrl('tenants'), { defaultValue: [] });
-  private readonly userRows = httpResource<User[]>(() => mockTableUrl('users'), { defaultValue: [] });
-  private readonly membershipRows = httpResource<Membership[]>(() => mockTableUrl('memberships'), {
+  private readonly mock = inject(API_CONFIG).mode === 'mock';
+  /** api mode: the JSON files are not loaded; core/remote fills these signals from the server. */
+  private readonly mockUrl = (table: MockTable) => (this.mock ? mockTableUrl(table) : undefined);
+  private readonly remoteReady = signal(false);
+
+  private readonly tenantRows = httpResource<Tenant[]>(() => this.mockUrl('tenants'), { defaultValue: [] });
+  private readonly userRows = httpResource<User[]>(() => this.mockUrl('users'), { defaultValue: [] });
+  private readonly membershipRows = httpResource<Membership[]>(() => this.mockUrl('memberships'), {
     defaultValue: [],
   });
-  private readonly invitationRows = httpResource<Invitation[]>(() => mockTableUrl('invitations'), {
+  private readonly invitationRows = httpResource<Invitation[]>(() => this.mockUrl('invitations'), {
     defaultValue: [],
   });
-  private readonly channelRows = httpResource<ChannelAccount[]>(() => mockTableUrl('channel-accounts'), {
+  private readonly channelRows = httpResource<ChannelAccount[]>(() => this.mockUrl('channel-accounts'), {
     defaultValue: [],
   });
-  private readonly usageRows = httpResource<UsageMonth[]>(() => mockTableUrl('usage'), { defaultValue: [] });
-  private readonly auditRows = httpResource<AuditEntry[]>(() => mockTableUrl('audit-log'), { defaultValue: [] });
+  private readonly usageRows = httpResource<UsageMonth[]>(() => this.mockUrl('usage'), { defaultValue: [] });
+  private readonly auditRows = httpResource<AuditEntry[]>(() => this.mockUrl('audit-log'), { defaultValue: [] });
 
   readonly tenants = linkedSignal(() => this.tenantRows.value());
   readonly users = linkedSignal(() => this.userRows.value());
@@ -47,7 +53,7 @@ export class Directory {
   readonly audit = linkedSignal(() => this.auditRows.value());
 
   readonly ready = computed(() =>
-    allLoaded(
+    !this.mock ? this.remoteReady() : allLoaded(
       this.tenantRows,
       this.userRows,
       this.membershipRows,
@@ -63,6 +69,11 @@ export class Directory {
 
   readonly userById = computed(() => new Map(this.users().map((u) => [u.id, u])));
   readonly tenantById = computed(() => new Map(this.tenants().map((t) => [t.id, t])));
+
+  /** api mode: the server answered (signed in or not), so guards can decide. */
+  markRemoteReady(): void {
+    this.remoteReady.set(true);
+  }
 
   findUserByEmail(email: string): User | null {
     const needle = email.trim().toLowerCase();

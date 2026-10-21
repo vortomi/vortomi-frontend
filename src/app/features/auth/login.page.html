@@ -22,11 +22,19 @@
         [attr.aria-invalid]="credentials.password().touched() && credentials.password().invalid()" />
       <app-field-error [state]="credentials.password()" />
     </div>
-    <button type="submit" class="btn btn--primary btn--block" [disabled]="credentials().submitting()">Entrar</button>
+    <button type="submit" class="btn btn--primary btn--block" [disabled]="credentials().submitting()" [attr.aria-busy]="credentials().submitting()"
+      [attr.aria-label]="credentials().submitting() ? 'Entrando' : null">
+      @if (credentials().submitting()) {
+        <span class="spinner" aria-hidden="true"></span>
+      } @else {
+        Entrar
+      }
+    </button>
   </form>
 
   <p class="footer-note">¿Tu empresa todavía no usa {{ brand.name }}? Escríbenos y la damos de alta contigo.</p>
 
+  @if (demoAccounts.length) {
   <div class="demo-box">
     <b>Prototipo · cualquier contraseña sirve</b>
     Elige una cuenta para probar cada rol. Nuestro equipo pide además un código de 6 dígitos.
@@ -36,4 +44,5 @@
       }
     </div>
   </div>
+  }
 </div>

@@ -7,6 +7,7 @@ import { Session } from '../../core/session';
 import { FieldError } from '../../shared/ui/field-error';
 import { Icon } from '../../shared/ui/icon';
 import { BRAND } from '../../core/brand';
+import { API_CONFIG } from '../../core/api/api-config';
 
 /** Prototype shortcuts: one account per role. Remove with the mock data. */
 const DEMO_ACCOUNTS = [
@@ -32,7 +33,8 @@ export class LoginPage {
   /** From the query string (?returnUrl=...), sanitised before use. */
   readonly returnUrl = input<string>();
 
-  protected readonly demoAccounts = DEMO_ACCOUNTS;
+  /** Sample accounts exist only in the prototype; real sessions use Supabase. */
+  protected readonly demoAccounts = inject(API_CONFIG).mode === 'mock' ? DEMO_ACCOUNTS : [];
   protected readonly error = signal<string | null>(null);
   protected readonly credentials = form(signal({ email: '', password: '' }), (path) => {
     required(path.email, { message: 'Escribe tu correo.' });

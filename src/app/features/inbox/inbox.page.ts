@@ -31,10 +31,10 @@ export class InboxPage {
   protected readonly selected = computed(() => this.data.findItem(this.conversationId()));
 
   constructor() {
-    // Opening a conversation marks it as read, once its data is loaded.
+    // Opening a conversation loads it (server mode) and marks it as read, once the inbox is loaded.
     effect(() => {
       const id = this.conversationId();
-      if (id && this.data.ready()) untracked(() => this.data.markRead(id));
+      if (id && this.data.ready()) untracked(() => this.data.open(id));
     });
   }
 

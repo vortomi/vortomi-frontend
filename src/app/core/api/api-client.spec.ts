@@ -21,7 +21,7 @@ function setup(token: string | null = 'session-token') {
     providers: [
       provideHttpClient(withInterceptors([authInterceptor])),
       provideHttpClientTesting(),
-      provideApiConfig({ mode: 'api', baseUrl: '/api' }),
+      provideApiConfig({ mode: 'api', baseUrl: '/api', supabase: null }),
       { provide: AccessTokenSource, useValue: new FixedToken(token) },
     ],
   });

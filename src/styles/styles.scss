@@ -74,6 +74,36 @@ a {
     border-color: #b42318;
     color: #fff;
   }
+
+  // Working on it: full colour (not the faded disabled look) and a busy cursor.
+  &[aria-busy='true'] {
+    opacity: 1;
+    cursor: progress;
+  }
+}
+
+// Loading circle. Takes the text colour, so it works on any button or background.
+.spinner {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 50%;
+  border: 3px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// It still shows that something is happening, only slower.
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
+  }
 }
 
 // Native select styled like the mockup dropdowns.

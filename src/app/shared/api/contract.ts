@@ -11,7 +11,26 @@ export interface Page<T> {
 export interface ApiMe {
   user: { id: string; email: string; name: string; platformRole: 'super_admin' | null };
   secondFactor: boolean;
-  companies: { tenantId: string; name: string; tenantStatus: string; role: 'admin' | 'agent' }[];
+  companies: ApiCompany[];
+}
+
+export interface ApiCompany {
+  tenantId: string;
+  name: string;
+  slug: string;
+  tenantStatus: 'draft' | 'awaiting_channel' | 'active' | 'suspended' | 'cancelled';
+  plan: 'internal' | 'basic' | 'team';
+  timezone: string;
+  role: 'admin' | 'agent';
+}
+
+export interface ApiChannel {
+  id: string;
+  label: string;
+  displayNumber: string;
+  phoneNumberId: string;
+  wabaId: string;
+  status: 'connected' | 'disconnected' | 'restricted';
 }
 
 export interface ApiMember {

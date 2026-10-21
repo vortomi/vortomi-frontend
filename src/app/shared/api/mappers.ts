@@ -3,6 +3,8 @@
 // Fields the server does not provide yet get explicit neutral values, marked "not on the server yet".
 import { formatWaId } from '../format/phone';
 import type {
+  ApiChannel,
+  ApiCompany,
   ApiContact,
   ApiConversation,
   ApiMessage,
@@ -20,6 +22,7 @@ import type {
   ApiVariant,
 } from './contract';
 import type {
+  ChannelAccount,
   Contact,
   Conversation,
   Id,
@@ -33,6 +36,7 @@ import type {
   QuickReply,
   StockMovement,
   Tag,
+  Tenant,
   TenantSettings,
   UsageMonth,
   User,
@@ -218,5 +222,68 @@ export function toUsage(row: ApiUsageRow): UsageMonth {
     utilityMessages: row.utilityMessages,
     marketingMessages: row.marketingMessages,
     freeEntryMessages: row.freeEntryMessages,
+  };
+}
+
+/** A company from /me. Fiscal and profile data are not in that response: neutral values. */
+export function toTenant(row: ApiCompany): Tenant {
+  return {
+    id: row.tenantId,
+    name: row.name,
+    slug: row.slug,
+    status: row.tenantStatus,
+    plan: row.plan,
+    timezone: row.timezone,
+    currency: 'USD',
+    // Not in /me (only the console needs them).
+    industry: '',
+    city: '',
+    legalName: '',
+    taxId: '',
+    fiscalAddress: '',
+    createdAt: '',
+  };
+}
+
+/** Colours told apart in the panel, given by position until each company can choose its own. */
+const CHANNEL_COLORS = ['#3b4fd8', '#e8743b', '#10a37f', '#7c3aed', '#d9467a'];
+
+export function toChannel(tenantId: Id, row: ApiChannel, index: number): ChannelAccount {
+  return {
+    id: row.id,
+    tenantId,
+    label: row.label,
+    displayNumber: row.displayNumber,
+    phoneNumberId: row.phoneNumberId,
+    wabaId: row.wabaId,
+    status: row.status,
+    color: CHANNEL_COLORS[index % CHANNEL_COLORS.length]!,
+    // Number health is not on the server yet (doc. 09, B13): neutral values.
+    qualityRating: 'high',
+    messagingTier: 250,
+    coexistence: false,
+    accessExpiresAt: null,
+  };
+}
+
+/**
+ * The contact embedded in a conversation, when the contacts list has not brought it
+ * (it pages): enough for the inbox card until the full row arrives.
+ */
+export function toContactStub(tenantId: Id, row: ApiConversation): Contact {
+  return {
+    id: row.contact.id,
+    tenantId,
+    channelAccountId: row.channelAccountId,
+    waId: row.contact.waId,
+    name: contactName(row.contact),
+    phone: formatWaId(row.contact.waId),
+    stageId: null,
+    tagIds: [],
+    ownerUserId: null,
+    purchasesCount: 0,
+    purchasesTotalCents: 0,
+    attributes: [],
+    createdAt: '',
   };
 }

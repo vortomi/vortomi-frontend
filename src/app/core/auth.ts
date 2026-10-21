@@ -1,92 +1,26 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import type { Signal } from '@angular/core';
 import type { Id } from '../shared/api/models';
-import { Directory } from './directory';
-import { readStored, writeStored } from './storage';
-
-interface AuthState {
-  userId: Id;
-  /** Super admins must pass a second factor before the session counts. */
-  mfaPending: boolean;
-  activeTenantId: Id | null;
-}
 
 export type SignInResult = 'signed_in' | 'mfa_required' | 'invalid' | 'locked';
 
-const STORAGE_KEY = 'vortomi.auth';
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCK_MS = 15 * 60_000;
-
 /**
- * Prototype sign-in. Any password works for a known, active person; the real check will be
- * Supabase Auth on the backend. What is real here is the behaviour the screens must have:
- * generic errors, temporary lock, second factor for our team.
+ * Who is signed in and which company they are working on. Two implementations, picked by
+ * the data mode (core/data-source.providers.ts): MockAuth for the prototype and
+ * SupabaseAuth for real sessions. Screens and guards only know this contract.
  */
-@Injectable({ providedIn: 'root' })
-export class Auth {
-  private readonly directory = inject(Directory);
+export abstract class Auth {
+  /** Null until the person passed every step (password and, when required, the second factor). */
+  abstract readonly userId: Signal<Id | null>;
+  /** Password accepted, second factor still pending. */
+  abstract readonly mfaPendingUserId: Signal<Id | null>;
+  abstract readonly activeTenantId: Signal<Id | null>;
 
-  private readonly state = signal<AuthState | null>(readStored<AuthState>(STORAGE_KEY));
-  private failedAttempts = 0;
-  private lockedUntil = 0;
-
-  readonly userId = computed(() => {
-    const state = this.state();
-    return state && !state.mfaPending ? state.userId : null;
-  });
-  readonly mfaPendingUserId = computed(() => {
-    const state = this.state();
-    return state?.mfaPending ? state.userId : null;
-  });
-  readonly activeTenantId = computed(() => this.state()?.activeTenantId ?? null);
-
-  constructor() {
-    effect(() => writeStored(STORAGE_KEY, this.state()));
-  }
-
-  async signIn(email: string, password: string): Promise<SignInResult> {
-    await this.directory.loaded;
-    if (Date.now() < this.lockedUntil) return 'locked';
-
-    const user = this.directory.findUserByEmail(email);
-    const hasAccess =
-      !!user &&
-      (user.platformRole === 'super_admin' ||
-        this.directory.memberships().some((m) => m.userId === user.id && m.status === 'active'));
-
-    if (!user || !hasAccess || password.length === 0) {
-      this.failedAttempts += 1;
-      if (this.failedAttempts >= MAX_FAILED_ATTEMPTS) {
-        this.failedAttempts = 0;
-        this.lockedUntil = Date.now() + LOCK_MS;
-        return 'locked';
-      }
-      return 'invalid';
-    }
-
-    this.failedAttempts = 0;
-    const needsMfa = user.platformRole === 'super_admin';
-    this.state.set({ userId: user.id, mfaPending: needsMfa, activeTenantId: null });
-    return needsMfa ? 'mfa_required' : 'signed_in';
-  }
-
-  /** Prototype: any six digits except 000000 pass. */
-  verifySecondFactor(code: string): boolean {
-    const state = this.state();
-    if (!state?.mfaPending || !/^\d{6}$/.test(code) || code === '000000') return false;
-    this.state.set({ ...state, mfaPending: false });
-    return true;
-  }
-
-  selectTenant(tenantId: Id | null): void {
-    this.state.update((state) => (state ? { ...state, activeTenantId: tenantId } : state));
-  }
-
+  /** Picks up a session that survived a reload. Runs once, before the first route. */
+  abstract restore(): Promise<void>;
+  abstract signIn(email: string, password: string): Promise<SignInResult>;
+  abstract verifySecondFactor(code: string): boolean;
+  abstract selectTenant(tenantId: Id | null): void;
   /** Accepting an invitation signs the person straight into that company. */
-  startSession(userId: Id, tenantId: Id): void {
-    this.state.set({ userId, mfaPending: false, activeTenantId: tenantId });
-  }
-
-  signOut(): void {
-    this.state.set(null);
-  }
+  abstract startSession(userId: Id, tenantId: Id): void;
+  abstract signOut(): void;
 }
