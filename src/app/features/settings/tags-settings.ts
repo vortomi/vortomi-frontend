@@ -76,23 +76,22 @@ export class TagsSettings {
       input.value = tag.name;
       return;
     }
-    this.actions.updateTag(tag.id, { name: input.value.trim() });
+    void this.actions.updateTag(tag.id, { name: input.value.trim() }).then((ok) => ok || (input.value = tag.name));
   }
 
   protected setTone(tag: Tag, event: Event): void {
-    this.actions.updateTag(tag.id, { tone: this.value(event) as Tone });
+    void this.actions.updateTag(tag.id, { tone: this.value(event) as Tone });
   }
 
-  protected add(): void {
+  protected async add(): Promise<void> {
     const error = nameError(this.newName(), this.workspace.tags().map((t) => t.name));
     if (error) return this.toaster.show(error, 'info');
-    this.actions.addTag(this.newName(), this.newTone());
-    this.newName.set('');
+    if (await this.actions.addTag(this.newName(), this.newTone())) this.newName.set('');
   }
 
-  protected remove(tag: Tag): void {
-    this.actions.removeTag(tag.id);
+  protected async remove(tag: Tag): Promise<void> {
+    const ok = await this.actions.removeTag(tag.id);
     this.confirming.set(null);
-    this.toaster.show(`Etiqueta «${tag.name}» borrada`);
+    if (ok) this.toaster.show(`Etiqueta «${tag.name}» borrada`);
   }
 }

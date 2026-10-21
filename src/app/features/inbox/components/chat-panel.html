@@ -45,7 +45,7 @@
           <div class="note">
             <b>
               <app-icon name="note" />Nota interna · {{ firstName(entry.note.authorUserId) }}
-              @if (entry.note.mentionUserId) {
+              @if (entry.note.mentionUserId && entry.note.mentionUserId !== entry.note.authorUserId) {
                 → {{ firstName(entry.note.mentionUserId) }}
               }
               · solo la ve el equipo

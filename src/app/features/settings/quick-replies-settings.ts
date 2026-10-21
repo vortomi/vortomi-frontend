@@ -68,12 +68,12 @@ export class QuickRepliesSettings {
       input.value = reply.shortcut;
       return;
     }
-    this.actions.updateQuickReply(reply.id, { shortcut });
+    void this.actions.updateQuickReply(reply.id, { shortcut }).then((ok) => ok || (input.value = reply.shortcut));
   }
 
   protected setField(reply: QuickReply, key: 'title' | 'body', event: Event): void {
     const value = (event.target as HTMLInputElement).value.trim();
-    if (value) this.actions.updateQuickReply(reply.id, { [key]: value });
+    if (value) void this.actions.updateQuickReply(reply.id, { [key]: value });
   }
 
   protected setDraft(key: 'shortcut' | 'title' | 'body', event: Event): void {
@@ -81,18 +81,17 @@ export class QuickRepliesSettings {
     this.draft.update((d) => ({ ...d, [key]: value }));
   }
 
-  protected add(): void {
+  protected async add(): Promise<void> {
     const { shortcut, title, body } = this.draft();
     const clean = shortcut.trim().replace(/^\//, '');
     const error = shortcutError(clean, this.taken()) ?? (!title.trim() || !body.trim() ? 'Escribe el título y el texto.' : null);
     if (error) return this.toaster.show(error, 'info');
-    this.actions.addQuickReply({ shortcut: clean, title: title.trim(), body: body.trim() });
+    if (!(await this.actions.addQuickReply({ shortcut: clean, title: title.trim(), body: body.trim() }))) return;
     this.draft.set({ shortcut: '', title: '', body: '' });
     this.toaster.show(`Respuesta /${clean} agregada`);
   }
 
-  protected remove(reply: QuickReply): void {
-    this.actions.removeQuickReply(reply.id);
-    this.toaster.show(`Respuesta /${reply.shortcut} borrada`);
+  protected async remove(reply: QuickReply): Promise<void> {
+    if (await this.actions.removeQuickReply(reply.id)) this.toaster.show(`Respuesta /${reply.shortcut} borrada`);
   }
 }

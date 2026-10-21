@@ -7,6 +7,8 @@ import { formatCount, formatUnitPrice, formatUsdCents } from '../shared/format/m
 /** Meta consumption of the month, always visible (original document: measure usage per company from day one). */
 @Component({
   selector: 'app-usage-meter',
+  // Without data (an agent, or usage not loaded) there is no box at all, not an empty one.
+  host: { '[style.display]': "spend() ? null : 'none'" },
   template: `
     @if (spend(); as s) {
       <p>Respuestas de WhatsApp · {{ monthName() }}</p>

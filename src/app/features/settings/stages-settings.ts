@@ -65,24 +65,22 @@ export class StagesSettings {
       input.value = stage.name;
       return;
     }
-    this.actions.updateStage(stage.id, { name: input.value.trim() });
+    void this.actions.updateStage(stage.id, { name: input.value.trim() }).then((ok) => ok || (input.value = stage.name));
   }
 
   protected setColor(stage: PipelineStage, event: Event): void {
-    this.actions.updateStage(stage.id, { color: this.value(event) });
+    void this.actions.updateStage(stage.id, { color: this.value(event) });
   }
 
-  protected add(): void {
+  protected async add(): Promise<void> {
     const error = nameError(this.newName(), this.workspace.stages().map((s) => s.name));
     if (error) return this.toaster.show(error, 'info');
-    this.actions.addStage(this.newName(), this.newColor());
-    this.newName.set('');
+    if (await this.actions.addStage(this.newName(), this.newColor())) this.newName.set('');
   }
 
-  protected remove(stage: PipelineStage): void {
+  protected async remove(stage: PipelineStage): Promise<void> {
     const error = stageDeleteError(this.usage(stage.id));
     if (error) return this.toaster.show(error, 'info');
-    this.actions.removeStage(stage.id);
-    this.toaster.show(`Etapa «${stage.name}» borrada`);
+    if (await this.actions.removeStage(stage.id)) this.toaster.show(`Etapa «${stage.name}» borrada`);
   }
 }

@@ -19,6 +19,14 @@ export function nameError(name: string, taken: string[]): string | null {
   return null;
 }
 
+/** Monday first, as the week reads in Venezuela. */
+const WEEK_ORDER: DayHours['day'][] = [1, 2, 3, 4, 5, 6, 0];
+
+/** Always the seven days, in order: a company that never saved its hours sees them all closed. */
+export function fullWeek(hours: DayHours[]): DayHours[] {
+  return WEEK_ORDER.map((day) => hours.find((h) => h.day === day) ?? { day, open: null, close: null });
+}
+
 export function hoursError(hours: DayHours): string | null {
   if (hours.open === null || hours.close === null) return null;
   return hours.open < hours.close ? null : 'La hora de cierre debe ser después de la de apertura.';

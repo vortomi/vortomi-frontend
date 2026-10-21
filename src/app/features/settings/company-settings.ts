@@ -1,4 +1,5 @@
 import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { BRAND } from '../../core/brand';
 import { Session } from '../../core/session';
 import { Workspace } from '../../core/workspace';
 import { TIMEZONES, WEEKDAYS } from '../../shared/api/labels';
@@ -8,7 +9,7 @@ import { Icon } from '../../shared/ui/icon';
 import { parsePriceCents } from '../../shared/format/money';
 import { Toaster } from '../../shared/ui/toaster';
 import { SettingsActions } from './settings.actions';
-import { hoursError, logoError } from './settings.rules';
+import { fullWeek, hoursError, logoError } from './settings.rules';
 
 @Component({
   selector: 'app-company-settings',
@@ -16,6 +17,7 @@ import { hoursError, logoError } from './settings.rules';
   template: `
     <section class="card box">
       <h2>Empresa</h2>
+      @if (profileEditable) {
       <div class="logo-row">
         @if (logo(); as src) {
           <img class="logo" [src]="src" alt="Logo de la empresa" />
@@ -29,14 +31,17 @@ import { hoursError, logoError } from './settings.rules';
           @if (logo()) { <button type="button" class="link danger" (click)="logo.set(null)">Quitar logo</button> }
         </div>
       </div>
+      } @else {
+        <p class="field-hint">El nombre y la zona horaria los cambia por ahora el equipo de {{ brand.name }}. Escríbenos si necesitas ajustarlos.</p>
+      }
       <div class="g2">
         <div class="field">
           <label for="company-name">Nombre comercial</label>
-          <input id="company-name" class="input" [value]="name()" (input)="name.set(value($event))" />
+          <input id="company-name" class="input" [value]="name()" [disabled]="!profileEditable" (input)="name.set(value($event))" />
         </div>
         <div class="field">
           <label for="tz">Zona horaria</label>
-          <select id="tz" class="input" (change)="timezone.set(value($event))">
+          <select id="tz" class="input" [disabled]="!profileEditable" (change)="timezone.set(value($event))">
             @for (tz of timezones; track tz[0]) {
               <option [value]="tz[0]" [selected]="tz[0] === timezone()">{{ tz[1] }}</option>
             }
@@ -89,7 +94,10 @@ import { hoursError, logoError } from './settings.rules';
     </section>
 
     <div class="actions">
-      <button type="button" class="btn btn--primary" [disabled]="hasErrors()" (click)="save()"><app-icon name="check" />Guardar cambios</button>
+      <button type="button" class="btn btn--primary" [disabled]="hasErrors() || saving()" [attr.aria-busy]="saving()" (click)="save()">
+        @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
+        Guardar cambios
+      </button>
     </div>
   `,
   styleUrl: './settings-section.scss',
@@ -113,6 +121,9 @@ export class CompanySettings {
   private readonly workspace = inject(Workspace);
   private readonly actions = inject(SettingsActions);
   private readonly toaster = inject(Toaster);
+  protected readonly brand = BRAND;
+  protected readonly profileEditable = this.actions.profileEditable;
+  protected readonly saving = signal(false);
 
   protected readonly timezones = TIMEZONES;
   protected readonly weekdays = WEEKDAYS;
@@ -144,7 +155,7 @@ export class CompanySettings {
         this.name.set(tenant?.name ?? '');
         this.timezone.set(tenant?.timezone ?? 'America/Caracas');
         this.logo.set(settings?.logoDataUrl ?? null);
-        this.hours.set(settings?.businessHours ?? []);
+        this.hours.set(fullWeek(settings?.businessHours ?? []));
         this.away.set(settings?.awayMessage ?? '');
         this.rate.set(settings?.exchangeRateVes ? String(settings.exchangeRateVes).replace('.', ',') : '');
         this.workMode.set(settings?.workMode ?? 'sales_and_support');
@@ -186,10 +197,11 @@ export class CompanySettings {
     reader.readAsDataURL(file);
   }
 
-  protected save(): void {
+  protected async save(): Promise<void> {
     const settings = this.workspace.settings();
-    if (!settings || this.hasErrors()) return;
-    this.actions.saveCompany(this.name(), this.timezone(), {
+    if (!settings || this.hasErrors() || this.saving()) return;
+    this.saving.set(true);
+    const ok = await this.actions.saveCompany(this.name(), this.timezone(), {
       ...settings,
       logoDataUrl: this.logo(),
       businessHours: this.hours(),
@@ -197,6 +209,7 @@ export class CompanySettings {
       exchangeRateVes: this.parsedRate(),
       workMode: this.workMode(),
     });
-    this.toaster.show('Ajustes guardados');
+    this.saving.set(false);
+    if (ok) this.toaster.show('Ajustes guardados');
   }
 }

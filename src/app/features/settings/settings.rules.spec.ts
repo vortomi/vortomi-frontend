@@ -1,4 +1,4 @@
-import { hoursError, logoError, nameError, shortcutError, stageDeleteError } from './settings.rules';
+import { fullWeek, hoursError, logoError, nameError, shortcutError, stageDeleteError } from './settings.rules';
 
 describe('settings rules', () => {
   it('validates quick reply shortcuts', () => {
@@ -16,6 +16,13 @@ describe('settings rules', () => {
     expect(hoursError({ day: 1, open: '08:00', close: '17:00' })).toBeNull();
     expect(hoursError({ day: 1, open: '17:00', close: '08:00' })).toContain('después');
     expect(hoursError({ day: 0, open: null, close: null })).toBeNull();
+  });
+
+  it('always lists the seven days, Monday first', () => {
+    const week = fullWeek([{ day: 0, open: '09:00', close: '13:00' }]);
+    expect(week.map((h) => h.day)).toEqual([1, 2, 3, 4, 5, 6, 0]);
+    expect(week[6]).toEqual({ day: 0, open: '09:00', close: '13:00' });
+    expect(week[0]).toEqual({ day: 1, open: null, close: null });
   });
 
   it('accepts only small raster logos, never SVG', () => {

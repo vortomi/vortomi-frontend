@@ -1,5 +1,17 @@
 import { Injectable, inject } from '@angular/core';
-import type { ApiChannel, ApiList, ApiMe, ApiMember, ApiQuickReply, ApiSettings, ApiStage, ApiTag, ApiTeamMember, ApiTemplate } from '../../shared/api/contract';
+import type {
+  ApiChannel,
+  ApiList,
+  ApiMe,
+  ApiMember,
+  ApiQuickReply,
+  ApiSettings,
+  ApiStage,
+  ApiTag,
+  ApiTeamMember,
+  ApiTemplate,
+  ApiUsageRow,
+} from '../../shared/api/contract';
 import {
   toChannel,
   toQuickReply,
@@ -9,9 +21,12 @@ import {
   toTeamMember,
   toTemplate,
   toTenant,
+  toUsage,
 } from '../../shared/api/mappers';
-import type { Id, Membership, User } from '../../shared/api/models';
+import type { Id, Membership, UsageMonth, User } from '../../shared/api/models';
+import { calendarDay } from '../../shared/format/date-time';
 import { ApiClient } from '../api/api-client';
+import { Clock } from '../clock';
 import { CompanyData } from '../company-data';
 import { Directory } from '../directory';
 
@@ -27,6 +42,7 @@ export class RemoteSession {
   private readonly api = inject(ApiClient);
   private readonly directory = inject(Directory);
   private readonly company = inject(CompanyData);
+  private readonly clock = inject(Clock);
 
   async loadMe(): Promise<ApiMe> {
     const me = await this.api.get<ApiMe>('me');
@@ -81,6 +97,31 @@ export class RemoteSession {
     this.company.quickReplies.replaceAll(quickReplies.items.map((row) => toQuickReply(tenantId, row)));
     this.company.templates.replaceAll(templates.items.map((row) => toTemplate(tenantId, row)));
     this.company.settings.replaceAll([toSettings(tenantId, settings)]);
+    this.directory.usage.set(member.role === 'admin' ? await this.usage(tenantId, channels.items) : []);
+  }
+
+  /**
+   * This month's Meta usage, one row per number: a number with no messages yet shows 0.
+   * Usage is a report, so only admins read it; for everyone else the meter stays hidden.
+   */
+  private async usage(tenantId: Id, channels: ApiChannel[]): Promise<UsageMonth[]> {
+    const timezone = this.directory.tenants().find((t) => t.id === tenantId)?.timezone ?? 'America/Caracas';
+    const month = calendarDay(this.clock.now().toISOString(), timezone).slice(0, 7);
+    const list = await this.api.get<ApiList<ApiUsageRow>>(this.api.company(tenantId, 'usage'), { month });
+    const byChannel = new Map(list.items.map((row) => [row.channelAccountId, toUsage(row)]));
+    return channels.map(
+      (channel) =>
+        byChannel.get(channel.id) ?? {
+          tenantId,
+          channelAccountId: channel.id,
+          month,
+          totalMessages: 0,
+          serviceMessages: 0,
+          utilityMessages: 0,
+          marketingMessages: 0,
+          freeEntryMessages: 0,
+        },
+    );
   }
 
   /** Signed out: nothing of the previous person stays in memory. */
@@ -89,6 +130,7 @@ export class RemoteSession {
     this.directory.tenants.set([]);
     this.directory.memberships.set([]);
     this.directory.channels.set([]);
+    this.directory.usage.set([]);
     for (const table of [this.company.tags, this.company.stages, this.company.quickReplies, this.company.templates, this.company.settings]) {
       table.rows.set([]);
     }
