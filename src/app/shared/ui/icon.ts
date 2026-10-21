@@ -13,6 +13,7 @@ const PATHS = {
   search: '<circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   check: '<path d="M5 12l5 5 9-10"/>',
+  checks: '<path d="M2 12.5l4.5 4.5L15 7"/><path d="M10.5 15.5L12 17l9.5-10"/>',
   send: '<path d="M4 12l16-8-6 16-2-7z"/>',
   clip: '<path d="M8 12l6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l7-7"/>',
   bolt: '<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>',

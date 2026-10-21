@@ -62,18 +62,26 @@ small {
   align-items: center;
 }
 
+// Grey while it travels, green once the customer read it, red when WhatsApp gave up.
 .status {
-  letter-spacing: -2px;
-  font-size: 11.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  --icon-size: 15px;
+
+  &.pending,
+  &.failed {
+    --icon-size: 13px;
+  }
 
   &.read {
-    color: #34b7f1;
+    color: var(--color-window-text);
+    font-weight: 600;
   }
 
   &.failed {
     color: var(--color-danger);
-    letter-spacing: 0;
-    font-weight: 700;
+    font-weight: 600;
   }
 }
 

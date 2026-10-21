@@ -3,7 +3,7 @@ import { API_CONFIG } from '../../core/api/api-config';
 import { toApiFailure } from '../../core/api/api-error';
 import { Clock } from '../../core/clock';
 import { Session } from '../../core/session';
-import type { Conversation, Id, IsoDate, Message, MessageTemplate, Note } from '../../shared/api/models';
+import type { Conversation, Id, IsoDate, Message, MessageStatus, MessageTemplate, Note } from '../../shared/api/models';
 import { allLoaded, newId } from '../../shared/api/mock-db';
 import { editableTable } from '../../shared/api/editable-table';
 import { Toaster } from '../../shared/ui/toaster';
@@ -15,7 +15,10 @@ export type TimelineEntry =
   | { kind: 'message'; at: IsoDate; message: Message }
   | { kind: 'note'; at: IsoDate; note: Note };
 
-/** Simulated delivery receipt so a sent message visibly moves from ✓ to ✓✓. */
+type OutboundContent = Pick<Message, 'type' | 'body' | 'templateId' | 'productVariantId'>;
+
+/** Simulated network and delivery receipt, so a demo message moves from the clock to ✓ to ✓✓. */
+const FAKE_SEND_MS = 600;
 const FAKE_DELIVERY_MS = 1200;
 /** Until realtime notices arrive (doc. 09, B7), the inbox asks the server again this often. */
 const REFRESH_MS = 15_000;
@@ -39,6 +42,8 @@ export class InboxData {
   private readonly noteTable = editableTable<Note>('notes');
   /** 'api' mode: the conversation whose messages are kept fresh. */
   private openId: Id | null = null;
+  /** 'api' mode: messages already on screen that the server has not answered for yet. */
+  private readonly sending = new Set<Id>();
 
   // Scoped to the active company (tenant_id), as the backend does.
   private readonly conversations = this.scoped(() => this.conversationTable.rows());
@@ -132,8 +137,9 @@ export class InboxData {
   }
 
   sendText(conversationId: Id, body: string): void {
-    if (this.remote) return void this.run((remote, tenantId) => remote.sendText(tenantId, conversationId, body), conversationId);
-    this.appendOutbound(conversationId, { type: 'text', body, templateId: null }, body);
+    const content = { type: 'text', body, templateId: null } as const;
+    if (this.remote) return this.sendRemote(conversationId, content, body, (remote, tenantId) => remote.sendText(tenantId, conversationId, body));
+    this.appendOutbound(conversationId, content, body);
   }
 
   sendTemplate(conversationId: Id, template: MessageTemplate): void {
@@ -143,7 +149,10 @@ export class InboxData {
       // The chat cannot ask for each value yet: only templates with no data or just the name.
       if (count > 1) return this.toaster.show('Esta plantilla pide varios datos. Pronto podrás escribirlos desde el chat.', 'info');
       const parameters = count === 1 ? [firstName || 'cliente'] : [];
-      return void this.run((remote, tenantId) => remote.sendTemplate(tenantId, conversationId, template.id, parameters), conversationId);
+      const shown = template.body.replace(/\{\{\s*\d+\s*\}\}/g, parameters[0] ?? '');
+      return this.sendRemote(conversationId, { type: 'template', body: shown, templateId: template.id }, `Plantilla: ${shown}`, (remote, tenantId) =>
+        remote.sendTemplate(tenantId, conversationId, template.id, parameters),
+      );
     }
     const body = template.body.replace('{{1}}', firstName).replace(/\{\{\d+\}\}/g, '…');
     this.appendOutbound(conversationId, { type: 'template', body, templateId: template.id }, `Plantilla: ${body}`);
@@ -151,9 +160,10 @@ export class InboxData {
 
   /** Product card from the inventory. Free-form message: needs the 24 h window open. */
   sendProduct(conversationId: Id, body: string, productVariantId: Id): void {
-    if (this.remote) return void this.run((remote, tenantId) => remote.sendText(tenantId, conversationId, body), conversationId);
     const title = body.split('\n')[0] ?? body;
-    this.appendOutbound(conversationId, { type: 'product', body, templateId: null, productVariantId }, `Producto: ${title}`);
+    const content = { type: 'product', body, templateId: null, productVariantId } as const;
+    if (this.remote) return this.sendRemote(conversationId, content, `Producto: ${title}`, (remote, tenantId) => remote.sendText(tenantId, conversationId, body));
+    this.appendOutbound(conversationId, content, `Producto: ${title}`);
   }
 
   addNote(conversationId: Id, body: string): void {
@@ -195,6 +205,31 @@ export class InboxData {
    * 'api' mode: runs a server action, shows its Spanish error if it fails, and reloads
    * what it changed (the list, and the conversation when one is given).
    */
+  /**
+   * 'api' mode: the message shows up at once with the clock, like in WhatsApp, and the
+   * server's row (with its real status) replaces it once the send is answered. A send the
+   * server refuses leaves nothing behind: its row disappears and the toast says why.
+   */
+  private sendRemote(
+    conversationId: Id,
+    content: OutboundContent,
+    preview: string,
+    send: (remote: InboxRemote, tenantId: Id) => Promise<unknown>,
+  ): void {
+    const message = this.outbound(conversationId, content, 'pending', this.clock.now().toISOString());
+    this.sending.add(message.id);
+    this.messageTable.upsert(message);
+    this.conversationTable.patch(conversationId, { lastMessageAt: message.createdAt, lastMessagePreview: preview });
+    void this.run(async (remote, tenantId) => {
+      try {
+        await send(remote, tenantId);
+      } finally {
+        // Before the reload that follows, so the server's row takes its place without a duplicate.
+        this.sending.delete(message.id);
+      }
+    }, conversationId);
+  }
+
   private async run(action: (remote: InboxRemote, tenantId: Id) => Promise<unknown>, conversationId?: Id): Promise<void> {
     const tenantId = this.session.tenant()?.id;
     if (!this.remote || !tenantId) return;
@@ -223,28 +258,32 @@ export class InboxData {
   private async loadTimeline(tenantId: Id, conversationId: Id): Promise<void> {
     if (!this.remote) return;
     const { messages, notes } = await this.remote.timeline(tenantId, conversationId);
-    this.messageTable.replaceAll([...this.messageTable.rows().filter((m) => m.conversationId !== conversationId), ...messages]);
+    // A message still being sent stays on screen: the server does not list it yet.
+    const kept = this.messageTable.rows().filter((m) => m.conversationId !== conversationId || this.sending.has(m.id));
+    this.messageTable.replaceAll([...kept, ...messages]);
     this.noteTable.replaceAll([...this.noteTable.rows().filter((n) => n.conversationId !== conversationId), ...notes]);
   }
 
-  private appendOutbound(
-    conversationId: Id,
-    content: Pick<Message, 'type' | 'body' | 'templateId' | 'productVariantId'>,
-    preview: string,
-  ): void {
-    const message: Message = {
+  /** 'mock' mode: the demo walks through the same ticks a real send shows. */
+  private appendOutbound(conversationId: Id, content: OutboundContent, preview: string): void {
+    const message = this.outbound(conversationId, content, 'pending', this.nowIso());
+    this.messageTable.upsert(message);
+    this.conversationTable.patch(conversationId, { lastMessageAt: message.createdAt, lastMessagePreview: preview });
+    setTimeout(() => this.messageTable.patch(message.id, { status: 'sent' }), FAKE_SEND_MS);
+    setTimeout(() => this.messageTable.patch(message.id, { status: 'delivered' }), FAKE_SEND_MS + FAKE_DELIVERY_MS);
+  }
+
+  private outbound(conversationId: Id, content: OutboundContent, status: MessageStatus, createdAt: IsoDate): Message {
+    return {
       id: newId('msg'),
       tenantId: this.tenantId(),
       conversationId,
       direction: 'outbound',
       authorUserId: this.session.user()?.id ?? null,
-      status: 'sent',
-      createdAt: this.nowIso(),
+      status,
+      createdAt,
       ...content,
     };
-    this.messageTable.upsert(message);
-    this.conversationTable.patch(conversationId, { lastMessageAt: message.createdAt, lastMessagePreview: preview });
-    setTimeout(() => this.messageTable.patch(message.id, { status: 'delivered' }), FAKE_DELIVERY_MS);
   }
 
   private scoped<T extends { tenantId: Id }>(rows: () => T[]) {

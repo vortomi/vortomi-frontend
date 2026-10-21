@@ -1,14 +1,15 @@
 import { Component, computed, input } from '@angular/core';
-import type { Message } from '../../../shared/api/models';
+import type { Message, MessageStatus } from '../../../shared/api/models';
 import { formatTime } from '../../../shared/format/date-time';
-import { Icon } from '../../../shared/ui/icon';
+import { Icon, type IconName } from '../../../shared/ui/icon';
 
-const STATUS_MARK: Record<string, { mark: string; label: string }> = {
-  pending: { mark: '🕓', label: 'Enviando' },
-  sent: { mark: '✓', label: 'Enviado' },
-  delivered: { mark: '✓✓', label: 'Entregado' },
-  read: { mark: '✓✓', label: 'Leído' },
-  failed: { mark: '!', label: 'No se entregó' },
+/** WhatsApp's ticks, with the word next to them so nobody has to guess what each one means. */
+const STATUS_MARK: Record<MessageStatus, { icon: IconName; label: string }> = {
+  pending: { icon: 'clock', label: 'Enviando' },
+  sent: { icon: 'check', label: 'Enviado' },
+  delivered: { icon: 'checks', label: 'Recibido' },
+  read: { icon: 'checks', label: 'Leído' },
+  failed: { icon: 'alert', label: 'No se entregó' },
 };
 
 @Component({
@@ -29,7 +30,7 @@ const STATUS_MARK: Record<string, { mark: string; label: string }> = {
     <small>
       {{ time() }}
       @if (status(); as s) {
-        <span class="status" [class]="msg.status" [attr.title]="s.label" [attr.aria-label]="s.label">{{ s.mark }}</span>
+        <span class="status" [class]="msg.status"><app-icon [name]="s.icon" [stroke]="2.2" />{{ s.label }}</span>
       }
     </small>
   `,
