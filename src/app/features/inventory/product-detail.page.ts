@@ -11,6 +11,7 @@ import { imageFileError, readAsDataUrl } from '../../shared/files/image';
 import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
 import { Toaster } from '../../shared/ui/toaster';
+import { CategoriesData } from './categories.data';
 import { InventoryData, type VariantDraft } from './inventory.data';
 import { MOVEMENT_LABEL, freeUnits, parsePriceCents, skuError, toBolivares, variantStatus } from './inventory.rules';
 
@@ -38,6 +39,7 @@ const REMOVING: StockMovementKind[] = ['sale', 'loss'];
 })
 export class ProductDetailPage {
   protected readonly data = inject(InventoryData);
+  protected readonly categories = inject(CategoriesData);
   protected readonly session = inject(Session);
   private readonly workspace = inject(Workspace);
   private readonly directory = inject(Directory);
@@ -57,7 +59,8 @@ export class ProductDetailPage {
   protected readonly manualKinds = MANUAL_KINDS;
 
   protected readonly name = signal('');
-  protected readonly category = signal('');
+  /** Empty: none chosen yet. */
+  protected readonly categoryId = signal('');
   protected readonly description = signal('');
   protected readonly photo = signal<string | null>(null);
   protected readonly stockMode = signal<StockMode>('units');
@@ -66,8 +69,16 @@ export class ProductDetailPage {
   protected readonly errors = signal<string[]>([]);
 
   protected readonly movement = signal({ variantId: '', kind: 'purchase' as StockMovementKind, quantity: 1, reason: '' });
+  protected readonly saving = signal(false);
+  /** On the server a product keeps the stock mode it was created with. */
+  protected readonly stockModeLocked = computed(() => this.data.onServer && !this.isNew());
 
   constructor() {
+    // 'api' mode: the history is read when the product opens, not with the whole catalog.
+    effect(() => {
+      const id = this.productId();
+      if (id && this.data.ready()) untracked(() => void this.data.loadMovements(id));
+    });
     // Reload the form only when the product changes (or data arrives), never on stock updates:
     // recording a movement must not wipe price edits the person has not saved yet.
     effect(() => {
@@ -77,7 +88,7 @@ export class ProductDetailPage {
         const product = this.product();
         const variants = this.variants();
         this.name.set(product?.name ?? '');
-        this.category.set(product?.category ?? '');
+        this.categoryId.set(product?.categoryId ?? '');
         this.description.set(product?.description ?? '');
         this.photo.set(product?.photoDataUrl ?? null);
         this.stockMode.set(product?.stockMode ?? 'units');
@@ -110,6 +121,10 @@ export class ProductDetailPage {
   protected removeRow(index: number): void {
     const row = this.rows()[index];
     const variant = row?.id ? this.data.variantById().get(row.id) : undefined;
+    if (variant && this.data.onServer) {
+      this.toaster.show('Una variante guardada no se borra: su historial de movimientos se conserva. Si ya no la vendes, deja su existencia en 0.', 'info');
+      return;
+    }
     if (variant && (variant.onHand > 0 || variant.reserved > 0)) {
       this.toaster.show('Tiene unidades en existencia: regístralas como merma o venta antes de quitarla.', 'info');
       return;
@@ -129,12 +144,13 @@ export class ProductDetailPage {
     this.photo.set(await readAsDataUrl(file));
   }
 
-  protected save(): void {
+  protected async save(): Promise<void> {
+    if (this.saving()) return;
     const ownIds = new Set(this.rows().map((r) => r.id));
     const takenElsewhere = this.data.variants().filter((v) => !ownIds.has(v.id)).map((v) => v.sku);
     const problems: string[] = [];
     if (!this.name().trim()) problems.push('Escribe el nombre del producto.');
-    if (!this.category().trim()) problems.push('Escribe la categoría.');
+    if (!this.categories.byId().has(this.categoryId())) problems.push('Elige la categoría.');
     if (!this.rows().length) problems.push('Agrega al menos una variante.');
     const seen: string[] = [];
     const drafts: VariantDraft[] = [];
@@ -151,11 +167,13 @@ export class ProductDetailPage {
     this.errors.set(problems);
     if (problems.length) return;
 
-    const id = this.data.saveProduct(
+    this.saving.set(true);
+    const id = await this.data.saveProduct(
       {
         id: this.product()?.id ?? null,
         name: this.name().trim(),
-        category: this.category().trim(),
+        categoryId: this.categoryId(),
+        category: this.categories.byId().get(this.categoryId())?.name ?? '',
         description: this.description().trim(),
         photoDataUrl: this.photo(),
         stockMode: this.stockMode(),
@@ -163,6 +181,8 @@ export class ProductDetailPage {
       },
       drafts,
     );
+    this.saving.set(false);
+    if (!id) return;
     this.toaster.show(this.isNew() ? 'Producto creado' : 'Producto guardado');
     if (this.isNew()) void this.router.navigate(['/inventory', id]);
   }
@@ -172,10 +192,10 @@ export class ProductDetailPage {
     this.movement.update((m) => ({ ...m, [key]: key === 'quantity' ? Math.floor(Number(raw) || 0) : raw }));
   }
 
-  protected record(): void {
+  protected async record(): Promise<void> {
     const { variantId, kind, quantity, reason } = this.movement();
     const signed = REMOVING.includes(kind) ? -Math.abs(quantity) : kind === 'adjustment' ? quantity : Math.abs(quantity);
-    const error = this.data.recordMovement(variantId, kind, signed, reason);
+    const error = await this.data.recordMovement(variantId, kind, signed, reason);
     if (error) return this.toaster.show(error, 'info');
     this.movement.update((m) => ({ ...m, quantity: 1, reason: '' }));
     this.toaster.show('Movimiento registrado');

@@ -16,6 +16,7 @@ export type MockTable =
   | 'quick-replies'
   | 'templates'
   | 'products'
+  | 'product-categories'
   | 'product-variants'
   | 'stock-movements'
   | 'tenant-settings'

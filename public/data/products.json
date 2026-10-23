@@ -1,15 +1,145 @@
 [
-  { "id": "prd_brake_pads", "tenantId": "ten_ra", "name": "Pastillas de freno delanteras Corolla 2015", "category": "Frenos", "description": "Juego para las dos ruedas delanteras.", "photoDataUrl": null, "stockMode": "units", "active": true, "createdAt": "2026-08-05T10:00:00-04:00" },
-  { "id": "prd_oil_filter", "tenantId": "ten_ra", "name": "Filtro de aceite", "category": "Filtros", "description": "", "photoDataUrl": null, "stockMode": "units", "active": true, "createdAt": "2026-08-05T10:00:00-04:00" },
-  { "id": "prd_battery", "tenantId": "ten_ra", "name": "Batería 12 V 45 Ah", "category": "Eléctrico", "description": "Garantía de 12 meses con la factura.", "photoDataUrl": null, "stockMode": "units", "active": true, "createdAt": "2026-08-05T10:00:00-04:00" },
-  { "id": "prd_spark_plugs", "tenantId": "ten_ra", "name": "Bujías NGK (juego de 4)", "category": "Encendido", "description": "", "photoDataUrl": null, "stockMode": "units", "active": true, "createdAt": "2026-08-05T10:00:00-04:00" },
-  { "id": "prd_alternator", "tenantId": "ten_ra", "name": "Alternador reconstruido Spark", "category": "Eléctrico", "description": "Reconstruido en nuestro taller.", "photoDataUrl": null, "stockMode": "units", "active": true, "createdAt": "2026-08-12T10:00:00-04:00" },
-  { "id": "prd_engine_oil", "tenantId": "ten_ra", "name": "Aceite de motor 15W40 (galón)", "category": "Lubricantes", "description": "", "photoDataUrl": null, "stockMode": "units", "active": true, "createdAt": "2026-08-05T10:00:00-04:00" },
-  { "id": "prd_diagnostic", "tenantId": "ten_ra", "name": "Diagnóstico computarizado", "category": "Servicios", "description": "Escaneo completo con reporte. Se agenda por día.", "photoDataUrl": null, "stockMode": "availability", "active": true, "createdAt": "2026-08-05T10:00:00-04:00" },
-  { "id": "prd_shock", "tenantId": "ten_ra", "name": "Amortiguador trasero Fiesta", "category": "Suspensión", "description": "", "photoDataUrl": null, "stockMode": "units", "active": false, "createdAt": "2026-09-01T10:00:00-04:00" },
-  { "id": "prd_v_chair", "tenantId": "ten_valle", "name": "Silla Milano", "category": "Comedor", "description": "Silla de pino macizo con asiento tapizado.", "photoDataUrl": null, "stockMode": "units", "active": true, "createdAt": "2026-09-10T10:00:00-04:00" },
-  { "id": "prd_v_mattress", "tenantId": "ten_valle", "name": "Colchón ortopédico", "category": "Dormitorio", "description": "Resortes ensacados, 25 cm de alto.", "photoDataUrl": null, "stockMode": "units", "active": true, "createdAt": "2026-09-10T10:00:00-04:00" },
-  { "id": "prd_v_sofa", "tenantId": "ten_valle", "name": "Sofá cama Lisboa", "category": "Sala", "description": "Tela antimanchas, se abre en cama matrimonial.", "photoDataUrl": null, "stockMode": "units", "active": true, "createdAt": "2026-09-10T10:00:00-04:00" },
-  { "id": "prd_v_dining", "tenantId": "ten_valle", "name": "Comedor a medida", "category": "Comedor", "description": "Pino macizo. Se fabrica en unas 3 semanas.", "photoDataUrl": null, "stockMode": "availability", "active": true, "createdAt": "2026-09-10T10:00:00-04:00" },
-  { "id": "prd_v_closet", "tenantId": "ten_valle", "name": "Closet a medida", "category": "Dormitorio", "description": "Precio por metro lineal, con toma de medidas incluida.", "photoDataUrl": null, "stockMode": "availability", "active": true, "createdAt": "2026-09-10T10:00:00-04:00" }
+  {
+    "id": "prd_brake_pads",
+    "tenantId": "ten_ra",
+    "name": "Pastillas de freno delanteras Corolla 2015",
+    "categoryId": "cat_ra_frenos",
+    "description": "Juego para las dos ruedas delanteras.",
+    "photoDataUrl": null,
+    "stockMode": "units",
+    "active": true,
+    "createdAt": "2026-08-05T10:00:00-04:00"
+  },
+  {
+    "id": "prd_oil_filter",
+    "tenantId": "ten_ra",
+    "name": "Filtro de aceite",
+    "categoryId": "cat_ra_filtros",
+    "description": "",
+    "photoDataUrl": null,
+    "stockMode": "units",
+    "active": true,
+    "createdAt": "2026-08-05T10:00:00-04:00"
+  },
+  {
+    "id": "prd_battery",
+    "tenantId": "ten_ra",
+    "name": "Batería 12 V 45 Ah",
+    "categoryId": "cat_ra_electrico",
+    "description": "Garantía de 12 meses con la factura.",
+    "photoDataUrl": null,
+    "stockMode": "units",
+    "active": true,
+    "createdAt": "2026-08-05T10:00:00-04:00"
+  },
+  {
+    "id": "prd_spark_plugs",
+    "tenantId": "ten_ra",
+    "name": "Bujías NGK (juego de 4)",
+    "categoryId": "cat_ra_encendido",
+    "description": "",
+    "photoDataUrl": null,
+    "stockMode": "units",
+    "active": true,
+    "createdAt": "2026-08-05T10:00:00-04:00"
+  },
+  {
+    "id": "prd_alternator",
+    "tenantId": "ten_ra",
+    "name": "Alternador reconstruido Spark",
+    "categoryId": "cat_ra_electrico",
+    "description": "Reconstruido en nuestro taller.",
+    "photoDataUrl": null,
+    "stockMode": "units",
+    "active": true,
+    "createdAt": "2026-08-12T10:00:00-04:00"
+  },
+  {
+    "id": "prd_engine_oil",
+    "tenantId": "ten_ra",
+    "name": "Aceite de motor 15W40 (galón)",
+    "categoryId": "cat_ra_lubricantes",
+    "description": "",
+    "photoDataUrl": null,
+    "stockMode": "units",
+    "active": true,
+    "createdAt": "2026-08-05T10:00:00-04:00"
+  },
+  {
+    "id": "prd_diagnostic",
+    "tenantId": "ten_ra",
+    "name": "Diagnóstico computarizado",
+    "categoryId": "cat_ra_servicios",
+    "description": "Escaneo completo con reporte. Se agenda por día.",
+    "photoDataUrl": null,
+    "stockMode": "availability",
+    "active": true,
+    "createdAt": "2026-08-05T10:00:00-04:00"
+  },
+  {
+    "id": "prd_shock",
+    "tenantId": "ten_ra",
+    "name": "Amortiguador trasero Fiesta",
+    "categoryId": "cat_ra_suspension",
+    "description": "",
+    "photoDataUrl": null,
+    "stockMode": "units",
+    "active": false,
+    "createdAt": "2026-09-01T10:00:00-04:00"
+  },
+  {
+    "id": "prd_v_chair",
+    "tenantId": "ten_valle",
+    "name": "Silla Milano",
+    "categoryId": "cat_valle_comedor",
+    "description": "Silla de pino macizo con asiento tapizado.",
+    "photoDataUrl": null,
+    "stockMode": "units",
+    "active": true,
+    "createdAt": "2026-09-10T10:00:00-04:00"
+  },
+  {
+    "id": "prd_v_mattress",
+    "tenantId": "ten_valle",
+    "name": "Colchón ortopédico",
+    "categoryId": "cat_valle_dormitorio",
+    "description": "Resortes ensacados, 25 cm de alto.",
+    "photoDataUrl": null,
+    "stockMode": "units",
+    "active": true,
+    "createdAt": "2026-09-10T10:00:00-04:00"
+  },
+  {
+    "id": "prd_v_sofa",
+    "tenantId": "ten_valle",
+    "name": "Sofá cama Lisboa",
+    "categoryId": "cat_valle_sala",
+    "description": "Tela antimanchas, se abre en cama matrimonial.",
+    "photoDataUrl": null,
+    "stockMode": "units",
+    "active": true,
+    "createdAt": "2026-09-10T10:00:00-04:00"
+  },
+  {
+    "id": "prd_v_dining",
+    "tenantId": "ten_valle",
+    "name": "Comedor a medida",
+    "categoryId": "cat_valle_comedor",
+    "description": "Pino macizo. Se fabrica en unas 3 semanas.",
+    "photoDataUrl": null,
+    "stockMode": "availability",
+    "active": true,
+    "createdAt": "2026-09-10T10:00:00-04:00"
+  },
+  {
+    "id": "prd_v_closet",
+    "tenantId": "ten_valle",
+    "name": "Closet a medida",
+    "categoryId": "cat_valle_dormitorio",
+    "description": "Precio por metro lineal, con toma de medidas incluida.",
+    "photoDataUrl": null,
+    "stockMode": "availability",
+    "active": true,
+    "createdAt": "2026-09-10T10:00:00-04:00"
+  }
 ]

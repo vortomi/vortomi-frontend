@@ -10,6 +10,7 @@ import {
 } from './core/guards';
 import { AppLayout } from './layout/app-layout';
 import { AuthLayout } from './layout/auth-layout';
+import { unsavedChangesGuard } from './shared/ui/unsaved-changes';
 
 const inboxPage = () => import('./features/inbox/inbox.page').then((m) => m.InboxPage);
 const profilePage = () => import('./features/account/profile.page').then((m) => m.ProfilePage);
@@ -79,6 +80,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/inventory/inventory.page').then((m) => m.InventoryPage),
       },
       {
+        // Before inventory/:productId, which would otherwise take "categories" as a product id.
+        path: 'inventory/categories',
+        title: 'Categorías',
+        canActivate: [tenantAdminGuard, salesModeGuard],
+        loadComponent: () => import('./features/inventory/categories.page').then((m) => m.CategoriesPage),
+      },
+      {
         path: 'inventory/new',
         title: 'Nuevo producto',
         canActivate: [tenantAdminGuard],
@@ -132,6 +140,7 @@ export const routes: Routes = [
         path: 'settings',
         title: 'Ajustes',
         canActivate: [tenantAdminGuard],
+        canDeactivate: [unsavedChangesGuard],
         loadComponent: () => import('./features/settings/settings.page').then((m) => m.SettingsPage),
       },
       { path: 'profile', title: 'Mi perfil', loadComponent: profilePage },

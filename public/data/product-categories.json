@@ -1,0 +1,52 @@
+[
+  {
+    "id": "cat_ra_frenos",
+    "tenantId": "ten_ra",
+    "name": "Frenos"
+  },
+  {
+    "id": "cat_ra_filtros",
+    "tenantId": "ten_ra",
+    "name": "Filtros"
+  },
+  {
+    "id": "cat_ra_electrico",
+    "tenantId": "ten_ra",
+    "name": "Eléctrico"
+  },
+  {
+    "id": "cat_ra_encendido",
+    "tenantId": "ten_ra",
+    "name": "Encendido"
+  },
+  {
+    "id": "cat_ra_lubricantes",
+    "tenantId": "ten_ra",
+    "name": "Lubricantes"
+  },
+  {
+    "id": "cat_ra_servicios",
+    "tenantId": "ten_ra",
+    "name": "Servicios"
+  },
+  {
+    "id": "cat_ra_suspension",
+    "tenantId": "ten_ra",
+    "name": "Suspensión"
+  },
+  {
+    "id": "cat_valle_comedor",
+    "tenantId": "ten_valle",
+    "name": "Comedor"
+  },
+  {
+    "id": "cat_valle_dormitorio",
+    "tenantId": "ten_valle",
+    "name": "Dormitorio"
+  },
+  {
+    "id": "cat_valle_sala",
+    "tenantId": "ten_valle",
+    "name": "Sala"
+  }
+]

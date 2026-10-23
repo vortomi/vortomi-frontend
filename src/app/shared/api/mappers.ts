@@ -3,6 +3,7 @@
 // Fields the server does not provide yet get explicit neutral values, marked "not on the server yet".
 import { formatWaId } from '../format/phone';
 import type {
+  ApiCategory,
   ApiChannel,
   ApiCompany,
   ApiContact,
@@ -32,6 +33,7 @@ import type {
   Note,
   PipelineStage,
   Product,
+  ProductCategory,
   ProductVariant,
   QuickReply,
   StockMovement,
@@ -181,6 +183,7 @@ export function toProduct(tenantId: Id, row: ApiProduct): { product: Product; va
       id: row.id,
       tenantId,
       name: row.name,
+      categoryId: row.categoryId,
       category: row.category,
       description: row.description,
       stockMode: row.stockMode,
@@ -192,6 +195,8 @@ export function toProduct(tenantId: Id, row: ApiProduct): { product: Product; va
     variants: row.variants.map((variant) => toVariant(tenantId, variant)),
   };
 }
+
+export const toCategory = (tenantId: Id, row: ApiCategory): ProductCategory => ({ id: row.id, tenantId, name: row.name });
 
 export function toVariant(tenantId: Id, row: ApiVariant): ProductVariant {
   return {

@@ -219,10 +219,20 @@ export interface TenantSettings {
 /** "units": counted stock (resale). "availability": made to order, only an "available today" switch. */
 export type StockMode = 'units' | 'availability';
 
+/** One entry of the company's category list; products pick from it. */
+export interface ProductCategory {
+  id: Id;
+  tenantId: Id;
+  name: string;
+}
+
 export interface Product {
   id: Id;
   tenantId: Id;
   name: string;
+  /** Null: no category yet. */
+  categoryId: Id | null;
+  /** Name of that category, filled in by the store from the list (empty without one). */
   category: string;
   description: string;
   /** Prototype keeps the image inline; production stores it in Storage. */

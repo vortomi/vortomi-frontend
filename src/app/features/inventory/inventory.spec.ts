@@ -3,7 +3,7 @@ import { movementError, parsePriceCents, productStatus, skuError, toBolivares, v
 import { analyzeProductImport, guessProductMapping } from './product-import';
 
 const product = (overrides: Partial<Product> = {}): Product => ({
-  id: 'prd', tenantId: 't', name: 'Filtro', category: 'Filtros', description: '', photoDataUrl: null,
+  id: 'prd', tenantId: 't', name: 'Filtro', categoryId: 'cat', category: 'Filtros', description: '', photoDataUrl: null,
   stockMode: 'units', active: true, createdAt: '2026-10-01T00:00:00Z', ...overrides,
 });
 const variant = (overrides: Partial<ProductVariant> = {}): ProductVariant => ({

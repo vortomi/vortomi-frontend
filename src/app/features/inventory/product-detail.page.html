@@ -6,7 +6,10 @@
   }
   <span class="spacer"></span>
   @if (canEdit() && (isNew() || product())) {
-    <button type="button" class="btn btn--primary" (click)="save()"><app-icon name="check" />Guardar</button>
+    <button type="button" class="btn btn--primary" [disabled]="saving()" [attr.aria-busy]="saving()" (click)="save()">
+      @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
+      Guardar
+    </button>
   }
 </header>
 
@@ -22,6 +25,8 @@
         }
         <section class="card box">
           <h2>Producto</h2>
+          <!-- The server does not store photos yet. -->
+          @if (!data.onServer) {
           <div class="photo-row">
             @if (photo(); as src) { <img class="photo" [src]="src" alt="Foto del producto" /> } @else { <span class="photo ph"><app-icon name="image" /></span> }
             @if (canEdit()) {
@@ -32,6 +37,7 @@
               </div>
             }
           </div>
+          }
           <div class="g2">
             <div class="field">
               <label for="p-name">Nombre</label>
@@ -39,12 +45,22 @@
             </div>
             <div class="field">
               <label for="p-cat">Categoría</label>
-              <input id="p-cat" class="input" list="categories" [value]="category()" [disabled]="!canEdit()" (input)="category.set(value($event))" />
-              <datalist id="categories">@for (c of data.categories(); track c) { <option [value]="c"></option> }</datalist>
+              <select id="p-cat" class="input" [disabled]="!canEdit()" (change)="categoryId.set(value($event))">
+                <option value="" [selected]="!categoryId()">Elige una categoría</option>
+                @for (c of categories.list(); track c.id) {
+                  <option [value]="c.id" [selected]="c.id === categoryId()">{{ c.name }}</option>
+                }
+              </select>
+              @if (canEdit()) {
+                <p class="field-hint">
+                  @if (!categories.list().length) { Todavía no hay categorías. }
+                  <a class="link" routerLink="/inventory/categories">Administrar categorías</a>
+                </p>
+              }
             </div>
             <div class="field">
               <label for="p-mode">Cómo se controla la existencia</label>
-              <select id="p-mode" class="input" [disabled]="!canEdit()" (change)="stockMode.set($any(value($event)))">
+              <select id="p-mode" class="input" [disabled]="!canEdit() || stockModeLocked()" (change)="stockMode.set($any(value($event)))">
                 <option value="units" [selected]="stockMode() === 'units'">Por unidades (se compra y se revende)</option>
                 <option value="availability" [selected]="stockMode() === 'availability'">Disponible hoy (se hace por encargo)</option>
               </select>

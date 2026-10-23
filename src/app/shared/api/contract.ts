@@ -165,9 +165,16 @@ export interface ApiVariant {
   lowStockThreshold: number;
 }
 
+export interface ApiCategory {
+  id: string;
+  name: string;
+  productCount: number;
+}
+
 export interface ApiProduct {
   id: string;
   name: string;
+  categoryId: string | null;
   category: string;
   description: string;
   stockMode: 'availability' | 'units';
