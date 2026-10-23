@@ -13,13 +13,6 @@
           <div><b>{{ channel.label }}</b><span>{{ channel.displayNumber }}</span></div>
           <app-pill [tone]="labels.channel[channel.status].tone">{{ labels.channel[channel.status].text }}</app-pill>
         </div>
-        @if (editingChannel() === channel.id) {
-          <div class="edit">
-            <input #label class="input" aria-label="Nombre interno" [value]="channel.label" />
-            <input #color type="color" aria-label="Color" [value]="channel.color" />
-            <button type="button" class="btn btn--primary" (click)="saveChannel(channel, label.value, color.value)">Guardar</button>
-          </div>
-        }
         <dl>
           <dt>Calidad según Meta</dt><dd><app-pill [tone]="labels.quality[channel.qualityRating].tone">{{ labels.quality[channel.qualityRating].text }}</app-pill></dd>
           <dt>Clientes nuevos por día</dt><dd>{{ channel.messagingTier }}</dd>
@@ -29,8 +22,8 @@
         @if (channel.qualityRating !== 'high') {
           <div class="form-alert warn"><app-icon name="alert" />Algunos clientes bloquearon este número. Si sigue bajando, Meta limita los envíos: revisa las plantillas de esta semana.</div>
         }
-        @if (session.isTenantAdmin() && editingChannel() !== channel.id) {
-          <button type="button" class="link" (click)="editingChannel.set(channel.id)">Cambiar nombre o color</button>
+        @if (session.isTenantAdmin()) {
+          <button type="button" class="link" (click)="editChannel(channel)">Editar nombre</button>
         }
       </section>
     }
@@ -53,9 +46,9 @@
   </div>
   <div class="card table-card">
     <table class="data-table">
-      <thead><tr><th>Persona</th><th>Rol</th><th>Números que atiende</th><th>Ve las de otros</th><th>Estado</th><th></th></tr></thead>
+      <thead><tr><th>Persona</th><th>Rol</th><th>Números que atiende</th><th>Ve las de otros</th><th></th></tr></thead>
       <tbody>
-        @for (row of rows(); track row.user.id) {
+        @for (row of active(); track row.user.id) {
           <tr>
             <td>
               <div class="who">
@@ -63,51 +56,19 @@
                 <div><b>{{ row.user.name }}</b><span>{{ row.user.email }}</span></div>
               </div>
             </td>
-            <td>
-              @if (session.isTenantAdmin()) {
-                <select class="select" [attr.aria-label]="'Rol de ' + row.user.name" (change)="setRole(row.membership, $event)">
-                  <option value="agent" [selected]="row.membership.role === 'agent'">Agente</option>
-                  <option value="admin" [selected]="row.membership.role === 'admin'">Administración</option>
-                </select>
-              } @else {
-                {{ labels.role[row.membership.role] }}
-              }
-            </td>
+            <td>{{ labels.role[row.membership.role] }}</td>
             <td>
               <div class="chips">
-                @for (channel of workspace.channels(); track channel.id) {
-                  @if (session.isTenantAdmin() && row.membership.role === 'agent') {
-                    <button type="button" class="chip" [class.on]="row.membership.channelAccountIds.includes(channel.id)"
-                      [attr.aria-pressed]="row.membership.channelAccountIds.includes(channel.id)" (click)="toggleChannel(row.membership, channel.id)">
-                      <app-channel-badge [channel]="channel" />
-                    </button>
-                  } @else if (row.membership.role === 'admin' || row.membership.channelAccountIds.includes(channel.id)) {
-                    <app-channel-badge [channel]="channel" />
-                  }
-                }
+                @for (channel of channelsOf(row); track channel.id) { <app-channel-badge [channel]="channel" /> }
+                @empty { <span class="muted sm">Ninguno</span> }
               </div>
             </td>
-            <td>
-              <app-switch [label]="'Ve las conversaciones de otros: ' + row.user.name" [checked]="row.membership.canSeeOthers"
-                [disabled]="!session.isTenantAdmin() || row.membership.role === 'admin'" (toggled)="setSeeOthers(row.membership, $event)" />
-            </td>
-            <td>
-              @if (row.membership.status === 'active') {
-                <app-pill tone="green">Activo</app-pill>
-              } @else {
-                <app-pill tone="amber">Invitación pendiente</app-pill>
-              }
-            </td>
+            <td>{{ row.membership.canSeeOthers ? 'Sí' : 'No' }}</td>
             <td class="actions">
               @if (session.isTenantAdmin()) {
-                @if (row.invitation; as invitation) {
-                  <button type="button" class="link" (click)="resend(invitation.id)">Reenviar</button>
-                }
-                @if (confirmRemove() === row.user.id) {
-                  <button type="button" class="link danger" (click)="remove(row.user.id)">Sí, quitar</button>
-                  <button type="button" class="link" (click)="confirmRemove.set(null)">No</button>
-                } @else if (row.user.id !== session.user()?.id) {
-                  <button type="button" class="link danger" (click)="confirmRemove.set(row.user.id)">Quitar</button>
+                <button type="button" class="link" (click)="editingMember.set(row)">Editar</button>
+                @if (row.user.id !== session.user()?.id) {
+                  <button type="button" class="link danger" (click)="disable(row)">Desactivar</button>
                 }
               }
             </td>
@@ -117,6 +78,68 @@
     </table>
   </div>
   <p class="field-hint foot">Administración ve todas las conversaciones. Un agente ve las suyas y las sin asignar de sus números, y las de otros solo si lo activas.</p>
+
+  @if (session.isTenantAdmin() && team.pendingInvitations().length) {
+    <div class="sec-title"><h2>Invitaciones pendientes</h2><span class="muted sm">Todavía no crearon su contraseña</span></div>
+    <div class="card table-card">
+      <table class="data-table">
+        <thead><tr><th>Persona</th><th>Rol</th><th>Enlace</th><th></th></tr></thead>
+        <tbody>
+          @for (invitation of team.pendingInvitations(); track invitation.id) {
+            <tr>
+              <td><div class="who"><app-avatar [name]="invitation.name" [seed]="invitation.id" /><div><b>{{ invitation.name }}</b><span>{{ invitation.email }}</span></div></div></td>
+              <td>{{ labels.role[invitation.role] }}</td>
+              <td class="muted sm">{{ expires(invitation) }}</td>
+              <td class="actions">
+                <button type="button" class="link" (click)="renew(invitation)">Nuevo enlace</button>
+                <button type="button" class="link danger" (click)="revoke(invitation)">Anular</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (session.isTenantAdmin() && disabled().length) {
+    <div class="sec-title"><h2>Desactivados</h2><span class="muted sm">No pueden entrar; su historial se conserva</span></div>
+    <div class="card table-card">
+      <table class="data-table">
+        <tbody>
+          @for (row of disabled(); track row.user.id) {
+            <tr>
+              <td><div class="who"><app-avatar [name]="row.user.name" [seed]="row.user.id" /><div><b>{{ row.user.name }}</b><span>{{ row.user.email }}</span></div></div></td>
+              <td>{{ labels.role[row.membership.role] }}</td>
+              <td class="actions"><button type="button" class="link" (click)="reactivate(row)">Reactivar</button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 </div>
 
-<app-invite-dialog [open]="inviting()" (closed)="inviting.set(false)" />
+<app-invite-dialog [open]="inviting()" (closed)="inviting.set(false)" (created)="link.set($event)" />
+<app-invitation-link-dialog [link]="link()?.link ?? null" [name]="link()?.name ?? ''" (closed)="link.set(null)" />
+<app-member-access-dialog [member]="editingMember()" [submit]="saveAccess" (closed)="editingMember.set(null)" (saved)="accessSaved()" />
+
+<app-dialog title="Nombre del número" [open]="!!channelForm()" (closed)="channelForm.set(null)">
+  @if (channelForm(); as f) {
+    <div class="field">
+      <label for="ch-label">Nombre que ve el equipo</label>
+      <input id="ch-label" class="input" maxlength="40" [value]="f.label" (input)="setChannelField('label', $event)" />
+      <p class="field-hint">El número ({{ f.channel.displayNumber }}) no cambia: es el de WhatsApp.</p>
+    </div>
+    <div class="field">
+      <label for="ch-color">Color en el panel</label>
+      <input id="ch-color" type="color" class="color" [value]="f.color" (input)="setChannelField('color', $event)" />
+    </div>
+  }
+  <div dialog-actions>
+    <button type="button" class="btn" [disabled]="savingChannel()" (click)="channelForm.set(null)">Cancelar</button>
+    <button type="button" class="btn btn--primary" [disabled]="savingChannel()" [attr.aria-busy]="savingChannel()" (click)="saveChannel()">
+      @if (savingChannel()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
+      Guardar
+    </button>
+  </div>
+</app-dialog>

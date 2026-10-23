@@ -9,6 +9,7 @@ import { editableTable } from '../../shared/api/editable-table';
 import { Toaster } from '../../shared/ui/toaster';
 import { CategoriesData } from './categories.data';
 import { InventoryRemote, type NewVariant } from './inventory-remote';
+import { VariantTypesData } from './variant-types.data';
 import { type StockStatus, freeUnits, movementError, priceRange, productStatus } from './inventory.rules';
 import type { ProductImportRow } from './product-import';
 
@@ -20,7 +21,7 @@ export interface InventoryItem {
   freeUnits: number;
 }
 
-export type VariantDraft = Pick<ProductVariant, 'name' | 'sku' | 'priceCents' | 'lowStockThreshold'> & {
+export type VariantDraft = Pick<ProductVariant, 'optionId' | 'name' | 'sku' | 'priceCents' | 'lowStockThreshold'> & {
   id: Id | null;
   /** Only for new variants: becomes an "initial" movement. */
   initialStock: number;
@@ -41,6 +42,7 @@ export class InventoryData {
   private readonly toaster = inject(Toaster);
   private readonly remote = inject(API_CONFIG).mode === 'api' ? inject(InventoryRemote) : null;
   private readonly categoryList = inject(CategoriesData);
+  private readonly variantTypes = inject(VariantTypesData);
 
   /**
    * The server does not store photos yet, does not import files, never changes a product's
@@ -52,7 +54,9 @@ export class InventoryData {
   private readonly variantTable = editableTable<ProductVariant>('product-variants');
   private readonly movementTable = editableTable<StockMovement>('stock-movements');
 
-  readonly ready = computed(() => allLoaded(this.productTable, this.variantTable, this.movementTable) && this.categoryList.ready());
+  readonly ready = computed(
+    () => allLoaded(this.productTable, this.variantTable, this.movementTable) && this.categoryList.ready() && this.variantTypes.ready(),
+  );
 
   constructor() {
     if (!this.remote) return;
@@ -72,7 +76,14 @@ export class InventoryData {
       .map((p) => ({ ...p, category: (p.categoryId && categories.get(p.categoryId)?.name) || '' }))
       .sort((a, b) => a.name.localeCompare(b.name, 'es'));
   });
-  readonly variants = computed(() => this.variantTable.rows().filter((v) => v.tenantId === this.tenantId()));
+  /** A variant with a value is named after it, so renaming the value shows everywhere at once. */
+  readonly variants = computed(() => {
+    const options = this.variantTypes.optionById();
+    return this.variantTable
+      .rows()
+      .filter((v) => v.tenantId === this.tenantId())
+      .map((v) => (v.optionId && options.has(v.optionId) ? { ...v, name: options.get(v.optionId)!.value } : v));
+  });
   readonly variantById = computed(() => new Map(this.variants().map((v) => [v.id, v])));
   readonly productById = computed(() => new Map(this.products().map((p) => [p.id, p])));
   /** Names of the categories that have products, for the list filter. */
@@ -130,7 +141,8 @@ export class InventoryData {
 
     for (const draft of variants) {
       if (draft.id) {
-        this.variantTable.patch(draft.id, { name: draft.name, sku: draft.sku, priceCents: draft.priceCents, lowStockThreshold: draft.lowStockThreshold });
+        const { optionId, name, sku, priceCents, lowStockThreshold } = draft;
+        this.variantTable.patch(draft.id, { optionId, name, sku, priceCents, lowStockThreshold });
         continue;
       }
       const id = newId('var');
@@ -214,8 +226,9 @@ export class InventoryData {
    */
   private async saveRemote(remote: InventoryRemote, product: ProductDraft, drafts: VariantDraft[]): Promise<Id | null> {
     const tenantId = this.tenantId();
-    const fields = { name: product.name, categoryId: product.categoryId, description: product.description };
+    const fields = { name: product.name, categoryId: product.categoryId, variantTypeId: product.variantTypeId, description: product.description };
     const fresh = (draft: VariantDraft): NewVariant => ({
+      optionId: draft.optionId,
       name: draft.name,
       sku: draft.sku,
       priceCents: draft.priceCents,
@@ -239,6 +252,7 @@ export class InventoryData {
           continue;
         }
         const changed =
+          variant.optionId !== draft.optionId ||
           variant.name !== draft.name || variant.sku !== draft.sku || variant.priceCents !== draft.priceCents || variant.lowStockThreshold !== draft.lowStockThreshold;
         if (changed) await remote.updateVariant(tenantId, { ...variant, ...fresh(draft) });
       }
@@ -280,6 +294,7 @@ export class InventoryData {
             id: null,
             name: row.product,
             categoryId: this.categoryList.ensureLocal(row.category),
+            variantTypeId: null,
             category: row.category,
             description: '',
             photoDataUrl: null,
@@ -293,6 +308,7 @@ export class InventoryData {
         id: variantId,
         tenantId: this.tenantId(),
         productId,
+        optionId: null,
         name: row.variant,
         sku: row.sku,
         priceCents: row.priceCents,

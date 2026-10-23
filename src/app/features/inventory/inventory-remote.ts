@@ -1,12 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClient } from '../../core/api/api-client';
-import type { ApiCategory, ApiList, ApiMovement, ApiProduct, ApiVariant } from '../../shared/api/contract';
-import { toCategory, toMovement, toProduct, toVariant } from '../../shared/api/mappers';
-import type { Id, Product, ProductCategory, ProductVariant, StockMovement, StockMovementKind } from '../../shared/api/models';
+import type { ApiCategory, ApiList, ApiMovement, ApiProduct, ApiVariant, ApiVariantType } from '../../shared/api/contract';
+import { toCategory, toMovement, toProduct, toVariant, toVariantType } from '../../shared/api/mappers';
+import type { Id, Product, ProductCategory, ProductVariant, StockMovement, StockMovementKind, VariantOption, VariantType } from '../../shared/api/models';
 
 /** A variant as it is created: the opening count becomes an 'initial' movement on the server. */
-export type NewVariant = Pick<ProductVariant, 'name' | 'sku' | 'priceCents' | 'lowStockThreshold'> & { initialStock: number };
-export type ProductFields = Pick<Product, 'name' | 'categoryId' | 'description'>;
+export type NewVariant = Pick<ProductVariant, 'optionId' | 'name' | 'sku' | 'priceCents' | 'lowStockThreshold'> & { initialStock: number };
+export type ProductFields = Pick<Product, 'name' | 'categoryId' | 'variantTypeId' | 'description'>;
 
 /**
  * Inventory against vortomi-backend ('api' mode). Everyone reads and sells; admins manage the
@@ -40,8 +40,8 @@ export class InventoryRemote {
   }
 
   async updateVariant(tenantId: Id, variant: ProductVariant): Promise<ProductVariant> {
-    const { name, sku, priceCents, available, lowStockThreshold } = variant;
-    const row = await this.api.put<ApiVariant>(this.variant(tenantId, variant.id), { name, sku, priceCents, available, lowStockThreshold });
+    const { optionId, name, sku, priceCents, available, lowStockThreshold } = variant;
+    const row = await this.api.put<ApiVariant>(this.variant(tenantId, variant.id), { optionId, name, sku, priceCents, available, lowStockThreshold });
     return toVariant(tenantId, row);
   }
 
@@ -71,6 +71,40 @@ export class InventoryRemote {
 
   removeCategory(tenantId: Id, id: Id): Promise<void> {
     return this.api.delete(this.path(tenantId, `categories/${encodeURIComponent(id)}`));
+  }
+
+  async variantTypes(tenantId: Id): Promise<{ types: VariantType[]; options: VariantOption[] }> {
+    const list = await this.api.get<ApiList<ApiVariantType>>(this.path(tenantId, 'variant-types'));
+    const mapped = list.items.map((row) => toVariantType(tenantId, row));
+    return { types: mapped.map((m) => m.type), options: mapped.flatMap((m) => m.options) };
+  }
+
+  async createVariantType(tenantId: Id, name: string): Promise<VariantType> {
+    return toVariantType(tenantId, await this.api.post<ApiVariantType>(this.path(tenantId, 'variant-types'), { name })).type;
+  }
+
+  async renameVariantType(tenantId: Id, id: Id, name: string): Promise<VariantType> {
+    const row = await this.api.put<{ id: string; name: string }>(this.path(tenantId, `variant-types/${encodeURIComponent(id)}`), { name });
+    return { id: row.id, tenantId, name: row.name };
+  }
+
+  removeVariantType(tenantId: Id, id: Id): Promise<void> {
+    return this.api.delete(this.path(tenantId, `variant-types/${encodeURIComponent(id)}`));
+  }
+
+  async addVariantOption(tenantId: Id, typeId: Id, value: string): Promise<VariantOption> {
+    const row = await this.api.post<{ id: string; value: string }>(this.path(tenantId, `variant-types/${encodeURIComponent(typeId)}/options`), { value });
+    return { id: row.id, tenantId, typeId, value: row.value };
+  }
+
+  /** The server renames the variants that use it too. */
+  async renameVariantOption(tenantId: Id, option: VariantOption, value: string): Promise<VariantOption> {
+    const row = await this.api.put<{ id: string; value: string }>(this.path(tenantId, `variant-options/${encodeURIComponent(option.id)}`), { value });
+    return { ...option, value: row.value };
+  }
+
+  removeVariantOption(tenantId: Id, id: Id): Promise<void> {
+    return this.api.delete(this.path(tenantId, `variant-options/${encodeURIComponent(id)}`));
   }
 
   private variant(tenantId: Id, variantId: Id): string {

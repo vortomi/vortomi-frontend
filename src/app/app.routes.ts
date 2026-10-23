@@ -87,14 +87,22 @@ export const routes: Routes = [
         loadComponent: () => import('./features/inventory/categories.page').then((m) => m.CategoriesPage),
       },
       {
+        path: 'inventory/variant-types',
+        title: 'Variantes',
+        canActivate: [tenantAdminGuard, salesModeGuard],
+        loadComponent: () => import('./features/inventory/variant-types.page').then((m) => m.VariantTypesPage),
+      },
+      {
         path: 'inventory/new',
         title: 'Nuevo producto',
         canActivate: [tenantAdminGuard],
+        canDeactivate: [unsavedChangesGuard],
         loadComponent: () => import('./features/inventory/product-detail.page').then((m) => m.ProductDetailPage),
       },
       {
         path: 'inventory/:productId',
         canActivate: [salesModeGuard],
+        canDeactivate: [unsavedChangesGuard],
         title: 'Producto',
         loadComponent: () => import('./features/inventory/product-detail.page').then((m) => m.ProductDetailPage),
       },

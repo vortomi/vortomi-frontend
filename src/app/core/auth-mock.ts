@@ -86,8 +86,9 @@ export class MockAuth extends Auth {
   }
 
   /** Accepting an invitation signs the person straight into that company. */
-  override startSession(userId: Id, tenantId: Id): void {
+  override startSession(userId: Id, tenantId: Id): Promise<void> {
     this.state.set({ userId, mfaPending: false, activeTenantId: tenantId });
+    return Promise.resolve();
   }
 
   override signOut(): void {

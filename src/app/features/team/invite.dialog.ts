@@ -5,7 +5,6 @@ import type { Id, TenantRole } from '../../shared/api/models';
 import { Dialog } from '../../shared/ui/dialog';
 import { FieldError } from '../../shared/ui/field-error';
 import { Icon } from '../../shared/ui/icon';
-import { Toaster } from '../../shared/ui/toaster';
 import { TeamActions } from './team.actions';
 
 interface InviteModel {
@@ -53,11 +52,14 @@ interface InviteModel {
           </fieldset>
           <label class="checkbox"><input type="checkbox" [formField]="inviteForm.canSeeOthers" />Puede ver las conversaciones asignadas a otras personas</label>
         }
-        <p class="field-hint">Le llega una invitación de un solo uso que vence en 72 horas. Ella crea su contraseña.</p>
+        <p class="field-hint">Se crea un enlace de un solo uso que vence en 72 horas. Se lo envías, y con él la persona crea su contraseña.</p>
       </form>
       <div dialog-actions class="dialog-actions">
         <button type="button" class="btn" (click)="close()">Cancelar</button>
-        <button type="submit" form="invite-form" class="btn btn--primary">Enviar invitación</button>
+        <button type="submit" form="invite-form" class="btn btn--primary" [disabled]="inviteForm().submitting()" [attr.aria-busy]="inviteForm().submitting()">
+          @if (inviteForm().submitting()) { <span class="spinner" aria-hidden="true"></span> }
+          Crear invitación
+        </button>
       </div>
     </app-dialog>
   `,
@@ -69,10 +71,10 @@ interface InviteModel {
 export class InviteDialog {
   protected readonly workspace = inject(Workspace);
   private readonly team = inject(TeamActions);
-  private readonly toaster = inject(Toaster);
-
   readonly open = input(false);
   readonly closed = output<void>();
+  /** The link to hand over, shown once by the page (InvitationLinkDialog). */
+  readonly created = output<{ link: string; name: string }>();
 
   protected readonly error = signal<string | null>(null);
   protected readonly channels = signal<Id[]>([]);
@@ -92,15 +94,15 @@ export class InviteDialog {
     await submit(this.inviteForm, async () => {
       const value = this.model();
       const allChannels = this.workspace.channels().map((c) => c.id);
-      const error = this.team.invite({
+      const result = await this.team.invite({
         ...value,
         channelAccountIds: value.role === 'admin' ? allChannels : this.channels(),
       });
-      if (error) {
-        this.error.set(error);
+      if ('error' in result) {
+        this.error.set(result.error);
         return undefined;
       }
-      this.toaster.show(`Invitación enviada a ${value.email}`);
+      this.created.emit({ link: result.link, name: value.name.trim() });
       this.close();
       return undefined;
     });

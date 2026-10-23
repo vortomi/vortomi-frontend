@@ -38,6 +38,6 @@ export class InvitationAcceptance {
       detail: `${invitation.email} aceptó la invitación`,
       createdAt: now,
     });
-    this.auth.startSession(userId, invitation.tenantId);
+    void this.auth.startSession(userId, invitation.tenantId);
   }
 }

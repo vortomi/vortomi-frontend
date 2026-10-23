@@ -1,3 +1,4 @@
+@let f = form();
 <header class="page-top">
   <a class="back" routerLink="/inventory" aria-label="Volver al inventario"><app-icon name="back" /></a>
   <h1>{{ isNew() ? 'Nuevo producto' : (product()?.name ?? 'Producto no encontrado') }}</h1>
@@ -6,10 +7,16 @@
   }
   <span class="spacer"></span>
   @if (canEdit() && (isNew() || product())) {
-    <button type="button" class="btn btn--primary" [disabled]="saving()" [attr.aria-busy]="saving()" (click)="save()">
-      @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
-      Guardar
-    </button>
+    @if (editing()) {
+      <span class="editing-hint">Editando · los cambios se aplican al pulsar «Guardar».</span>
+      <button type="button" class="btn" [disabled]="saving()" (click)="cancel()">Cancelar</button>
+      <button type="button" class="btn btn--primary" [disabled]="saving()" [attr.aria-busy]="saving()" (click)="save()">
+        @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
+        Guardar
+      </button>
+    } @else {
+      <button type="button" class="btn btn--primary" (click)="edit()"><app-icon name="edit" />Editar</button>
+    }
   }
 </header>
 
@@ -17,85 +24,133 @@
   <div class="page-body">
     <div class="grid">
       <div class="col">
-        @if (errors().length) {
+        @if (editing() && errors().length) {
           <div class="form-alert" role="alert">
             <app-icon name="alert" />
             <ul>@for (e of errors(); track e) { <li>{{ e }}</li> }</ul>
           </div>
         }
+
         <section class="card box">
           <h2>Producto</h2>
-          <!-- The server does not store photos yet. -->
-          @if (!data.onServer) {
-          <div class="photo-row">
-            @if (photo(); as src) { <img class="photo" [src]="src" alt="Foto del producto" /> } @else { <span class="photo ph"><app-icon name="image" /></span> }
-            @if (canEdit()) {
-              <div class="field">
-                <label for="photo">Foto</label>
-                <input id="photo" type="file" accept="image/png,image/jpeg,image/webp" (change)="onPhoto($event)" />
-                <p class="field-hint">PNG, JPG o WebP de hasta 800 KB. Es la que se envía al cliente por WhatsApp.</p>
+          @if (!editing()) {
+            <dl class="facts">
+              <dt>Nombre</dt><dd>{{ f.name }}</dd>
+              <dt>Categoría</dt><dd>{{ categoryName(f.categoryId) }}</dd>
+              <dt>Existencia</dt><dd>{{ f.stockMode === 'units' ? 'Por unidades (se compra y se revende)' : 'Disponible hoy (se hace por encargo)' }}</dd>
+              <dt>Variantes por</dt><dd>{{ typeName(f.variantTypeId) }}</dd>
+              <dt>Estado</dt><dd>{{ f.active ? 'Activo: se puede ofrecer y enviar' : 'Inactivo: no se ofrece' }}</dd>
+              <dt>Descripción</dt><dd>{{ f.description || '—' }}</dd>
+            </dl>
+          } @else {
+            <!-- The server does not store photos yet. -->
+            @if (!data.onServer) {
+              <div class="photo-row">
+                @if (f.photo; as src) { <img class="photo" [src]="src" alt="Foto del producto" /> } @else { <span class="photo ph"><app-icon name="image" /></span> }
+                <div class="field">
+                  <label for="photo">Foto</label>
+                  <input id="photo" type="file" accept="image/png,image/jpeg,image/webp" (change)="onPhoto($event)" />
+                  <p class="field-hint">PNG, JPG o WebP de hasta 800 KB. Es la que se envía al cliente por WhatsApp.</p>
+                </div>
               </div>
             }
-          </div>
-          }
-          <div class="g2">
-            <div class="field">
-              <label for="p-name">Nombre</label>
-              <input id="p-name" class="input" [value]="name()" [disabled]="!canEdit()" (input)="name.set(value($event))" />
-            </div>
-            <div class="field">
-              <label for="p-cat">Categoría</label>
-              <select id="p-cat" class="input" [disabled]="!canEdit()" (change)="categoryId.set(value($event))">
-                <option value="" [selected]="!categoryId()">Elige una categoría</option>
-                @for (c of categories.list(); track c.id) {
-                  <option [value]="c.id" [selected]="c.id === categoryId()">{{ c.name }}</option>
-                }
-              </select>
-              @if (canEdit()) {
+            <div class="g2">
+              <div class="field">
+                <label for="p-name">Nombre</label>
+                <input id="p-name" class="input" [value]="f.name" (input)="patch({ name: value($event) })" />
+              </div>
+              <div class="field">
+                <label for="p-cat">Categoría</label>
+                <select id="p-cat" class="input" (change)="patch({ categoryId: value($event) })">
+                  <option value="" [selected]="!f.categoryId">Elige una categoría</option>
+                  @for (c of categories.list(); track c.id) {
+                    <option [value]="c.id" [selected]="c.id === f.categoryId">{{ c.name }}</option>
+                  }
+                </select>
                 <p class="field-hint">
                   @if (!categories.list().length) { Todavía no hay categorías. }
                   <a class="link" routerLink="/inventory/categories">Administrar categorías</a>
                 </p>
-              }
+              </div>
+              <div class="field">
+                <label for="p-mode">Cómo se controla la existencia</label>
+                <select id="p-mode" class="input" [disabled]="stockModeLocked()" (change)="patch({ stockMode: $any(value($event)) })">
+                  <option value="units" [selected]="f.stockMode === 'units'">Por unidades (se compra y se revende)</option>
+                  <option value="availability" [selected]="f.stockMode === 'availability'">Disponible hoy (se hace por encargo)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="p-type">Las variantes se distinguen por</label>
+                <select id="p-type" class="input" [disabled]="typeLocked()" (change)="setType($event)">
+                  <option value="" [selected]="!f.variantTypeId">Sin tipo: nombre libre</option>
+                  @for (t of variantTypes.list(); track t.type.id) {
+                    <option [value]="t.type.id" [selected]="t.type.id === f.variantTypeId">{{ t.type.name }}</option>
+                  }
+                </select>
+                <p class="field-hint">
+                  @if (typeLocked()) { No se cambia: sus variantes ya usan estos valores. }
+                  <a class="link" routerLink="/inventory/variant-types">Administrar variantes</a>
+                </p>
+              </div>
+              <label class="checkbox active"><input type="checkbox" [checked]="f.active" (change)="patch({ active: !f.active })" />Activo: se puede ofrecer y enviar</label>
             </div>
             <div class="field">
-              <label for="p-mode">Cómo se controla la existencia</label>
-              <select id="p-mode" class="input" [disabled]="!canEdit() || stockModeLocked()" (change)="stockMode.set($any(value($event)))">
-                <option value="units" [selected]="stockMode() === 'units'">Por unidades (se compra y se revende)</option>
-                <option value="availability" [selected]="stockMode() === 'availability'">Disponible hoy (se hace por encargo)</option>
-              </select>
+              <label for="p-desc">Descripción</label>
+              <textarea id="p-desc" class="input" rows="2" [value]="f.description" (input)="patch({ description: value($event) })"></textarea>
             </div>
-            <label class="checkbox active"><input type="checkbox" [checked]="active()" [disabled]="!canEdit()" (change)="active.set(!active())" />Activo: se puede ofrecer y enviar</label>
-          </div>
-          <div class="field">
-            <label for="p-desc">Descripción</label>
-            <textarea id="p-desc" class="input" rows="2" [value]="description()" [disabled]="!canEdit()" (input)="description.set(value($event))"></textarea>
-          </div>
+          }
         </section>
 
         <section class="card box">
           <h2>Variantes y precios</h2>
-          <p class="field-hint">Cada variante (marca, modelo, presentación) tiene su SKU, su precio y su existencia.</p>
-          <div class="variants">
-            <div class="vrow head"><span>Variante</span><span>SKU</span><span>Precio USD</span><span>Aviso con</span><span>{{ isNew() ? 'Existencia inicial' : 'Disponibles' }}</span><span></span></div>
-            @for (row of rows(); track $index; let i = $index) {
-              <div class="vrow">
-                <input class="input" aria-label="Variante" [value]="row.name" [disabled]="!canEdit()" (input)="setRow(i, 'name', $event)" />
-                <input class="input mono" aria-label="SKU" [value]="row.sku" [disabled]="!canEdit()" (input)="setRow(i, 'sku', $event)" />
-                <input class="input" aria-label="Precio en dólares" inputmode="decimal" placeholder="38,00" [value]="row.price" [disabled]="!canEdit()" (input)="setRow(i, 'price', $event)" />
-                <input class="input" aria-label="Avisar cuando queden" type="number" min="0" [value]="row.threshold" [disabled]="!canEdit()" (input)="setRow(i, 'threshold', $event)" />
-                @if (row.id && data.variantById().get(row.id); as v) {
+          @if (!editing()) {
+            <div class="vtable">
+              <div class="vread head"><span>Variante</span><span>SKU</span><span>Precio</span><span>Aviso con</span><span>Disponibles</span></div>
+              @for (v of variants(); track v.id) {
+                <div class="vread">
+                  <span class="vname">{{ v.name }}</span>
+                  <span class="mono">{{ v.sku }}</span>
+                  <span>{{ money(v.priceCents) }}</span>
+                  <span>{{ v.lowStockThreshold }}</span>
                   <span class="stock">{{ free(v) }} <small>({{ v.onHand }} en estante, {{ v.reserved }} apartadas)</small></span>
-                } @else {
-                  <input class="input" aria-label="Existencia inicial" type="number" min="0" [value]="row.initialStock" [disabled]="!canEdit() || stockMode() === 'availability'" (input)="setRow(i, 'initialStock', $event)" />
-                }
-                @if (canEdit()) {
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="field-hint">
+              {{ f.variantTypeId ? 'Cada variante elige un valor de «' + typeName(f.variantTypeId) + '».' : 'Cada variante tiene su nombre, su SKU, su precio y su existencia.' }}
+            </p>
+            <div class="variants">
+              <div class="vrow head"><span>Variante</span><span>SKU</span><span>Precio USD</span><span>Aviso con</span><span>{{ isNew() ? 'Existencia inicial' : 'Disponibles' }}</span><span></span></div>
+              @for (row of f.rows; track $index; let i = $index) {
+                <div class="vrow">
+                  @if (f.variantTypeId) {
+                    @let taken = takenBy(i);
+                    <select class="input" aria-label="Valor de la variante" (change)="setRow(i, 'optionId', $event)">
+                      <option value="" [selected]="!row.optionId">Elige…</option>
+                      @for (o of typeOptions(); track o.id) {
+                        <option [value]="o.id" [selected]="o.id === row.optionId" [disabled]="taken.has(o.id)">{{ o.value }}</option>
+                      }
+                    </select>
+                  } @else {
+                    <input class="input" aria-label="Variante" [value]="row.name" (input)="setRow(i, 'name', $event)" />
+                  }
+                  <input class="input mono" aria-label="SKU" [value]="row.sku" (input)="setRow(i, 'sku', $event)" />
+                  <input class="input" aria-label="Precio en dólares" inputmode="decimal" placeholder="38,00" [value]="row.price" (input)="setRow(i, 'price', $event)" />
+                  <input class="input" aria-label="Avisar cuando queden" type="number" min="0" [value]="row.threshold" (input)="setRow(i, 'threshold', $event)" />
+                  @if (row.id && data.variantById().get(row.id); as v) {
+                    <span class="stock">{{ free(v) }} <small>({{ v.onHand }} en estante, {{ v.reserved }} apartadas)</small></span>
+                  } @else {
+                    <input class="input" aria-label="Existencia inicial" type="number" min="0" [value]="row.initialStock" [disabled]="f.stockMode === 'availability'"
+                      (input)="setRow(i, 'initialStock', $event)" />
+                  }
                   <button type="button" class="link danger" (click)="removeRow(i)">Quitar</button>
-                }
-              </div>
+                </div>
+              }
+            </div>
+            @if (f.variantTypeId && !typeOptions().length) {
+              <p class="field-hint">«{{ typeName(f.variantTypeId) }}» todavía no tiene valores. Agrégalos en <a class="link" routerLink="/inventory/variant-types">Variantes</a>.</p>
             }
-          </div>
-          @if (canEdit()) {
             <button type="button" class="btn add" (click)="addRow()"><app-icon name="plus" />Agregar variante</button>
           }
         </section>

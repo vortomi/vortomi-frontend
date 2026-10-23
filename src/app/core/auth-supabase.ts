@@ -78,9 +78,12 @@ export class SupabaseAuth extends Auth {
     if (tenantId) void this.openCompany(tenantId);
   }
 
-  /** Invitations arrive with milestone B7 (doc. 09); until then this mode has none. */
-  override startSession(): void {
-    return;
+  /** After accepting an invitation: Supabase already holds the new session; open that company. */
+  override async startSession(_userId: Id, tenantId: Id): Promise<void> {
+    const me = await this.remote.loadMe();
+    this.signedIn.set(me.user.id);
+    this.activeTenant.set(tenantId);
+    await this.openCompany(tenantId);
   }
 
   override signOut(): void {

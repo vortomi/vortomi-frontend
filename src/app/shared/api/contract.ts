@@ -155,6 +155,7 @@ export interface ApiTemplate {
 export interface ApiVariant {
   id: string;
   productId: string;
+  optionId: string | null;
   name: string;
   sku: string;
   priceCents: number;
@@ -171,10 +172,17 @@ export interface ApiCategory {
   productCount: number;
 }
 
+export interface ApiVariantType {
+  id: string;
+  name: string;
+  options: { id: string; value: string; variantCount: number }[];
+}
+
 export interface ApiProduct {
   id: string;
   name: string;
   categoryId: string | null;
+  variantTypeId: string | null;
   category: string;
   description: string;
   stockMode: 'availability' | 'units';
@@ -206,4 +214,27 @@ export interface ApiUsageRow {
 
 export interface ApiList<T> {
   items: T[];
+}
+
+/** An open invitation as the team screen lists it. The token only comes on create and renew. */
+export interface ApiInvitation {
+  id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'agent';
+  canSeeOthers: boolean;
+  channelAccountIds: string[];
+  expiresAt: string;
+  createdAt: string;
+  token?: string;
+}
+
+/** What the invitation page shows before the person signs in (/public/invitations/:token). */
+export interface ApiInvitationPreview {
+  companyName: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'agent';
+  expiresAt: string;
+  hasAccount: boolean;
 }

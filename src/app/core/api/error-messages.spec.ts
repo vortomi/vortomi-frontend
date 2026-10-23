@@ -12,6 +12,11 @@ const SERVER_CODES = [
   'template_not_usable', 'invalid_template', 'template_exists', 'tag_not_found', 'tag_name_taken',
   'unknown_tag', 'quick_reply_not_found', 'shortcut_taken', 'stage_not_found', 'stage_name_taken',
   'stage_in_use', 'inventory_item_not_found', 'sku_taken', 'insufficient_stock', 'invalid_movement',
+  'category_not_found', 'category_name_taken', 'category_in_use', 'variant_type_not_found', 'variant_option_not_found',
+  'variant_type_name_taken', 'variant_option_taken', 'variant_option_repeated', 'variant_type_in_use',
+  'variant_option_in_use', 'variant_type_locked', 'invalid_variant', 'member_not_found', 'channel_not_found',
+  'unknown_channel', 'last_admin', 'cannot_disable_self', 'already_member', 'invitation_exists',
+  'invitation_not_found', 'invitation_expired', 'invitation_email_mismatch', 'email_in_use',
   'invalid_request', 'bad_request', 'internal',
 ];
 

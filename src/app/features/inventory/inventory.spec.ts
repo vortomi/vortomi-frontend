@@ -3,11 +3,11 @@ import { movementError, parsePriceCents, productStatus, skuError, toBolivares, v
 import { analyzeProductImport, guessProductMapping } from './product-import';
 
 const product = (overrides: Partial<Product> = {}): Product => ({
-  id: 'prd', tenantId: 't', name: 'Filtro', categoryId: 'cat', category: 'Filtros', description: '', photoDataUrl: null,
+  id: 'prd', tenantId: 't', name: 'Filtro', categoryId: 'cat', variantTypeId: null, category: 'Filtros', description: '', photoDataUrl: null,
   stockMode: 'units', active: true, createdAt: '2026-10-01T00:00:00Z', ...overrides,
 });
 const variant = (overrides: Partial<ProductVariant> = {}): ProductVariant => ({
-  id: 'var', tenantId: 't', productId: 'prd', name: 'Única', sku: 'FLT-1', priceCents: 800,
+  id: 'var', tenantId: 't', productId: 'prd', optionId: null, name: 'Única', sku: 'FLT-1', priceCents: 800,
   onHand: 10, reserved: 0, available: true, lowStockThreshold: 3, ...overrides,
 });
 

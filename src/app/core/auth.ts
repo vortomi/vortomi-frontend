@@ -20,7 +20,7 @@ export abstract class Auth {
   abstract signIn(email: string, password: string): Promise<SignInResult>;
   abstract verifySecondFactor(code: string): boolean;
   abstract selectTenant(tenantId: Id | null): void;
-  /** Accepting an invitation signs the person straight into that company. */
-  abstract startSession(userId: Id, tenantId: Id): void;
+  /** Accepting an invitation signs the person straight into that company; resolves once it is open. */
+  abstract startSession(userId: Id, tenantId: Id): Promise<void>;
   abstract signOut(): void;
 }

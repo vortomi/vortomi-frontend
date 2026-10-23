@@ -17,6 +17,8 @@ export type MockTable =
   | 'templates'
   | 'products'
   | 'product-categories'
+  | 'variant-types'
+  | 'variant-options'
   | 'product-variants'
   | 'stock-movements'
   | 'tenant-settings'

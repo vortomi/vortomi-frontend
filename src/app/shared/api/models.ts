@@ -51,7 +51,8 @@ export interface Membership {
   tenantId: Id;
   userId: Id;
   role: TenantRole;
-  status: 'active' | 'invited';
+  /** 'disabled': kept for history, cannot enter; an admin can bring them back. */
+  status: 'active' | 'invited' | 'disabled';
   /** Business numbers this person attends. */
   channelAccountIds: Id[];
   /** Whether the person sees conversations assigned to someone else. */
@@ -226,12 +227,29 @@ export interface ProductCategory {
   name: string;
 }
 
+/** What tells a product's variants apart (Marca, Talla...), defined once per company. */
+export interface VariantType {
+  id: Id;
+  tenantId: Id;
+  name: string;
+}
+
+/** One value of a type (Bosch, M...). Variants pick it instead of typing a name. */
+export interface VariantOption {
+  id: Id;
+  tenantId: Id;
+  typeId: Id;
+  value: string;
+}
+
 export interface Product {
   id: Id;
   tenantId: Id;
   name: string;
   /** Null: no category yet. */
   categoryId: Id | null;
+  /** Null: variants are named freely (a single "Única", or products from before types existed). */
+  variantTypeId: Id | null;
   /** Name of that category, filled in by the store from the list (empty without one). */
   category: string;
   description: string;
@@ -246,6 +264,8 @@ export interface ProductVariant {
   id: Id;
   tenantId: Id;
   productId: Id;
+  /** A value of the product's type; its name is that value. Null: named freely. */
+  optionId: Id | null;
   /** Option that tells variants apart: brand, model, size... */
   name: string;
   sku: string;

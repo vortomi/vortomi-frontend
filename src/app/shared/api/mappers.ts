@@ -21,6 +21,7 @@ import type {
   ApiTemplate,
   ApiUsageRow,
   ApiVariant,
+  ApiVariantType,
 } from './contract';
 import type {
   ChannelAccount,
@@ -42,6 +43,8 @@ import type {
   TenantSettings,
   UsageMonth,
   User,
+  VariantOption,
+  VariantType,
 } from './models';
 
 /** How each kind of message reads in a one-line preview. */
@@ -169,8 +172,7 @@ export function toTeamMember(tenantId: Id, row: ApiTeamMember): { user: User; me
       tenantId,
       userId: row.userId,
       role: row.role,
-      // Disabled people are not listed by the server.
-      status: row.status === 'invited' ? 'invited' : 'active',
+      status: row.status,
       channelAccountIds: row.channelAccountIds,
       canSeeOthers: row.canSeeOthers,
     },
@@ -184,6 +186,7 @@ export function toProduct(tenantId: Id, row: ApiProduct): { product: Product; va
       tenantId,
       name: row.name,
       categoryId: row.categoryId,
+      variantTypeId: row.variantTypeId,
       category: row.category,
       description: row.description,
       stockMode: row.stockMode,
@@ -196,6 +199,14 @@ export function toProduct(tenantId: Id, row: ApiProduct): { product: Product; va
   };
 }
 
+/** A type with its values, as the panel keeps them: two lists. */
+export function toVariantType(tenantId: Id, row: ApiVariantType): { type: VariantType; options: VariantOption[] } {
+  return {
+    type: { id: row.id, tenantId, name: row.name },
+    options: row.options.map((o) => ({ id: o.id, tenantId, typeId: row.id, value: o.value })),
+  };
+}
+
 export const toCategory = (tenantId: Id, row: ApiCategory): ProductCategory => ({ id: row.id, tenantId, name: row.name });
 
 export function toVariant(tenantId: Id, row: ApiVariant): ProductVariant {
@@ -203,6 +214,7 @@ export function toVariant(tenantId: Id, row: ApiVariant): ProductVariant {
     id: row.id,
     tenantId,
     productId: row.productId,
+    optionId: row.optionId,
     name: row.name,
     sku: row.sku,
     priceCents: row.priceCents,

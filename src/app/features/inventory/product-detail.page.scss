@@ -98,6 +98,56 @@
   }
 }
 
+.editing-hint {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+// Read mode: label and value pairs, and the variants as plain text.
+.facts {
+  display: grid;
+  grid-template-columns: minmax(130px, max-content) 1fr;
+  gap: 8px 18px;
+  font-size: 13.5px;
+
+  dt {
+    color: var(--color-text-muted);
+  }
+
+  dd {
+    white-space: pre-wrap;
+  }
+}
+
+.vtable {
+  display: flex;
+  flex-direction: column;
+}
+
+.vread {
+  display: grid;
+  grid-template-columns: 1.1fr 1.3fr 1fr 0.6fr 1.2fr;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 0;
+  border-top: 1px solid var(--color-border-soft);
+  font-size: 13.5px;
+
+  &.head {
+    border-top: 0;
+    padding-top: 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--color-text-faint);
+    font-weight: 600;
+  }
+
+  .vname {
+    font-weight: 500;
+  }
+}
+
 .mono {
   font-family: var(--font-mono);
   font-size: 13px;
