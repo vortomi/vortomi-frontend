@@ -19,7 +19,8 @@ import { Icon } from './icon';
     </dialog>
   `,
   styles: `
-    dialog { border: 0; border-radius: var(--radius-lg); padding: 0; width: min(var(--dialog-width, 520px), calc(100vw - 32px));
+    /* margin: auto centres it; the global reset (styles.scss) would otherwise pin it to a corner. */
+    dialog { margin: auto; border: 0; border-radius: var(--radius-lg); padding: 0; width: min(var(--dialog-width, 520px), calc(100vw - 32px));
       max-height: calc(100dvh - 48px); box-shadow: 0 24px 60px rgba(20, 30, 50, 0.3); color: var(--color-text); }
     dialog::backdrop { background: rgba(15, 19, 32, 0.45); }
     header { display: flex; align-items: center; padding: 16px 20px 0; }

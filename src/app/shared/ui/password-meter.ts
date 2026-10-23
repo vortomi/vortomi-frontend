@@ -13,7 +13,7 @@ import { MIN_PASSWORD_LENGTH, passwordStrength } from '../security/password-poli
       @if (password()) {
         {{ strength().label }}.
       }
-      Mínimo {{ min }} caracteres. Una frase larga es mejor que símbolos raros.
+      Mínimo {{ min }} caracteres, con letras y al menos un número.
     </p>
   `,
   styles: `
