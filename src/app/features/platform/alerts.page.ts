@@ -34,6 +34,10 @@ import { PlatformData } from './platform.data';
 export class AlertsPage {
   private readonly data = inject(PlatformData);
 
+  constructor() {
+    void this.data.load();
+  }
+
   protected readonly options: { id: AlertSeverity | 'all'; label: string }[] = [
     { id: 'all', label: 'Todas' },
     { id: 'critical', label: 'Críticas' },

@@ -38,6 +38,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/auth/verify.page').then((m) => m.VerifyPage),
       },
       {
+        path: 'security/second-factor',
+        title: 'Proteger la consola',
+        canActivate: [signedInGuard],
+        loadComponent: () => import('./features/auth/second-factor-setup.page').then((m) => m.SecondFactorSetupPage),
+      },
+      {
         path: 'forgot-password',
         title: 'Recuperar contraseña',
         loadComponent: () => import('./features/auth/forgot-password.page').then((m) => m.ForgotPasswordPage),

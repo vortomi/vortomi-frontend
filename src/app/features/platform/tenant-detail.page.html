@@ -4,20 +4,16 @@
     <app-avatar class="logo" size="md" [name]="r.tenant.name" [seed]="r.tenant.id" />
     <div>
       <h1>{{ r.tenant.name }}</h1>
-      <span class="sub">{{ r.tenant.industry }} · {{ r.tenant.city }}</span>
+      <span class="sub">{{ subtitle(r.tenant) }}</span>
     </div>
     <app-pill [tone]="labels.status[r.tenant.status].tone">{{ labels.status[r.tenant.status].text }}</app-pill>
     <span class="spacer"></span>
     @if (r.tenant.status === 'active') {
-      @if (confirmingSuspend()) {
-        <span class="confirm">¿Suspender? Nadie de la empresa podrá entrar.</span>
-        <button type="button" class="btn" (click)="confirmingSuspend.set(false)">Cancelar</button>
-        <button type="button" class="btn btn--danger" (click)="suspend()">Sí, suspender</button>
-      } @else {
-        <button type="button" class="btn" (click)="confirmingSuspend.set(true)">Suspender</button>
-      }
+      <button type="button" class="btn" [disabled]="busy()" (click)="suspend()">Suspender</button>
     } @else if (r.tenant.status === 'suspended') {
-      <button type="button" class="btn btn--success" (click)="reactivate()"><app-icon name="check" />Reactivar</button>
+      <button type="button" class="btn btn--success" [disabled]="busy()" (click)="reactivate()"><app-icon name="check" />Reactivar</button>
+    } @else if (r.tenant.status === 'draft' || r.tenant.status === 'awaiting_channel') {
+      <a class="btn btn--primary" routerLink="/platform/tenants/new" [queryParams]="{ resume: r.tenant.id }"><app-icon name="arrow" />Seguir el alta</a>
     }
   </header>
 
@@ -37,7 +33,7 @@
       </section>
 
       <section class="card box">
-        <h2>Consumo de octubre</h2>
+        <h2>Consumo de {{ month }}</h2>
         @if (usage(); as u) {
           <dl>
             <dt>Mensajes entrantes y salientes</dt><dd>{{ u.total }}</dd>
@@ -97,19 +93,28 @@
               @if (member.membership.status === 'active') {
                 <app-pill tone="green">Activo</app-pill>
               } @else {
-                @if (invitationFor(member.user.email); as invitation) {
-                  <span class="muted small">Vence {{ date(invitation.expiresAt) }}</span>
-                  <button type="button" class="btn" (click)="resend(invitation)">Reenviar</button>
-                } @else {
-                  <app-pill tone="amber">Invitación pendiente</app-pill>
-                }
+                <app-pill tone="neutral">Desactivado</app-pill>
               }
             </div>
+          }
+          @for (invitation of invitations(); track invitation.id) {
+            <div class="person">
+              <app-avatar [name]="invitation.name" [seed]="invitation.id" />
+              <div class="who">
+                <b>{{ invitation.name }}</b>
+                <span>{{ invitation.email }} · invitación pendiente, vence {{ date(invitation.expiresAt) }}</span>
+              </div>
+              <button type="button" class="btn" (click)="renew(invitation)">Nuevo enlace</button>
+            </div>
+          }
+          @if (!members().length && !invitations().length) {
+            <p class="muted pad">Todavía nadie. El administrador se invita en el último paso del alta.</p>
           }
           <p class="note"><app-icon name="lock" />Desde aquí se ve quién tiene acceso, no lo que escriben.</p>
         </div>
       </section>
 
+      @if (data.hasAudit) {
       <section>
         <h2 class="section-title">Registro de auditoría</h2>
         <div class="card list">
@@ -123,6 +128,7 @@
           }
         </div>
       </section>
+      }
     </div>
   </div>
 } @else {
@@ -130,3 +136,5 @@
     <p class="muted">Esa empresa no existe. <a class="link" routerLink="/platform/tenants">Volver a empresas</a></p>
   </div>
 }
+
+<app-invitation-link-dialog [link]="link()?.link ?? null" [name]="link()?.name ?? ''" (closed)="link.set(null)" />

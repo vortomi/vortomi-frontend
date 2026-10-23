@@ -1,5 +1,8 @@
 <form class="step-body" id="company-form" (submit)="next($event)" novalidate>
   <div class="col">
+    @if (state.error(); as message) {
+      <div class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</div>
+    }
     <section class="card sec">
       <h2><span class="k">1</span>Datos de la empresa</h2>
       <p class="d">Lo que verá su equipo en el panel. Se puede cambiar después.</p>

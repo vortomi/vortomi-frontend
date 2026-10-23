@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TENANT_PLAN, WHATSAPP_VERTICAL } from '../../../shared/api/labels';
 import { Icon } from '../../../shared/ui/icon';
@@ -36,6 +36,8 @@ import { BRAND } from '../../../core/brand';
       align-items: center; justify-content: center; --icon-size: 28px; }
     .done h2 { font-size: 20px; } .done p { color: var(--color-text-muted); max-width: 520px; }
     .done .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .done .copy { display: flex; gap: 8px; width: min(560px, 100%); }
+    .done .copy .input { flex: 1; min-width: 0; font-size: 12.5px; }
   `,
 })
 export class StepActivate {
@@ -44,6 +46,22 @@ export class StepActivate {
   protected readonly planLabel = computed(() => TENANT_PLAN[this.state.company().plan]);
   protected readonly firstName = computed(() => this.state.company().adminName.split(' ')[0] ?? '');
   protected readonly unverifiedLimit = UNVERIFIED_MESSAGING_LIMIT;
+  protected readonly activating = signal(false);
+
+  protected async activate(): Promise<void> {
+    if (this.activating()) return;
+    this.activating.set(true);
+    await this.state.activate();
+    this.activating.set(false);
+  }
+
+  protected select(event: Event): void {
+    (event.target as HTMLInputElement).select();
+  }
+
+  protected copy(link: string): void {
+    void navigator.clipboard?.writeText(link).catch(() => undefined);
+  }
   /** "Automotriz · https://..." under the profile sentence. */
   protected readonly profileDetail = computed(() => {
     const profile = this.state.channel()?.profile;

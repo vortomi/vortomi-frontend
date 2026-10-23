@@ -14,7 +14,7 @@ import { PlatformData } from './platform.data';
   template: `
     <header class="page-top">
       <h1>Uso y salud</h1>
-      <span class="sub">Mensajes de octubre por empresa. Cada número tiene 1.000 respuestas gratis al mes; lo demás lo paga la empresa a Meta.</span>
+      <span class="sub">Mensajes de {{ month }} por empresa. Cada número tiene 1.000 respuestas gratis al mes; lo demás lo paga la empresa a Meta.</span>
     </header>
     <div class="page-body">
       <div class="card table-card">
@@ -48,6 +48,11 @@ import { PlatformData } from './platform.data';
 })
 export class UsagePage {
   private readonly data = inject(PlatformData);
+  protected readonly month = new Intl.DateTimeFormat('es-VE', { month: 'long', timeZone: 'America/Caracas' }).format(new Date());
+
+  constructor() {
+    void this.data.load();
+  }
 
   protected readonly rates = { service: formatUnitPrice(META_RATES_USD.service), marketing: formatUnitPrice(META_RATES_USD.marketing) };
 

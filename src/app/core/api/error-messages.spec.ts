@@ -17,6 +17,7 @@ const SERVER_CODES = [
   'variant_option_in_use', 'variant_type_locked', 'invalid_variant', 'member_not_found', 'channel_not_found',
   'unknown_channel', 'last_admin', 'cannot_disable_self', 'already_member', 'invitation_exists',
   'invitation_not_found', 'invitation_expired', 'invitation_email_mismatch', 'email_in_use',
+  'company_unavailable', 'tenant_not_found', 'no_channel', 'waba_taken', 'phone_number_taken',
   'invalid_request', 'bad_request', 'internal',
 ];
 

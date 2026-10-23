@@ -6,11 +6,21 @@
     <section class="card done">
       <span class="big"><app-icon name="check" [stroke]="3" /></span>
       <h2>{{ company.name }} está activa</h2>
-      <p>Enviamos la invitación a {{ company.adminEmail }}. Lo que escriban sus clientes al {{ channel?.number?.displayNumber }} ya entra en su bandeja.</p>
+      @if (state.real) {
+        <p>Envíale este enlace a <b>{{ company.adminName }}</b> ({{ company.adminEmail }}) por WhatsApp o por correo. Con él crea su contraseña y entra a su panel. Sirve una sola vez y vence en 72 horas.</p>
+        <div class="copy">
+          <input class="input mono" aria-label="Enlace de invitación" readonly [value]="token" (focus)="select($event)" />
+          <button type="button" class="btn btn--primary" (click)="copy(token)"><app-icon name="copy" />Copiar</button>
+        </div>
+      } @else {
+        <p>Enviamos la invitación a {{ company.adminEmail }}. Lo que escriban sus clientes al {{ channel?.number?.displayNumber }} ya entra en su bandeja.</p>
+      }
       <div class="actions">
         <a class="btn" [routerLink]="['/platform/tenants', state.tenantId()]">Ver la empresa</a>
         <a class="btn" routerLink="/platform/tenants">Volver a empresas</a>
-        <a class="btn btn--primary" [routerLink]="['/invitation', token]">Prototipo: abrir la invitación</a>
+        @if (!state.real) {
+          <a class="btn btn--primary" [routerLink]="['/invitation', token]">Prototipo: abrir la invitación</a>
+        }
       </div>
     </section>
   </div>
@@ -19,13 +29,16 @@
     <div class="col">
       <section class="card sec">
         <h2>Resumen del alta</h2>
+        @if (state.error(); as message) {
+          <div class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</div>
+        }
         <p class="d">Revisa antes de activar. Después todo se puede cambiar desde la ficha de la empresa.</p>
         <table>
           <tr><td>Empresa</td><td><b>{{ company.name }}</b><span class="x">{{ company.industry }} · {{ company.city }} · {{ company.timezone }}</span></td></tr>
           <tr><td>Datos fiscales</td><td>{{ company.legalName }} · <span class="mono">{{ company.taxId }}</span><span class="x">{{ company.fiscalAddress }}</span></td></tr>
           <tr><td>Plan</td><td>{{ planLabel().text }}<span class="x">{{ planLabel().detail }}</span></td></tr>
           <tr><td>Administración</td><td>{{ company.adminName }}<span class="x">{{ company.adminEmail }}</span></td></tr>
-          <tr><td>Número de WhatsApp</td><td>{{ channel?.number?.displayNumber }} · «{{ channel?.label }}»<span class="x">Registrado con su PIN · avisos suscritos · acceso cifrado</span></td></tr>
+          <tr><td>Número de WhatsApp</td><td>{{ channel?.number?.displayNumber }} · «{{ channel?.label }}»<span class="x">{{ state.real ? 'Avisos suscritos · acceso cifrado' : 'Registrado con su PIN · avisos suscritos · acceso cifrado' }}</span></td></tr>
           <tr>
             <td>Nombre visible</td>
             <td>
@@ -101,6 +114,9 @@
   <footer class="step-foot">
     <span class="count">Paso 4 de 4</span>
     <button type="button" class="btn" (click)="state.goTo(2)">Atrás</button>
-    <button type="button" class="btn btn--success" (click)="state.activate()"><app-icon name="check" />Activar empresa</button>
+    <button type="button" class="btn btn--success" [disabled]="activating()" [attr.aria-busy]="activating()" (click)="activate()">
+      @if (activating()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
+      Activar empresa
+    </button>
   </footer>
 }

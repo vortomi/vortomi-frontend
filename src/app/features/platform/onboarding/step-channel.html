@@ -8,9 +8,14 @@
           <span>Si el número todavía no está en su cuenta, lo agrega en <b>WhatsApp Manager</b> y lo verifica con el código que le llega por SMS o llamada. Ahí mismo escribe el <b>nombre visible</b>.</span>
         </li>
         <li>
-          <span>En <b>Configuración → Cuentas → Cuentas de WhatsApp</b> elige la suya, pulsa <b>Asignar socio</b>, pega nuestro identificador y activa <b>control total</b>:<br />
-            <span class="idbox"><span class="mono">{{ businessId }}</span>
-              <button type="button" class="btn" (click)="copyBusinessId()"><app-icon name="copy" />Copiar</button></span>
+          <span>En <b>Configuración → Cuentas → Cuentas de WhatsApp</b> elige la suya, pulsa <b>Asignar socio</b>, pega nuestro identificador de negocio en Meta y activa <b>control total</b>
+            @if (!state.real) {
+              :<br />
+              <span class="idbox"><span class="mono">{{ businessId }}</span>
+                <button type="button" class="btn" (click)="copyBusinessId()"><app-icon name="copy" />Copiar</button></span>
+            } @else {
+              .
+            }
           </span>
         </li>
         <li><span>Nos dicta el identificador de esa cuenta de WhatsApp, que aparece en la misma pantalla.</span></li>
@@ -20,6 +25,17 @@
     <section class="card sec">
       <h2><span class="k">B</span>Lo hacemos nosotros</h2>
       <p class="d">Con el acceso ya compartido, la consola busca la cuenta y sus números en Meta.</p>
+      @if (state.error(); as message) {
+        <div class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</div>
+      }
+      @if (state.real) {
+        <div class="field">
+          <label for="token">Token de acceso a esa cuenta</label>
+          <input id="token" class="input mono" type="password" autocomplete="off" [formField]="connectForm.accessToken" />
+          <p class="field-hint">El token del usuario del sistema de nuestro Meta Business con acceso a la cuenta del cliente. Se guarda cifrado y nunca se vuelve a mostrar.</p>
+          <app-field-error [state]="connectForm.accessToken()" />
+        </div>
+      }
       <div class="search-row">
         <div class="field">
           <label for="waba">Identificador de la cuenta de WhatsApp</label>
@@ -58,6 +74,7 @@
 
         @if (!allTaken()) {
           <div class="g2" style="margin-top: 12px">
+            @if (!state.real) {
             <div class="field">
               <label for="pin">PIN de seguridad de 6 dígitos</label>
               <input id="pin" class="input mono" type="password" inputmode="numeric" autocomplete="off"
@@ -65,6 +82,7 @@
               <p class="field-hint">Lo escribe el cliente. Si el número ya tenía verificación en dos pasos, es ese PIN; si no, elige uno nuevo y lo guarda. Protege el número si alguien intenta registrarlo en otro lado.</p>
               <app-field-error [state]="connectForm.pin()" />
             </div>
+            }
             <div class="field">
               <label for="label">Nombre interno del número</label>
               <input id="label" class="input" [formField]="connectForm.label" />
@@ -73,17 +91,23 @@
             </div>
           </div>
 
-          <h3 class="sub-title">Perfil de WhatsApp de este número</h3>
-          <p class="d">Lo que ven sus clientes al abrir el chat. Se envía a Meta al conectar.</p>
-          <app-whatsapp-profile [profile]="connectForm.profile" [locked]="state.connected()" />
+          @if (state.real) {
+            <p class="field-hint" style="margin-top: 10px">El perfil del número (foto, descripción, categoría) se edita por ahora en el WhatsApp Manager del cliente.</p>
+          } @else {
+            <h3 class="sub-title">Perfil de WhatsApp de este número</h3>
+            <p class="d">Lo que ven sus clientes al abrir el chat. Se envía a Meta al conectar.</p>
+            <app-whatsapp-profile [profile]="connectForm.profile" [locked]="state.connected()" />
+          }
         }
       }
 
+      @if (!state.real) {
       <div class="demo-box" style="margin-top: 14px">
         <b>Prototipo · respuestas simuladas de Meta</b>
         <span class="mono">{{ demoWaba }}</span> cuenta nueva con un número libre ·
         <span class="mono">200000000000001</span> números que ya son de otra empresa · cualquier otro: no existe.
       </div>
+      }
     </section>
   </div>
 

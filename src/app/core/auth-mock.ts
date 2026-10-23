@@ -74,11 +74,16 @@ export class MockAuth extends Auth {
   }
 
   /** Prototype: any six digits except 000000 pass. */
-  override verifySecondFactor(code: string): boolean {
+  override verifySecondFactor(code: string): Promise<boolean> {
     const state = this.state();
-    if (!state?.mfaPending || !/^\d{6}$/.test(code) || code === '000000') return false;
+    if (!state?.mfaPending || !/^\d{6}$/.test(code) || code === '000000') return Promise.resolve(false);
     this.state.set({ ...state, mfaPending: false });
-    return true;
+    return Promise.resolve(true);
+  }
+
+  /** The prototype already asks for the code at sign-in. */
+  override requireSecondFactor(): void {
+    return;
   }
 
   override selectTenant(tenantId: Id | null): void {

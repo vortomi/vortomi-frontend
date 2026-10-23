@@ -22,7 +22,7 @@
     <div class="card table-card">
       <table class="data-table">
         <thead>
-          <tr><th>Empresa</th><th>Plan</th><th>Números</th><th>Usuarios</th><th>Mensajes oct.</th><th>Canal</th><th>Calidad</th></tr>
+          <tr><th>Empresa</th><th>Plan</th><th>Números</th><th>Usuarios</th><th>Mensajes del mes</th><th>Canal</th><th>Calidad</th></tr>
         </thead>
         <tbody>
           @for (row of rows(); track row.tenant.id) {
@@ -32,7 +32,7 @@
                   <app-avatar class="logo" [name]="row.tenant.name" [seed]="row.tenant.id" />
                   <div>
                     <p>{{ row.tenant.name }}</p>
-                    <span>{{ row.tenant.industry }} · {{ row.tenant.city }}</span>
+                    <span>{{ row.tenant.industry }}{{ row.tenant.industry && row.tenant.city ? ' · ' : '' }}{{ row.tenant.city }}</span>
                   </div>
                   @if (row.tenant.status !== 'active') {
                     <app-pill [tone]="labels.status[row.tenant.status].tone">{{ labels.status[row.tenant.status].text }}</app-pill>

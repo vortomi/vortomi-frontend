@@ -2,10 +2,12 @@
 // they are NOT the security boundary: the backend checks every request on its own.
 import { inject } from '@angular/core';
 import { type CanActivateFn, Router } from '@angular/router';
+import { API_CONFIG } from './api/api-config';
 import { Auth } from './auth';
 import { CompanyData } from './company-data';
 import { Directory } from './directory';
 import { resolveLanding } from './landing';
+import { SecondFactor } from './second-factor';
 import { Session } from './session';
 import { Workspace } from './workspace';
 
@@ -61,11 +63,28 @@ export const salesModeGuard: CanActivateFn = async () => {
   return workspace.sells() ? true : router.parseUrl('/inbox');
 };
 
-export const superAdminGuard: CanActivateFn = async () => {
+/**
+ * The platform console: our team only, and (with real sessions) only after the authenticator
+ * code. The server demands the same on every request; this just leads the person to the code
+ * page, or to set the app up the first time.
+ */
+export const superAdminGuard: CanActivateFn = async (_route, state) => {
   const router = inject(Router);
   const session = inject(Session);
+  const auth = inject(Auth);
+  const real = inject(API_CONFIG).mode === 'api';
+  const secondFactor = real ? inject(SecondFactor) : null;
   await inject(Directory).loaded;
-  return session.isSuperAdmin() ? true : router.parseUrl('/inbox');
+  if (!session.isSuperAdmin()) return router.parseUrl('/inbox');
+  if (!secondFactor) return true;
+  const factor = await secondFactor.state();
+  if (factor === 'verified') return true;
+  const returnUrl = { queryParams: { returnUrl: state.url } };
+  if (factor === 'needs_code') {
+    auth.requireSecondFactor();
+    return router.createUrlTree(['/login/verify'], returnUrl);
+  }
+  return router.createUrlTree(['/security/second-factor'], returnUrl);
 };
 
 /** The second-factor page only makes sense right after a correct password. */

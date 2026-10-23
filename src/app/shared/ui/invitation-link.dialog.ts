@@ -1,6 +1,6 @@
 import { Component, input, output, signal } from '@angular/core';
-import { Dialog } from '../../shared/ui/dialog';
-import { Icon } from '../../shared/ui/icon';
+import { Dialog } from './dialog';
+import { Icon } from './icon';
 
 /**
  * Shows an invitation link once, right after it is created or renewed: the server keeps only

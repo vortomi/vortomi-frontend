@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, effect, inject, signal } from '@angular/core';
 import type { Id } from '../shared/api/models';
 import { Toaster } from '../shared/ui/toaster';
 import { toApiFailure } from './api/api-error';
@@ -6,6 +6,7 @@ import { SUPABASE } from './api/supabase';
 import { Auth, type SignInResult } from './auth';
 import { Directory } from './directory';
 import { RemoteSession } from './remote/remote-session';
+import { SecondFactor } from './second-factor';
 import { readStored, writeStored } from './storage';
 
 const ACTIVE_TENANT_KEY = 'vortomi.activeTenant';
@@ -24,11 +25,15 @@ export class SupabaseAuth extends Auth {
   private readonly directory = inject(Directory);
   private readonly toaster = inject(Toaster);
 
+  private readonly secondFactor = inject(SecondFactor);
+
   private readonly signedIn = signal<Id | null>(null);
+  /** Password accepted; the authenticator code is still missing (our team only). */
+  private readonly mfaPending = signal<Id | null>(null);
   private readonly activeTenant = signal<Id | null>(readStored<Id>(ACTIVE_TENANT_KEY));
 
   override readonly userId = this.signedIn.asReadonly();
-  override readonly mfaPendingUserId = computed<Id | null>(() => null);
+  override readonly mfaPendingUserId = this.mfaPending.asReadonly();
   override readonly activeTenantId = this.activeTenant.asReadonly();
 
   constructor() {
@@ -59,8 +64,13 @@ export class SupabaseAuth extends Auth {
     if (error) return error.status === 429 ? 'locked' : 'invalid';
     try {
       const me = await this.remote.loadMe();
-      this.signedIn.set(me.user.id);
       this.activeTenant.set(null);
+      // Our team with the authenticator app set up: the code comes before anything else.
+      if (me.user.platformRole === 'super_admin' && (await this.secondFactor.state()) === 'needs_code') {
+        this.mfaPending.set(me.user.id);
+        return 'mfa_required';
+      }
+      this.signedIn.set(me.user.id);
       return 'signed_in';
     } catch {
       // A real Supabase user we never invited: same answer as a wrong password.
@@ -69,8 +79,16 @@ export class SupabaseAuth extends Auth {
     }
   }
 
-  override verifySecondFactor(): boolean {
-    return false;
+  override async verifySecondFactor(code: string): Promise<boolean> {
+    const userId = this.mfaPending() ?? this.signedIn();
+    if (!userId || !(await this.secondFactor.verify(code))) return false;
+    this.mfaPending.set(null);
+    this.signedIn.set(userId);
+    return true;
+  }
+
+  override requireSecondFactor(): void {
+    this.mfaPending.set(this.signedIn());
   }
 
   override selectTenant(tenantId: Id | null): void {
@@ -100,6 +118,7 @@ export class SupabaseAuth extends Auth {
 
   private async forget(): Promise<void> {
     this.signedIn.set(null);
+    this.mfaPending.set(null);
     this.activeTenant.set(null);
     this.remote.clear();
     await this.supabase.auth.signOut().catch(() => undefined);

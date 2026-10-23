@@ -238,3 +238,33 @@ export interface ApiInvitationPreview {
   expiresAt: string;
   hasAccount: boolean;
 }
+
+/** A company as the platform console lists it (/platform/tenants). */
+export interface ApiPlatformTenant {
+  id: string;
+  name: string;
+  slug: string;
+  status: 'draft' | 'awaiting_channel' | 'active' | 'suspended' | 'cancelled';
+  plan: 'internal' | 'basic' | 'team';
+  industry: string;
+  city: string;
+  timezone: string;
+  legalName: string;
+  taxId: string;
+  fiscalAddress: string;
+  createdAt: string;
+  channels: { id: string; label: string; displayNumber: string; status: 'connected' | 'disconnected' | 'restricted' }[];
+  memberCount: number;
+}
+
+/** One company in detail: numbers (never their token), people and open invitations. */
+export interface ApiPlatformTenantDetail extends Omit<ApiPlatformTenant, 'channels' | 'memberCount'> {
+  channels: (ApiChannel & { hasToken: boolean })[];
+  members: { userId: string; name: string; email: string; role: 'admin' | 'agent'; status: 'invited' | 'active' | 'disabled' }[];
+  invitations: ApiInvitation[];
+}
+
+export interface ApiWabaLookup {
+  wabaTakenBy: string | null;
+  numbers: { phoneNumberId: string; displayNumber: string; verifiedName: string; nameStatus: string; takenBy: string | null; alreadyHere: boolean }[];
+}

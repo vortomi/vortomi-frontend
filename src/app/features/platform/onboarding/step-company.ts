@@ -66,15 +66,14 @@ export class StepCompany {
   protected async next(event: Event): Promise<void> {
     event.preventDefault();
     await submit(this.companyForm, async () => {
-      this.state.saveCompany(this.draft());
-      this.state.goTo(1);
+      if (await this.state.saveCompany(this.draft())) this.state.goTo(1);
       return undefined;
     });
   }
 
   protected async saveDraft(): Promise<void> {
     await submit(this.companyForm, async () => {
-      this.state.saveCompany(this.draft());
+      if (!(await this.state.saveCompany(this.draft()))) return undefined;
       this.toaster.show('Borrador guardado. Puedes seguir desde la lista de empresas.');
       await this.router.navigateByUrl('/platform/tenants');
       return undefined;

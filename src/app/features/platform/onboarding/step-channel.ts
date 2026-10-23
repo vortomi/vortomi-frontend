@@ -27,6 +27,8 @@ const OUR_BUSINESS_ID = '4815 1623 4200';
 
 interface ConnectModel {
   wabaId: string;
+  /** 'api' mode: the token of the access the customer shared with us. Sent once, stored encrypted. */
+  accessToken: string;
   phoneNumberId: string;
   pin: string;
   label: string;
@@ -71,14 +73,29 @@ export class StepChannel {
   protected readonly searching = signal(false);
   protected readonly connecting = signal(false);
 
-  private readonly model = signal<ConnectModel>({ wabaId: '', phoneNumberId: '', pin: '', label: 'Ventas', profile: profileFrom(this.state.company()) });
+  private readonly model = signal<ConnectModel>({
+    wabaId: '',
+    accessToken: '',
+    phoneNumberId: '',
+    pin: '',
+    label: 'Ventas',
+    profile: profileFrom(this.state.company()),
+  });
   protected readonly connectForm = form(this.model, (path) => {
     required(path.wabaId, { message: 'Escribe el identificador de la cuenta.' });
     required(path.phoneNumberId, { message: 'Elige el número que va a usar.' });
+    required(path.label, { message: 'Ponle un nombre interno.' });
+    readonly(path.wabaId, () => this.state.connected());
+    readonly(path.label, () => this.state.connected());
+    if (this.state.real) {
+      required(path.accessToken, { message: 'Pega el token de acceso a esa cuenta.' });
+      readonly(path.accessToken, () => this.state.connected());
+      return;
+    }
+    // Prototype only: registering with the PIN and sending the profile to Meta come later for real.
     required(path.pin, { message: 'El cliente escribe su PIN.' });
     pattern(path.pin, /^\d{6}$/, { message: 'Son 6 números.' });
     maxLength(path.pin, 6);
-    required(path.label, { message: 'Ponle un nombre interno.' });
     // Meta's rules for the profile of the number.
     required(path.profile.about, { message: 'Escribe una frase corta sobre el negocio.' });
     maxLength(path.profile.about, PROFILE_ABOUT_MAX, { message: `Máximo ${PROFILE_ABOUT_MAX} caracteres.` });
@@ -88,9 +105,7 @@ export class StepChannel {
     maxLength(path.profile.address, PROFILE_ADDRESS_MAX, { message: `Máximo ${PROFILE_ADDRESS_MAX} caracteres.` });
     // Once connected, the number is stored for this company; changing it means a new connection.
     const locked = () => this.state.connected();
-    readonly(path.wabaId, locked);
     readonly(path.pin, locked);
-    readonly(path.label, locked);
     readonly(path.profile, locked);
   });
 
@@ -102,13 +117,15 @@ export class StepChannel {
   protected readonly selected = computed(() => this.numbers().find((n) => n.phoneNumberId === this.model().phoneNumberId));
 
   protected async search(): Promise<void> {
-    if (!this.model().wabaId.trim()) {
+    const { wabaId, accessToken } = this.model();
+    if (!wabaId.trim() || (this.state.real && !accessToken.trim())) {
       this.connectForm.wabaId().markAsTouched();
+      this.connectForm.accessToken().markAsTouched();
       return;
     }
     this.searching.set(true);
     this.lookup.set(null);
-    const result = await this.state.lookupWaba(this.model().wabaId);
+    const result = await this.state.lookupWaba(wabaId, accessToken);
     this.searching.set(false);
     this.lookup.set(result);
     const free = result.status === 'found' ? result.numbers.find((n) => !n.takenBy) : undefined;
@@ -131,8 +148,8 @@ export class StepChannel {
       const lookup = this.lookup();
       if (!number || number.takenBy || lookup?.status !== 'found') return undefined;
       this.connecting.set(true);
-      const { wabaId, label, profile } = this.model();
-      await this.state.connect({ wabaId, number, account: lookup.account, label, profile });
+      const { wabaId, label, profile, accessToken } = this.model();
+      await this.state.connect({ wabaId, number, account: lookup.account, label, profile }, accessToken);
       this.connecting.set(false);
       return undefined;
     });

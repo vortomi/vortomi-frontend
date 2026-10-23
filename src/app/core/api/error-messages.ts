@@ -8,6 +8,7 @@ const MESSAGES: Record<string, string> = {
   unauthorized: 'Tu sesión venció. Vuelve a iniciar sesión.',
   no_account: 'Este correo no tiene acceso a ninguna empresa. Pide una invitación.',
   not_a_member: 'No tienes acceso a esta empresa.',
+  company_unavailable: 'Esta empresa está suspendida o todavía no está activa. Escríbenos a soporte si crees que es un error.',
   admin_required: 'Solo la administración de la empresa puede hacer esto.',
   platform_admin_required: 'Solo nuestro equipo puede entrar a la consola.',
   second_factor_required: 'Para entrar a la consola necesitas el segundo factor.',
@@ -65,6 +66,12 @@ const MESSAGES: Record<string, string> = {
   invitation_expired: 'Esta invitación venció. Pide a quien te invitó un enlace nuevo.',
   invitation_email_mismatch: 'Esta invitación es para otro correo. Entra con el correo al que te invitaron.',
   email_in_use: 'Ese correo ya tiene otra cuenta. Inicia sesión con ella para aceptar.',
+
+  // Platform console
+  tenant_not_found: 'Esa empresa ya no existe.',
+  no_channel: 'La empresa necesita un número conectado antes de activarse.',
+  waba_taken: 'Esa cuenta de WhatsApp ya pertenece a otra empresa de la plataforma.',
+  phone_number_taken: 'Ese número ya está conectado a una empresa de la plataforma.',
 
   // Generic
   invalid_request: 'Hay datos que no son válidos. Revisa el formulario.',

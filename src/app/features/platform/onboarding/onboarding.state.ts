@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { API_CONFIG } from '../../../core/api/api-config';
 import { Clock } from '../../../core/clock';
 import { Directory } from '../../../core/directory';
 import { Session } from '../../../core/session';
@@ -7,6 +8,7 @@ import type { Id, TenantPlan, WhatsAppVertical } from '../../../shared/api/model
 import { newId } from '../../../shared/api/mock-db';
 import type { IconName } from '../../../shared/ui/icon';
 import { PlatformData } from '../platform.data';
+import { OnboardingRemote } from './onboarding-remote';
 import { type WabaAccount, type WabaLookup, type WabaNumber, classifyWabaLookup, connectionChecks, slugify } from './onboarding.rules';
 
 export interface CompanyDraft {
@@ -100,6 +102,14 @@ export class OnboardingState {
   private readonly platform = inject(PlatformData);
   private readonly clock = inject(Clock);
   private readonly session = inject(Session);
+  private readonly remote = inject(API_CONFIG).mode === 'api' ? inject(OnboardingRemote) : null;
+
+  /** Real sign-up: the access token replaces the prototype's PIN, and the profile stays in Meta for now. */
+  readonly real = this.remote !== null;
+  /** Why the last step that talks to the server did not finish, shown on its screen. */
+  readonly error = signal<string | null>(null);
+  /** The test waits for a real message; leaving the step stops the wait. */
+  private testRun = 0;
 
   /** Admin contact typed in step 1, kept per draft until the invitation is created. */
   private readonly drafts = new Map<Id, CompanyDraft>();
@@ -124,6 +134,7 @@ export class OnboardingState {
 
   /** Reopens a company left half way, at the step its status points to. */
   resume(tenantId: Id): void {
+    if (this.remote) return void this.resumeRemote(this.remote, tenantId);
     const tenant = this.directory.tenantById().get(tenantId);
     if (!tenant || (tenant.status !== 'draft' && tenant.status !== 'awaiting_channel')) return this.start();
     this.tenantId.set(tenantId);
@@ -155,7 +166,24 @@ export class OnboardingState {
     }
   }
 
-  saveCompany(draft: CompanyDraft): void {
+  /** Resolves to true once stored; on the server's refusal its reason is in `error`. */
+  async saveCompany(draft: CompanyDraft): Promise<boolean> {
+    this.error.set(null);
+    if (this.remote) {
+      const saved = await this.remote.saveCompany(this.tenantId(), draft);
+      if ('error' in saved) {
+        this.error.set(saved.error);
+        return false;
+      }
+      this.tenantId.set(saved.ok);
+      this.company.set(draft);
+      return true;
+    }
+    this.saveLocal(draft);
+    return true;
+  }
+
+  private saveLocal(draft: CompanyDraft): void {
     const id = this.tenantId();
     const fields = {
       name: draft.name.trim(),
@@ -179,18 +207,30 @@ export class OnboardingState {
     this.drafts.set(this.tenantId()!, draft);
   }
 
-  async lookupWaba(wabaId: string): Promise<WabaLookup> {
+  /** 'api' mode also needs the access token the customer's account was shared with. */
+  async lookupWaba(wabaId: string, accessToken = ''): Promise<WabaLookup> {
+    const tenantId = this.tenantId();
+    if (this.remote && tenantId) return this.remote.lookup(tenantId, wabaId, accessToken);
     await wait(META_LATENCY_MS);
     const names = new Map(this.directory.tenants().map((t) => [t.id, t.name]));
     return classifyWabaLookup(wabaId, this.directory.channels(), names, this.company().name);
   }
 
   /** Runs the automatic checks of step 2 and, if they pass, stores the number for this company. */
-  async connect(choice: ChannelChoice): Promise<void> {
+  async connect(choice: ChannelChoice, accessToken = ''): Promise<void> {
     const tenantId = this.tenantId();
     if (!tenantId || choice.number.takenBy) return;
     this.channel.set(choice);
     this.connected.set(false);
+    this.error.set(null);
+    if (this.remote) {
+      const { phoneNumberId, displayNumber } = choice.number;
+      const result = await this.remote.connect(tenantId, { wabaId: choice.wabaId, accessToken, phoneNumberId, displayNumber, label: choice.label.trim() });
+      if ('error' in result) return this.error.set(result.error);
+      this.checks.set(result.ok);
+      this.connected.set(true);
+      return;
+    }
     const results = connectionChecks(choice.account, choice.number);
     const plan: ConnectionCheck[] = results.map(({ title, detail }) => ({ title, detail, status: 'pending' }));
     this.checks.set(plan);
@@ -223,6 +263,7 @@ export class OnboardingState {
   async runTest(): Promise<void> {
     const channel = this.channel();
     if (!channel) return;
+    if (this.remote) return this.runRemoteTest(this.remote, channel);
     const company = this.company().name;
     const events: TestEvent[] = [
       { icon: 'phone', title: `${this.company().adminName.split(' ')[0] || 'El cliente'} escribe al número de la empresa`, detail: 'Desde un teléfono de prueba', key: false },
@@ -242,10 +283,17 @@ export class OnboardingState {
   }
 
   /** Step 4: the company goes live and the admin gets a single-use, 72 h invitation. */
-  activate(): void {
+  async activate(): Promise<void> {
     const tenantId = this.tenantId();
     const draft = this.company();
     if (!tenantId) return;
+    this.error.set(null);
+    if (this.remote) {
+      const result = await this.remote.activate(tenantId, draft.adminName, draft.adminEmail);
+      if ('error' in result) return this.error.set(result.error);
+      this.invitationToken.set(result.ok);
+      return;
+    }
     const now = this.clock.now();
     const email = draft.adminEmail.trim().toLowerCase();
     const user = this.directory.findUserByEmail(email);
@@ -280,7 +328,73 @@ export class OnboardingState {
   }
 
   goTo(step: number): void {
+    // Leaving the test stops its wait for the customer's message.
+    if (step !== 2) this.testRun++;
+    this.error.set(null);
     this.step.set(step);
+  }
+
+  /**
+   * 'api' mode: waits for a real message to the number, then shows its trip. Only WHEN it
+   * arrived is read; its content stays in the company's inbox.
+   */
+  private async runRemoteTest(remote: OnboardingRemote, channel: ChannelChoice): Promise<void> {
+    const tenantId = this.tenantId();
+    if (!tenantId) return;
+    const run = ++this.testRun;
+    const since = this.clock.now().toISOString();
+    this.testEvents.set([{ icon: 'phone', title: `Esperando un mensaje al ${channel.number.displayNumber}`, detail: 'Desde cualquier teléfono; hasta 5 minutos', key: false }]);
+    this.testStatus.set('running');
+    const arrivedAt = await remote.waitForMessage(tenantId, since, () => run !== this.testRun);
+    if (run !== this.testRun) return;
+    if (!arrivedAt) {
+      this.testStatus.set('idle');
+      this.error.set('No llegó ningún mensaje en 5 minutos. Revisa que el número y la suscripción del paso 2 estén bien, y vuelve a intentarlo.');
+      return;
+    }
+    this.testEvents.set([
+      { icon: 'phone', title: `Un cliente escribió al ${channel.number.displayNumber}`, detail: 'Desde un teléfono de prueba', key: false },
+      { icon: 'server', title: 'Meta avisó a nuestro servidor', detail: 'Al mismo punto de entrada que usan todas las empresas', key: false },
+      { icon: 'building', title: `Identificado como ${this.company().name}`, detail: 'Ese número solo pertenece a esta empresa', key: true },
+      { icon: 'inbox', title: 'Guardado en su bandeja, y en ninguna otra', detail: 'Lo verá su equipo al entrar', key: false },
+    ]);
+    this.testStatus.set('passed');
+  }
+
+  private async resumeRemote(remote: OnboardingRemote, tenantId: Id): Promise<void> {
+    this.tenantId.set(tenantId);
+    this.resetFrom(1);
+    try {
+      const { detail, admin } = await remote.load(tenantId);
+      if (detail.status !== 'draft' && detail.status !== 'awaiting_channel') return this.start();
+      this.company.set({
+        ...emptyCompany(),
+        ...admin,
+        name: detail.name,
+        industry: detail.industry,
+        city: detail.city,
+        timezone: detail.timezone,
+        plan: detail.plan,
+        legalName: detail.legalName,
+        taxId: detail.taxId,
+        fiscalAddress: detail.fiscalAddress,
+      });
+      const channel = detail.channels[0];
+      // Without the admin's contact (another tab or computer) step 1 asks for it again.
+      this.resetFrom(!admin?.adminEmail ? 0 : channel ? 2 : 1);
+      if (!channel) return;
+      this.channel.set({
+        wabaId: channel.wabaId,
+        number: { phoneNumberId: channel.phoneNumberId, displayNumber: channel.displayNumber, verifiedName: detail.name, nameStatus: 'approved', takenBy: null },
+        account: { businessVerified: false, hasPaymentMethod: false },
+        label: channel.label,
+        profile: profileFrom(this.company()),
+      });
+      this.connected.set(true);
+    } catch {
+      this.start();
+      this.error.set('No se pudo abrir esa empresa. Vuelve a la lista e inténtalo de nuevo.');
+    }
   }
 
   private resetFrom(step: number): void {

@@ -25,6 +25,11 @@ export class TenantsPage {
   protected readonly labels = { status: TENANT_STATUS, plan: TENANT_PLAN, channel: CHANNEL_STATUS, quality: QUALITY };
   protected readonly count = formatCount;
 
+  constructor() {
+    // 'api' mode: the list from the server, fresh every time the page opens.
+    void this.data.load();
+  }
+
   protected readonly rows = computed(() => {
     const needle = normalize(this.search().trim());
     return this.data

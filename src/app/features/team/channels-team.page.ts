@@ -11,7 +11,7 @@ import { Dialog } from '../../shared/ui/dialog';
 import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
 import { Toaster } from '../../shared/ui/toaster';
-import { InvitationLinkDialog } from './invitation-link.dialog';
+import { InvitationLinkDialog } from '../../shared/ui/invitation-link.dialog';
 import { InviteDialog } from './invite.dialog';
 import { MemberAccessDialog } from './member-access.dialog';
 import type { MemberAccess } from './team-remote';

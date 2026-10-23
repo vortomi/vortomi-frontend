@@ -15,10 +15,18 @@ import { OnboardingState } from './onboarding.state';
             Alguien escribe desde un teléfono de prueba al número recién conectado. La consola sigue ese mensaje hasta ver en qué
             bandeja cae y contesta desde el número.
           </p>
+          @if (state.error(); as message) {
+            <div class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</div>
+          }
           @if (state.testStatus() === 'idle') {
             <div class="start">
-              <p>Pide al cliente que escriba <b>«Hola, prueba de conexión»</b> al {{ number() }} y pulsa el botón.</p>
-              <button type="button" class="btn btn--primary" (click)="state.runTest()"><app-icon name="send" />Iniciar prueba</button>
+              @if (state.real) {
+                <p>Pulsa el botón y después pide al cliente que escriba <b>«Hola, prueba de conexión»</b> al {{ number() }}. La consola espera hasta 5 minutos a que llegue.</p>
+                <button type="button" class="btn btn--primary" (click)="state.runTest()"><app-icon name="send" />Empezar a esperar el mensaje</button>
+              } @else {
+                <p>Pide al cliente que escriba <b>«Hola, prueba de conexión»</b> al {{ number() }} y pulsa el botón.</p>
+                <button type="button" class="btn btn--primary" (click)="state.runTest()"><app-icon name="send" />Iniciar prueba</button>
+              }
             </div>
           } @else {
             <h3 class="trace-title">Recorrido del mensaje</h3>

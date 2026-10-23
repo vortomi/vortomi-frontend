@@ -18,7 +18,9 @@ export abstract class Auth {
   /** Picks up a session that survived a reload. Runs once, before the first route. */
   abstract restore(): Promise<void>;
   abstract signIn(email: string, password: string): Promise<SignInResult>;
-  abstract verifySecondFactor(code: string): boolean;
+  abstract verifySecondFactor(code: string): Promise<boolean>;
+  /** Signed in with the password only, and the console asks for the code: back to the code page. */
+  abstract requireSecondFactor(): void;
   abstract selectTenant(tenantId: Id | null): void;
   /** Accepting an invitation signs the person straight into that company; resolves once it is open. */
   abstract startSession(userId: Id, tenantId: Id): Promise<void>;

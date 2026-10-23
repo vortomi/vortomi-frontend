@@ -1,6 +1,7 @@
 import { Component, inject, input, signal } from '@angular/core';
 import { FormField, form, maxLength, pattern, required, submit } from '@angular/forms/signals';
 import { Router } from '@angular/router';
+import { API_CONFIG } from '../../core/api/api-config';
 import { Auth } from '../../core/auth';
 import { resolveLanding, safeReturnUrl } from '../../core/landing';
 import { Session } from '../../core/session';
@@ -27,12 +28,15 @@ import { Icon } from '../../shared/ui/icon';
         <button type="submit" class="btn btn--primary btn--block">Verificar</button>
       </form>
       <button type="button" class="link" (click)="cancel()">Usar otra cuenta</button>
-      <div class="demo-box"><b>Prototipo</b>Cualquier código de 6 dígitos sirve, salvo 000000.</div>
+      @if (demo) {
+        <div class="demo-box"><b>Prototipo</b>Cualquier código de 6 dígitos sirve, salvo 000000.</div>
+      }
     </div>
   `,
   styles: '.code { letter-spacing: 8px; font-size: 20px; text-align: center; font-family: var(--font-mono); }',
 })
 export class VerifyPage {
+  protected readonly demo = inject(API_CONFIG).mode === 'mock';
   private readonly auth = inject(Auth);
   private readonly session = inject(Session);
   private readonly router = inject(Router);
@@ -49,7 +53,7 @@ export class VerifyPage {
   protected async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
     await submit(this.verification, async () => {
-      if (!this.auth.verifySecondFactor(this.verification().value().code)) {
+      if (!(await this.auth.verifySecondFactor(this.verification().value().code))) {
         this.error.set('Ese código no es válido o ya venció. Prueba con el siguiente.');
         return undefined;
       }
