@@ -5,6 +5,7 @@ import { QuickRepliesSettings } from './quick-replies-settings';
 import { StagesSettings } from './stages-settings';
 import { TagsSettings } from './tags-settings';
 import { BRAND } from '../../core/brand';
+import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
 
 type Tab = 'company' | 'tags' | 'stages' | 'replies';
 
@@ -19,7 +20,7 @@ type Tab = 'company' | 'tags' | 'stages' | 'replies';
     </header>
     <nav class="tabs" role="tablist" aria-label="Secciones de ajustes">
       @for (t of tabs(); track t.id) {
-        <button type="button" role="tab" [class.on]="tab() === t.id" [attr.aria-selected]="tab() === t.id" (click)="tab.set(t.id)">{{ t.label }}</button>
+        <button type="button" role="tab" [class.on]="tab() === t.id" [attr.aria-selected]="tab() === t.id" (click)="select(t.id)">{{ t.label }}</button>
       }
     </nav>
     <div class="page-body">
@@ -51,4 +52,10 @@ export class SettingsPage {
   ];
   protected readonly tabs = computed(() => this.allTabs.filter((t) => !t.salesOnly || this.workspace.sells()));
   protected readonly tab = signal<Tab>('company');
+  private readonly unsaved = inject(UnsavedChanges);
+
+  /** Changing tab closes the current form: ask first if it has unsaved changes. */
+  protected async select(tab: Tab): Promise<void> {
+    if (tab !== this.tab() && (await this.unsaved.mayLeave())) this.tab.set(tab);
+  }
 }
