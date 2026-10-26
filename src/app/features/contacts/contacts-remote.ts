@@ -28,6 +28,15 @@ export class ContactsRemote {
     return this.api.put(this.contact(tenantId, contactId, 'name'), { name });
   }
 
+  async create(tenantId: Id, contact: { channelAccountId: Id; waId: string; name: string | null; stageId: Id | null; tagIds: Id[] }): Promise<Contact> {
+    return toContact(tenantId, await this.api.post<ApiContact>(this.api.company(tenantId, 'contacts'), contact));
+  }
+
+  /** All rows in one request; the server saves all of them or none. */
+  import(tenantId: Id, channelAccountId: Id, rows: { waId: string; name: string | null; tagIds: Id[] }[]): Promise<{ created: number; updated: number }> {
+    return this.api.post(this.api.company(tenantId, 'contacts/import'), { channelAccountId, rows });
+  }
+
   private contact(tenantId: Id, contactId: Id, action: string): string {
     return this.api.company(tenantId, `contacts/${encodeURIComponent(contactId)}/${action}`);
   }

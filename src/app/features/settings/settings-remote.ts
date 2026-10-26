@@ -23,6 +23,10 @@ export class SettingsRemote {
     return toSettings(tenantId, await this.api.put<ApiSettings>(this.api.company(tenantId, 'settings'), body));
   }
 
+  saveProfile(tenantId: Id, name: string, timezone: string): Promise<{ name: string; timezone: string }> {
+    return this.api.put(this.api.company(tenantId, 'profile'), { name, timezone });
+  }
+
   async createTag(tenantId: Id, name: string, tone: Tone): Promise<Tag> {
     return toTag(tenantId, await this.api.post<ApiTag>(this.api.company(tenantId, 'tags'), { name, tone }));
   }

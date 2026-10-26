@@ -25,12 +25,23 @@ export class SettingsActions {
   private readonly toaster = inject(Toaster);
   private readonly remote = inject(API_CONFIG).mode === 'api' ? inject(SettingsRemote) : null;
 
-  /** Name, time zone and logo have no place on the server yet (documentations/08, B.2). */
-  readonly profileEditable = !this.remote;
+  /** The logo has no place on the server yet (it needs file storage); name and time zone do. */
+  readonly logoEditable = !this.remote;
 
   saveCompany(name: string, timezone: string, settings: TenantSettings): Promise<boolean> {
     if (this.remote) {
-      return this.write((remote, tenantId) => remote.saveSettings(tenantId, settings), (saved) => this.company.settings.upsert(saved));
+      const current = this.session.tenant();
+      const profileChanged = current?.name !== name.trim() || current?.timezone !== timezone;
+      return this.write(
+        async (remote, tenantId) => ({
+          settings: await remote.saveSettings(tenantId, settings),
+          profile: profileChanged ? await remote.saveProfile(tenantId, name.trim(), timezone) : null,
+        }),
+        ({ settings: saved, profile }) => {
+          this.company.settings.upsert(saved);
+          if (profile) this.directory.updateTenant(this.tenantId(), profile);
+        },
+      );
     }
     this.directory.updateTenant(this.tenantId(), { name: name.trim(), timezone });
     this.company.settings.upsert(settings);

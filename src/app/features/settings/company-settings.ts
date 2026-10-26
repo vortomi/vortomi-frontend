@@ -1,5 +1,4 @@
 import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
-import { BRAND } from '../../core/brand';
 import { Session } from '../../core/session';
 import { Workspace } from '../../core/workspace';
 import { TIMEZONES, WEEKDAYS } from '../../shared/api/labels';
@@ -55,7 +54,7 @@ const WORK_MODES: { id: WorkMode; title: string; detail: string }[] = [
           <dt>Tasa del día</dt><dd>{{ f.rate ? f.rate + ' Bs por dólar' : 'Sin tasa: precios solo en dólares' }}</dd>
         </dl>
       } @else {
-        @if (profileEditable) {
+        @if (logoEditable) {
           <div class="logo-row">
             @if (f.logo; as src) {
               <img class="logo" [src]="src" alt="Logo de la empresa" />
@@ -69,17 +68,15 @@ const WORK_MODES: { id: WorkMode; title: string; detail: string }[] = [
               @if (f.logo) { <button type="button" class="link danger" (click)="patch({ logo: null })">Quitar logo</button> }
             </div>
           </div>
-        } @else {
-          <p class="field-hint">El nombre y la zona horaria los cambia por ahora el equipo de {{ brand.name }}. Escríbenos si necesitas ajustarlos.</p>
         }
         <div class="g2">
           <div class="field">
             <label for="company-name">Nombre comercial</label>
-            <input id="company-name" class="input" [value]="f.name" [disabled]="!profileEditable" (input)="patch({ name: value($event) })" />
+            <input id="company-name" class="input" maxlength="80" [value]="f.name" (input)="patch({ name: value($event) })" />
           </div>
           <div class="field">
             <label for="tz">Zona horaria</label>
-            <select id="tz" class="input" [disabled]="!profileEditable" (change)="patch({ timezone: value($event) })">
+            <select id="tz" class="input" (change)="patch({ timezone: value($event) })">
               @for (tz of timezones; track tz[0]) {
                 <option [value]="tz[0]" [selected]="tz[0] === f.timezone">{{ tz[1] }}</option>
               }
@@ -172,8 +169,7 @@ export class CompanySettings {
   private readonly actions = inject(SettingsActions);
   private readonly toaster = inject(Toaster);
 
-  protected readonly brand = BRAND;
-  protected readonly profileEditable = this.actions.profileEditable;
+  protected readonly logoEditable = this.actions.logoEditable;
   protected readonly timezones = TIMEZONES;
   protected readonly weekdays = WEEKDAYS;
   protected readonly workModes = WORK_MODES;

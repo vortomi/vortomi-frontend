@@ -144,8 +144,7 @@ export class ContactDetailPage {
       };
       const existing = this.contact();
       if (existing) {
-        this.contacts.update(existing.id, shared);
-        this.toaster.show('Contacto guardado');
+        if (await this.contacts.update(existing.id, shared)) this.toaster.show('Contacto guardado');
         return undefined;
       }
       const waId = toWaId(value.phone)!;
@@ -154,7 +153,8 @@ export class ContactDetailPage {
         this.duplicate.set(duplicate);
         return undefined;
       }
-      const created = this.contacts.create({ ...shared, waId, channelAccountId: value.channelAccountId });
+      const created = await this.contacts.create({ ...shared, waId, channelAccountId: value.channelAccountId });
+      if (!created) return undefined;
       this.toaster.show('Contacto creado');
       await this.router.navigate(['/contacts', created.id]);
       return undefined;

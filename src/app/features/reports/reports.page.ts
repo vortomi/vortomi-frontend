@@ -57,6 +57,11 @@ export class ReportsPage {
 
   protected readonly period = signal<ReportPeriod>('month');
 
+  constructor() {
+    // Fresh figures every time the screen opens ('api' mode; the prototype's are fixed).
+    this.data.reload();
+  }
+
   private readonly today = computed(() => calendarDay(this.clock.now().toISOString(), this.session.timezone()));
   private readonly range = computed(() => periodRange(this.period(), this.today()));
   private readonly rows = computed(() => inRange(this.data.days(), this.range()));

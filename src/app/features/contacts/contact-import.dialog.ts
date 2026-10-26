@@ -86,8 +86,10 @@ export class ContactImportDialog {
     downloadText('plantilla-contactos.csv', toCsv(['Nombre', 'Teléfono', 'Etiquetas'], [['María Fernández', '0424-555-0144', 'Cliente frecuente']]));
   }
 
-  protected confirm(): void {
-    const result = this.contacts.applyImport(this.analysis(), this.targetChannel());
+  protected async confirm(): Promise<void> {
+    const result = await this.contacts.applyImport(this.analysis(), this.targetChannel());
+    // Refused: the reason is already on screen and the dialog stays open to fix the file.
+    if (!result) return;
     this.toaster.show(`${result.created} contactos nuevos, ${result.updated} actualizados`);
     this.reset();
     this.closed.emit();
