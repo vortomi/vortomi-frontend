@@ -8,6 +8,7 @@ import { allLoaded, newId } from '../../shared/api/mock-db';
 import { editableTable } from '../../shared/api/editable-table';
 import { Toaster } from '../../shared/ui/toaster';
 import { ContactsData } from '../contacts/contacts.data';
+import { InboxRealtime } from './inbox-realtime';
 import { InboxRemote } from './inbox-remote';
 import { type InboxItem, visibleTo } from './inbox.filters';
 
@@ -20,8 +21,12 @@ type OutboundContent = Pick<Message, 'type' | 'body' | 'templateId' | 'productVa
 /** Simulated network and delivery receipt, so a demo message moves from the clock to ✓ to ✓✓. */
 const FAKE_SEND_MS = 600;
 const FAKE_DELIVERY_MS = 1200;
-/** Until realtime notices arrive (doc. 09, B7), the inbox asks the server again this often. */
+/** Without the live line the inbox asks the server this often... */
 const REFRESH_MS = 15_000;
+/** ...and with it, only as a safety net now and then. */
+const SAFETY_REFRESH_MS = 60_000;
+/** Several notices in a burst (a message and its statuses) become one reload. */
+const CHANGE_DEBOUNCE_MS = 250;
 
 /**
  * Inbox store. Screens read it the same way in both data modes:
@@ -36,6 +41,9 @@ export class InboxData {
   private readonly contacts = inject(ContactsData);
   private readonly toaster = inject(Toaster);
   private readonly remote = inject(API_CONFIG).mode === 'api' ? inject(InboxRemote) : null;
+  private readonly realtime = inject(InboxRealtime);
+  /** When the list was last read from the server ('api' mode). */
+  private lastRefresh = 0;
 
   private readonly conversationTable = editableTable<Conversation>('conversations');
   private readonly messageTable = editableTable<Message>('messages');
@@ -59,13 +67,30 @@ export class InboxData {
 
   constructor() {
     if (!this.remote) return;
-    // Load the active company's inbox, and keep it fresh while it stays active.
+    // Load the active company's inbox and keep it fresh: at once on every change notice the
+    // server sends, and by asking again now and then in case the live line is down.
     effect((onCleanup) => {
       const tenantId = this.session.tenant()?.id;
       if (!tenantId) return;
       untracked(() => void this.refresh(tenantId));
-      const timer = setInterval(() => void this.refresh(tenantId), REFRESH_MS);
-      onCleanup(() => clearInterval(timer));
+      let pending: ReturnType<typeof setTimeout> | null = null;
+      const soon = () => {
+        if (pending) return;
+        pending = setTimeout(() => {
+          pending = null;
+          void this.refresh(tenantId);
+        }, CHANGE_DEBOUNCE_MS);
+      };
+      const stop = this.realtime.listen(tenantId, soon, soon);
+      const timer = setInterval(() => {
+        const due = this.realtime.connected() ? SAFETY_REFRESH_MS : REFRESH_MS;
+        if (Date.now() - this.lastRefresh >= due - 1000) void this.refresh(tenantId);
+      }, REFRESH_MS);
+      onCleanup(() => {
+        clearInterval(timer);
+        if (pending) clearTimeout(pending);
+        stop();
+      });
     });
   }
 
@@ -243,6 +268,7 @@ export class InboxData {
 
   private async refresh(tenantId: Id, conversationId: Id | null = this.openId): Promise<void> {
     if (!this.remote) return;
+    this.lastRefresh = Date.now();
     try {
       const { conversations, contacts } = await this.remote.conversations(tenantId);
       this.contacts.mergeRemote(contacts);
