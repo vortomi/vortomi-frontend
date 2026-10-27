@@ -92,8 +92,10 @@ export interface Contact {
   ownerUserId: Id | null;
   purchasesCount: number;
   purchasesTotalCents: number;
-  /** Free fields each tenant defines (vehicle, address...). */
+  /** Notes typed freely before the company defined its fields; an admin moves them into one. */
   attributes: ContactAttribute[];
+  /** The company's own data about the customer ("Vehículo", "Zona"): field id to value. */
+  customValues: CustomValues;
   /** Value of the open opportunity shown in the pipeline (v1: one opportunity per contact). */
   quoteCents?: number | null;
   createdAt: IsoDate;
@@ -293,8 +295,33 @@ export interface Product {
   /** The least a customer can order, and the size of each step above it. */
   minQuantity: number;
   quantityStep: number;
+  /** The company's own data about the product ("Sirve para", "Marca"): field id to value. */
+  customValues: CustomValues;
   active: boolean;
   createdAt: IsoDate;
+}
+
+/** Whose data a company field describes. */
+export type CustomFieldEntity = 'product' | 'contact';
+/** How it is answered: short text, number, one or several options of its list, yes or no, date. */
+export type CustomFieldKind = 'text' | 'number' | 'choice' | 'multi_choice' | 'boolean' | 'date';
+/** Text, number, option id(s), yes/no or "YYYY-MM-DD". */
+export type CustomValue = string | number | boolean | string[];
+export type CustomValues = Record<Id, CustomValue>;
+
+/** A piece of data the company keeps about its products or customers, defined once (block B). */
+export interface CustomField {
+  id: Id;
+  tenantId: Id;
+  entity: CustomFieldEntity;
+  label: string;
+  kind: CustomFieldKind;
+  required: boolean;
+  position: number;
+  /** List fields only: the choices, in order. */
+  options: { id: Id; value: string }[];
+  /** Product fields only: the categories it shows in; none means all. */
+  categoryIds: Id[];
 }
 
 /** How a product is sold; labels and rules in features/inventory/sale-units.ts. */

@@ -1,0 +1,124 @@
+<section class="card box">
+  <div class="head">
+    <div>
+      <h2>{{ isProduct() ? 'Datos de tus productos' : 'Datos de tus clientes' }}</h2>
+      <p class="lead">
+        @if (isProduct()) {
+          Lo que anotas de cada producto, además del nombre y el precio. Se llena en la ficha de cada uno.
+        } @else {
+          Lo que anotas de cada cliente, además del nombre y el teléfono. Se llena en su ficha y sirve para filtrar la lista.
+        }
+      </p>
+    </div>
+    @if (!draft() && fields().length < max) {
+      <button type="button" class="btn" (click)="startNew()"><app-icon name="plus" />Nuevo dato</button>
+    }
+  </div>
+
+  @if (fields().length) {
+    <div class="list">
+      <div class="lrow lhead" [class.product]="isProduct()"><span>Dato</span><span>Se responde con</span>@if (isProduct()) { <span>Aparece en</span> }<span></span></div>
+      @for (field of fields(); track field.id) {
+        <div class="lrow" [class.product]="isProduct()">
+          <span class="name">{{ field.label }} @if (field.required) { <app-pill tone="amber">Obligatorio</app-pill> }</span>
+          <span>{{ kindSummary(field) }}</span>
+          @if (isProduct()) { <span class="muted">{{ where(field) }}</span> }
+          <button type="button" class="link" [disabled]="!!draft()" (click)="startEdit(field)">Editar</button>
+        </div>
+      }
+    </div>
+  } @else if (!draft()) {
+    <p class="empty">Todavía no tienes datos propios. Crea el primero o toma una idea de las de abajo.</p>
+  }
+  @if (fields().length >= max) {
+    <p class="field-hint">Llegaste al máximo de {{ max }} datos: así cada ficha se mantiene corta.</p>
+  }
+</section>
+
+@if (draft(); as d) {
+  <section class="card box editor">
+    <h2>{{ d.id ? 'Editar dato' : 'Nuevo dato' }}</h2>
+    @if (error(); as message) {
+      <div class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</div>
+    }
+
+    @if (!d.id && suggestions().length) {
+      <div class="ideas">
+        <span class="muted">Ideas:</span>
+        @for (idea of suggestions(); track idea.label; let i = $index) {
+          <button type="button" class="idea" (click)="useSuggestion(i)">{{ idea.label }}</button>
+        }
+      </div>
+    }
+
+    <div class="g2">
+      <div class="field">
+        <label for="cf-label">Nombre del dato</label>
+        <input id="cf-label" class="input" maxlength="40" [placeholder]="isProduct() ? 'Ej.: Sirve para' : 'Ej.: Zona'" [value]="d.label" (input)="patch({ label: value($event) })" />
+      </div>
+      <div class="field">
+        <label for="cf-kind">Se responde con</label>
+        <select id="cf-kind" class="input" [disabled]="!!d.id" (change)="patch({ kind: $any(value($event)) })">
+          @for (k of kinds; track k) { <option [value]="k" [selected]="k === d.kind">{{ kindLabel[k] }}</option> }
+        </select>
+        <p class="field-hint">{{ d.id ? 'No se cambia después de crearlo: las respuestas guardadas dependen de él.' : kindExample[d.kind] }}</p>
+      </div>
+    </div>
+
+    @if (isList(d.kind)) {
+      <div class="field">
+        <span class="label">Opciones de la lista</span>
+        <div class="options">
+          @for (o of d.options; track $index; let i = $index) {
+            <span class="option">
+              <input class="input" [attr.aria-label]="'Opción ' + (i + 1)" maxlength="60" [value]="o.value" (input)="renameOption(i, $event)" />
+              <button type="button" class="x" [attr.aria-label]="'Quitar ' + o.value" (click)="removeOption(i)"><app-icon name="x" /></button>
+            </span>
+          }
+          <span class="option add">
+            <input class="input" placeholder="Nueva opción" aria-label="Nueva opción" maxlength="60" [value]="optionText()" (input)="optionText.set(value($event))" (keydown)="onOptionKey($event)" />
+            <button type="button" class="btn" (click)="addOption()"><app-icon name="plus" />Agregar</button>
+          </span>
+        </div>
+        @if (d.id) { <p class="field-hint">Si quitas una opción, se borra de las fichas que la tenían elegida. Si solo la renombras, se conserva.</p> }
+      </div>
+    }
+
+    <label class="checkbox"><input type="checkbox" [checked]="d.required" (change)="patch({ required: !d.required })" />Obligatorio: no se puede guardar la ficha sin llenarlo</label>
+
+    @if (isProduct()) {
+      <div class="field">
+        <span class="label">Aparece en</span>
+        <div class="cats">
+          @for (c of categories.list(); track c.id) {
+            <label class="checkbox"><input type="checkbox" [checked]="d.categoryIds.includes(c.id)" (change)="toggleCategory(c.id)" />{{ c.name }}</label>
+          }
+        </div>
+        <p class="field-hint">{{ d.categoryIds.length ? 'Solo en los productos de esas categorías.' : 'Sin marcar ninguna: aparece en todos los productos.' }}</p>
+      </div>
+    }
+
+    <div class="actions">
+      @if (d.id) { <button type="button" class="link danger" (click)="remove()">Borrar dato</button> }
+      <span class="spacer"></span>
+      <button type="button" class="btn" [disabled]="saving()" (click)="cancel()">Cancelar</button>
+      <button type="button" class="btn btn--primary" [disabled]="saving()" (click)="save()"><app-icon name="check" />Guardar dato</button>
+    </div>
+  </section>
+}
+
+@if (!isProduct() && notes().length) {
+  <section class="card box">
+    <h2>Notas anotadas antes</h2>
+    <p class="lead">Datos escritos a mano en algunos clientes, antes de tener estos campos. Conviértelos en un dato para ordenarlos: los nombres parecidos («Dirección», «direccion:») se juntan.</p>
+    <div class="list">
+      @for (note of notes(); track note.label) {
+        <div class="lrow notes">
+          <span class="name">{{ note.label }}</span>
+          <span class="muted">{{ note.count }} {{ note.count === 1 ? 'cliente' : 'clientes' }}</span>
+          <button type="button" class="link" (click)="organize(note.label)">Convertir en dato</button>
+        </div>
+      }
+    </div>
+  </section>
+}

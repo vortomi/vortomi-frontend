@@ -109,6 +109,7 @@ export interface ApiContact {
   quoteCents: number | null;
   ownerUserId: string | null;
   attributes: { key: string; label: string; value: string }[];
+  customValues: Record<string, string | number | boolean | string[]>;
   lastInboundAt: string | null;
   createdAt: string;
   tagIds: string[];
@@ -192,6 +193,17 @@ export interface ApiVariantType {
   options: { id: string; value: string; variantCount: number }[];
 }
 
+export interface ApiCustomField {
+  id: string;
+  entity: 'product' | 'contact';
+  label: string;
+  kind: 'text' | 'number' | 'choice' | 'multi_choice' | 'boolean' | 'date';
+  required: boolean;
+  position: number;
+  options: { id: string; value: string }[];
+  categoryIds: string[];
+}
+
 /** vortomi-backend SALE_UNITS (src/db/schema/enums.ts). */
 export type ApiSaleUnit = 'unit' | 'pair' | 'dozen' | 'box' | 'pack' | 'roll' | 'kg' | 'g' | 'm' | 'm2' | 'l' | 'hour' | 'service' | 'session';
 
@@ -206,6 +218,7 @@ export interface ApiProduct {
   saleUnit: ApiSaleUnit;
   minQuantity: number;
   quantityStep: number;
+  customValues: Record<string, string | number | boolean | string[]>;
   active: boolean;
   createdAt: string;
   variants: ApiVariant[];

@@ -3,7 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Directory } from '../../core/directory';
 import { Session } from '../../core/session';
 import { STOCK_STATUS } from '../../shared/api/labels';
-import type { Id, Product, ProductVariant, SaleUnit, StockMode, StockMovementKind } from '../../shared/api/models';
+import type { CustomValues, Id, Product, ProductVariant, SaleUnit, StockMode, StockMovementKind } from '../../shared/api/models';
 import { formatShortDate } from '../../shared/format/date-time';
 import { formatUsdCents, formatVes } from '../../shared/format/money';
 import { imageFileError, readAsDataUrl } from '../../shared/files/image';
@@ -11,6 +11,9 @@ import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
 import { Toaster } from '../../shared/ui/toaster';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
+import { appliesTo, cleanValues, formatValue, missingRequired } from '../custom-fields/custom-field-rules';
+import { CustomFields } from '../custom-fields/custom-fields.data';
+import { CustomValuesForm } from '../custom-fields/custom-values-form';
 import { ExchangeRates } from '../exchange-rates/exchange-rates.data';
 import { CategoriesData } from './categories.data';
 import { InventoryData, type VariantDraft } from './inventory.data';
@@ -48,6 +51,8 @@ interface ProductForm extends SaleSettings {
   stockMode: StockMode;
   active: boolean;
   rows: VariantRow[];
+  /** The company's own data about it ("Sirve para", "Marca"). */
+  customValues: CustomValues;
 }
 
 const PHOTO_MAX_BYTES = 800_000;
@@ -89,6 +94,7 @@ function formOf(product: Product | null, variants: ProductVariant[]): ProductFor
     quantityStep: product?.quantityStep ?? 1,
     active: product?.active ?? true,
     rows,
+    customValues: product?.customValues ?? {},
   };
 }
 
@@ -98,7 +104,7 @@ function formOf(product: Product | null, variants: ProductVariant[]): ProductFor
  */
 @Component({
   selector: 'app-product-detail-page',
-  imports: [RouterLink, Icon, Pill, SaleUnitPicker],
+  imports: [RouterLink, Icon, Pill, SaleUnitPicker, CustomValuesForm],
   templateUrl: './product-detail.page.html',
   styleUrl: './product-detail.page.scss',
 })
@@ -106,6 +112,7 @@ export class ProductDetailPage {
   protected readonly data = inject(InventoryData);
   protected readonly categories = inject(CategoriesData);
   protected readonly variantTypes = inject(VariantTypesData);
+  private readonly customFields = inject(CustomFields);
   protected readonly session = inject(Session);
   private readonly directory = inject(Directory);
   private readonly router = inject(Router);
@@ -144,6 +151,12 @@ export class ProductDetailPage {
     const ids = this.form().variantTypeIds;
     return ids.length < MAX_TYPES && !this.typesLocked() ? [...ids, ''] : ids;
   });
+  /** Every product field the company has; none: the section is not shown. */
+  protected readonly hasFields = computed(() => this.customFields.products().length > 0);
+  /** The company's fields for this product's category (those without categories go everywhere). */
+  protected readonly productFields = computed(() => this.customFields.products().filter((f) => appliesTo(f, this.form().categoryId || null)));
+  protected readonly formatValue = formatValue;
+
   /** Values a saved variant uses: they stay picked (a saved variant is never deleted from here). */
   private readonly savedValues = computed(() => new Set(this.variants().flatMap((v) => v.optionIds)));
 
@@ -325,6 +338,7 @@ export class ProductDetailPage {
         saleUnit: f.saleUnit,
         minQuantity: f.minQuantity,
         quantityStep: f.quantityStep,
+        customValues: cleanValues(this.customFields.products(), f.customValues, f.categoryId || null),
         active: f.active,
       },
       drafts,
@@ -347,6 +361,7 @@ export class ProductDetailPage {
     if (!f.name.trim()) problems.push('Escribe el nombre del producto.');
     if (!this.categories.byId().has(f.categoryId)) problems.push('Elige la categoría.');
     if (!f.rows.length) problems.push(typed ? 'Marca al menos un valor de cada clase.' : 'Agrega al menos una versión.');
+    problems.push(...missingRequired(this.customFields.products(), f.customValues, f.categoryId || null));
     const amountHint = takesDecimals(f.saleUnit) ? 'un número de 0 o más, con hasta 3 decimales' : 'un número entero de 0 o más';
     const seen: string[] = [];
     const drafts: VariantDraft[] = [];

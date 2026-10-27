@@ -6,13 +6,19 @@
     "categoryId": "cat_ra_frenos",
     "description": "Juego para las dos ruedas delanteras.",
     "photoDataUrl": null,
-    "createdAt": "2026-08-05T10:00:00-04:00",
     "variantTypeIds": [],
     "stockMode": "units",
     "saleUnit": "unit",
     "minQuantity": 1,
     "quantityStep": 1,
-    "active": true
+    "customValues": {
+      "fld_ra_fits": [
+        "opt_ra_corolla15"
+      ],
+      "fld_ra_side": "opt_ra_both"
+    },
+    "active": true,
+    "createdAt": "2026-08-05T10:00:00-04:00"
   },
   {
     "id": "prd_oil_filter",
@@ -21,13 +27,14 @@
     "categoryId": "cat_ra_filtros",
     "description": "",
     "photoDataUrl": null,
-    "createdAt": "2026-08-05T10:00:00-04:00",
     "variantTypeIds": [],
     "stockMode": "units",
     "saleUnit": "unit",
     "minQuantity": 1,
     "quantityStep": 1,
-    "active": true
+    "customValues": {},
+    "active": true,
+    "createdAt": "2026-08-05T10:00:00-04:00"
   },
   {
     "id": "prd_battery",
@@ -36,13 +43,14 @@
     "categoryId": "cat_ra_electrico",
     "description": "Garantía de 12 meses con la factura.",
     "photoDataUrl": null,
-    "createdAt": "2026-08-05T10:00:00-04:00",
     "variantTypeIds": [],
     "stockMode": "units",
     "saleUnit": "unit",
     "minQuantity": 1,
     "quantityStep": 1,
-    "active": true
+    "customValues": {},
+    "active": true,
+    "createdAt": "2026-08-05T10:00:00-04:00"
   },
   {
     "id": "prd_spark_plugs",
@@ -51,13 +59,14 @@
     "categoryId": "cat_ra_encendido",
     "description": "",
     "photoDataUrl": null,
-    "createdAt": "2026-08-05T10:00:00-04:00",
     "variantTypeIds": [],
     "stockMode": "units",
     "saleUnit": "unit",
     "minQuantity": 1,
     "quantityStep": 1,
-    "active": true
+    "customValues": {},
+    "active": true,
+    "createdAt": "2026-08-05T10:00:00-04:00"
   },
   {
     "id": "prd_alternator",
@@ -66,13 +75,14 @@
     "categoryId": "cat_ra_electrico",
     "description": "Reconstruido en nuestro taller.",
     "photoDataUrl": null,
-    "createdAt": "2026-08-12T10:00:00-04:00",
     "variantTypeIds": [],
     "stockMode": "units",
     "saleUnit": "unit",
     "minQuantity": 1,
     "quantityStep": 1,
-    "active": true
+    "customValues": {},
+    "active": true,
+    "createdAt": "2026-08-12T10:00:00-04:00"
   },
   {
     "id": "prd_engine_oil",
@@ -81,13 +91,14 @@
     "categoryId": "cat_ra_lubricantes",
     "description": "",
     "photoDataUrl": null,
-    "createdAt": "2026-08-05T10:00:00-04:00",
     "variantTypeIds": [],
     "stockMode": "units",
     "saleUnit": "unit",
     "minQuantity": 1,
     "quantityStep": 1,
-    "active": true
+    "customValues": {},
+    "active": true,
+    "createdAt": "2026-08-05T10:00:00-04:00"
   },
   {
     "id": "prd_diagnostic",
@@ -96,13 +107,14 @@
     "categoryId": "cat_ra_servicios",
     "description": "Escaneo completo con reporte. Se agenda por día.",
     "photoDataUrl": null,
-    "createdAt": "2026-08-05T10:00:00-04:00",
     "variantTypeIds": [],
     "stockMode": "availability",
     "saleUnit": "unit",
     "minQuantity": 1,
     "quantityStep": 1,
-    "active": true
+    "customValues": {},
+    "active": true,
+    "createdAt": "2026-08-05T10:00:00-04:00"
   },
   {
     "id": "prd_shock",
@@ -111,13 +123,14 @@
     "categoryId": "cat_ra_suspension",
     "description": "",
     "photoDataUrl": null,
-    "createdAt": "2026-09-01T10:00:00-04:00",
     "variantTypeIds": [],
     "stockMode": "units",
     "saleUnit": "unit",
     "minQuantity": 1,
     "quantityStep": 1,
-    "active": false
+    "customValues": {},
+    "active": false,
+    "createdAt": "2026-09-01T10:00:00-04:00"
   },
   {
     "id": "prd_v_chair",
@@ -126,13 +139,14 @@
     "categoryId": "cat_valle_comedor",
     "description": "Silla de pino macizo con asiento tapizado.",
     "photoDataUrl": null,
-    "createdAt": "2026-09-10T10:00:00-04:00",
     "variantTypeIds": [],
     "stockMode": "units",
     "saleUnit": "unit",
     "minQuantity": 1,
     "quantityStep": 1,
-    "active": true
+    "customValues": {},
+    "active": true,
+    "createdAt": "2026-09-10T10:00:00-04:00"
   },
   {
     "id": "prd_v_mattress",
@@ -141,13 +155,14 @@
     "categoryId": "cat_valle_dormitorio",
     "description": "Resortes ensacados, 25 cm de alto.",
     "photoDataUrl": null,
-    "createdAt": "2026-09-10T10:00:00-04:00",
     "variantTypeIds": [],
     "stockMode": "units",
     "saleUnit": "unit",
     "minQuantity": 1,
     "quantityStep": 1,
-    "active": true
+    "customValues": {},
+    "active": true,
+    "createdAt": "2026-09-10T10:00:00-04:00"
   },
   {
     "id": "prd_v_sofa",
@@ -156,13 +171,14 @@
     "categoryId": "cat_valle_sala",
     "description": "Tela antimanchas, se abre en cama matrimonial.",
     "photoDataUrl": null,
-    "createdAt": "2026-09-10T10:00:00-04:00",
     "variantTypeIds": [],
     "stockMode": "units",
     "saleUnit": "unit",
     "minQuantity": 1,
     "quantityStep": 1,
-    "active": true
+    "customValues": {},
+    "active": true,
+    "createdAt": "2026-09-10T10:00:00-04:00"
   },
   {
     "id": "prd_v_dining",
@@ -171,13 +187,14 @@
     "categoryId": "cat_valle_comedor",
     "description": "Pino macizo. Se fabrica en unas 3 semanas.",
     "photoDataUrl": null,
-    "createdAt": "2026-09-10T10:00:00-04:00",
     "variantTypeIds": [],
     "stockMode": "availability",
     "saleUnit": "unit",
     "minQuantity": 1,
     "quantityStep": 1,
-    "active": true
+    "customValues": {},
+    "active": true,
+    "createdAt": "2026-09-10T10:00:00-04:00"
   },
   {
     "id": "prd_v_closet",
@@ -186,13 +203,14 @@
     "categoryId": "cat_valle_dormitorio",
     "description": "Precio por metro lineal, con toma de medidas incluida.",
     "photoDataUrl": null,
-    "createdAt": "2026-09-10T10:00:00-04:00",
     "variantTypeIds": [],
     "stockMode": "availability",
     "saleUnit": "unit",
     "minQuantity": 1,
     "quantityStep": 1,
-    "active": true
+    "customValues": {},
+    "active": true,
+    "createdAt": "2026-09-10T10:00:00-04:00"
   },
   {
     "id": "prd_v_fabric",
@@ -201,13 +219,14 @@
     "categoryId": "cat_valle_telas",
     "description": "Ancho 1,40 m. Se corta de medio metro en medio metro.",
     "photoDataUrl": null,
-    "createdAt": "2026-10-20T10:00:00-04:00",
     "variantTypeIds": [],
     "stockMode": "units",
     "saleUnit": "m",
     "minQuantity": 0.5,
     "quantityStep": 0.5,
-    "active": true
+    "customValues": {},
+    "active": true,
+    "createdAt": "2026-10-20T10:00:00-04:00"
   },
   {
     "id": "prd_v_cushion",
@@ -216,7 +235,6 @@
     "categoryId": "cat_valle_telas",
     "description": "Funda de lino con relleno.",
     "photoDataUrl": null,
-    "createdAt": "2026-10-20T10:00:00-04:00",
     "variantTypeIds": [
       "vt_valle_size",
       "vt_valle_color"
@@ -225,6 +243,8 @@
     "saleUnit": "unit",
     "minQuantity": 1,
     "quantityStep": 1,
-    "active": true
+    "customValues": {},
+    "active": true,
+    "createdAt": "2026-10-20T10:00:00-04:00"
   }
 ]

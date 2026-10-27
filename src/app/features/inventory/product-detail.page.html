@@ -93,6 +93,26 @@
           }
         </section>
 
+        @if (hasFields()) {
+          <section class="card box">
+            <h2>Datos del producto</h2>
+            @if (!editing()) {
+              <dl class="facts">
+                @for (field of productFields(); track field.id) {
+                  <dt>{{ field.label }}</dt><dd>{{ formatValue(field, f.customValues[field.id]) }}</dd>
+                } @empty {
+                  <dt></dt><dd class="muted">Su categoría no tiene datos propios.</dd>
+                }
+              </dl>
+            } @else if (productFields().length) {
+              <app-custom-values-form [fields]="productFields()" [values]="f.customValues" (changed)="patch({ customValues: $event })" />
+            } @else {
+              <p class="field-hint">{{ f.categoryId ? 'Esta categoría no tiene datos propios.' : 'Elige la categoría para ver sus datos.' }}
+                Se definen en <a class="link" routerLink="/settings">Ajustes → Datos de productos</a>.</p>
+            }
+          </section>
+        }
+
         <section class="card box">
           <h2>{{ editing() && !f.versions ? 'Precio y existencia' : 'Versiones y precios' }}</h2>
           @if (!editing()) {

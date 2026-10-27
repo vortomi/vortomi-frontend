@@ -15,6 +15,7 @@ const contact = (overrides: Partial<Contact>): Contact => ({
   purchasesCount: 0,
   purchasesTotalCents: 0,
   attributes: [],
+  customValues: {},
   createdAt: '2026-10-01T10:00:00-04:00',
   ...overrides,
 });

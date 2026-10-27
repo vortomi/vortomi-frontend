@@ -3,7 +3,7 @@ import { API_CONFIG } from '../../core/api/api-config';
 import { toApiFailure } from '../../core/api/api-error';
 import { Clock } from '../../core/clock';
 import { Session } from '../../core/session';
-import type { Contact, ContactAttribute, Id } from '../../shared/api/models';
+import type { Contact, ContactAttribute, CustomValues, Id } from '../../shared/api/models';
 import { allLoaded, newId } from '../../shared/api/mock-db';
 import { editableTable } from '../../shared/api/editable-table';
 import { formatWaId } from '../../shared/format/phone';
@@ -20,6 +20,7 @@ export interface NewContact {
   stageId: Id | null;
   tagIds: Id[];
   attributes: ContactAttribute[];
+  customValues: CustomValues;
   quoteCents?: number | null;
 }
 
@@ -58,8 +59,8 @@ export class ContactsData {
   }
 
   /**
-   * Saves what changed. 'api' mode: name, stage and quote, tags, owner and extra facts go to the
-   * server, each its own request. Resolves to whether all of them were saved.
+   * Saves what changed. 'api' mode: name, stage and quote, tags, owner, the company's fields and
+   * the old notes go to the server, each its own request. Resolves to whether all were saved.
    */
   async update(id: Id, patch: Partial<Omit<Contact, 'id' | 'tenantId'>>): Promise<boolean> {
     const current = this.byId().get(id);
@@ -83,6 +84,9 @@ export class ContactsData {
     if (changed('ownerUserId')) {
       const ownerUserId = patch.ownerUserId ?? null;
       steps.push(() => this.save(id, { ownerUserId }, (r, tenantId) => r.setOwner(tenantId, id, ownerUserId)));
+    }
+    if (changed('customValues')) {
+      steps.push(() => this.save(id, { customValues: patch.customValues! }, (r, tenantId) => r.setCustomValues(tenantId, id, patch.customValues!)));
     }
     if (changed('attributes')) {
       steps.push(() => this.save(id, { attributes: patch.attributes! }, (r, tenantId) => r.setAttributes(tenantId, id, patch.attributes!)));
@@ -110,6 +114,12 @@ export class ContactsData {
   private setTags(id: Id, tagIds: Id[]): void {
     if (this.remote) return void this.save(id, { tagIds }, (remote, tenantId) => remote.setTags(tenantId, id, tagIds));
     this.table.patch(id, { tagIds });
+  }
+
+  /** 'api' mode: reads the list again (after the server changed many contacts at once). */
+  async reload(): Promise<void> {
+    const tenantId = this.session.tenant()?.id;
+    if (tenantId) await this.load(tenantId);
   }
 
   private async load(tenantId: Id): Promise<void> {
@@ -146,8 +156,8 @@ export class ContactsData {
     const tenantId = this.session.tenant()?.id;
     if (this.remote && tenantId) {
       try {
-        const { channelAccountId, waId, name, stageId, tagIds, ownerUserId, attributes } = input;
-        let contact = await this.remote.create(tenantId, { channelAccountId, waId, name: name.trim() || null, stageId, tagIds, ownerUserId, attributes });
+        const { channelAccountId, waId, name, stageId, tagIds, ownerUserId, attributes, customValues } = input;
+        let contact = await this.remote.create(tenantId, { channelAccountId, waId, name: name.trim() || null, stageId, tagIds, ownerUserId, attributes, customValues });
         if (input.quoteCents) {
           await this.remote.setOpportunity(tenantId, contact.id, stageId, input.quoteCents);
           contact = { ...contact, quoteCents: input.quoteCents };
@@ -203,7 +213,7 @@ export class ContactsData {
         this.table.patch(existing.id, { tagIds: [...new Set([...existing.tagIds, ...row.tagIds])] });
         updated++;
       } else {
-        this.createLocal({ name: row.name, waId: row.waId, channelAccountId: channelId, ownerUserId: null, stageId: null, tagIds: row.tagIds, attributes: [] });
+        this.createLocal({ name: row.name, waId: row.waId, channelAccountId: channelId, ownerUserId: null, stageId: null, tagIds: row.tagIds, attributes: [], customValues: {} });
         created++;
       }
     }

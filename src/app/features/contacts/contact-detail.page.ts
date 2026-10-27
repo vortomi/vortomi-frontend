@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Clock } from '../../core/clock';
 import { Session } from '../../core/session';
 import { Workspace } from '../../core/workspace';
-import type { Contact, ContactAttribute, Id } from '../../shared/api/models';
+import type { Contact, ContactAttribute, CustomValues, Id } from '../../shared/api/models';
 import { formatListStamp, formatMonthYear } from '../../shared/format/date-time';
 import { formatUsdCents, parsePriceCents } from '../../shared/format/money';
 import { toWaId } from '../../shared/format/phone';
@@ -13,7 +13,9 @@ import { FieldError } from '../../shared/ui/field-error';
 import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
 import { Toaster } from '../../shared/ui/toaster';
-import { slugify } from '../../shared/format/slug';
+import { cleanValues, missingRequired } from '../custom-fields/custom-field-rules';
+import { CustomFields } from '../custom-fields/custom-fields.data';
+import { CustomValuesForm } from '../custom-fields/custom-values-form';
 import { InboxData } from '../inbox/inbox.data';
 import { ContactsData } from './contacts.data';
 import { findDuplicate } from './contacts.rules';
@@ -30,7 +32,7 @@ interface ContactModel {
 /** Create (/contacts/new) or edit (/contacts/:contactId) one contact. */
 @Component({
   selector: 'app-contact-detail-page',
-  imports: [FormField, RouterLink, Avatar, FieldError, Icon, Pill],
+  imports: [FormField, RouterLink, Avatar, FieldError, Icon, Pill, CustomValuesForm],
   templateUrl: './contact-detail.page.html',
   styleUrl: './contact-detail.page.scss',
 })
@@ -38,10 +40,11 @@ export class ContactDetailPage {
   private readonly contacts = inject(ContactsData);
   private readonly inbox = inject(InboxData);
   protected readonly workspace = inject(Workspace);
-  private readonly session = inject(Session);
+  protected readonly session = inject(Session);
   private readonly clock = inject(Clock);
   private readonly router = inject(Router);
   private readonly toaster = inject(Toaster);
+  protected readonly customFields = inject(CustomFields);
 
   readonly contactId = input<string>();
 
@@ -49,8 +52,12 @@ export class ContactDetailPage {
   protected readonly isNew = computed(() => !this.contactId());
   protected readonly duplicate = signal<Contact | null>(null);
   protected readonly tagIds = signal<Id[]>([]);
+  /** Notes typed before the company had fields: shown, removable, organized from Ajustes. */
   protected readonly attributes = signal<ContactAttribute[]>([]);
-  protected readonly newFieldLabel = signal('');
+  /** Answers to the company's own fields ("Vehículo", "Zona"). */
+  protected readonly customValues = signal<CustomValues>({});
+  /** Required fields still unanswered, shown after «Guardar». */
+  protected readonly fieldProblems = signal<string[]>([]);
 
   private readonly model = signal<ContactModel>({ name: '', phone: '', channelAccountId: '', ownerUserId: '', stageId: '', quote: '' });
   protected readonly contactForm = form(this.model, (path) => {
@@ -89,6 +96,8 @@ export class ContactDetailPage {
         });
         this.tagIds.set(contact?.tagIds ?? []);
         this.attributes.set(contact?.attributes ?? []);
+        this.customValues.set(contact?.customValues ?? {});
+        this.fieldProblems.set([]);
         this.duplicate.set(null);
       });
     });
@@ -110,28 +119,15 @@ export class ContactDetailPage {
     this.tagIds.update((ids) => (ids.includes(tagId) ? ids.filter((id) => id !== tagId) : [...ids, tagId]));
   }
 
-  protected setAttribute(index: number, event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.attributes.update((list) => list.map((a, i) => (i === index ? { ...a, value } : a)));
-  }
-
   protected removeAttribute(index: number): void {
     this.attributes.update((list) => list.filter((_, i) => i !== index));
   }
 
-  protected addAttribute(): void {
-    const label = this.newFieldLabel().trim();
-    if (!label || this.attributes().some((a) => a.label.toLowerCase() === label.toLowerCase())) return;
-    this.attributes.update((list) => [...list, { key: slugify(label), label, value: '' }]);
-    this.newFieldLabel.set('');
-  }
-
-  protected onNewFieldLabel(event: Event): void {
-    this.newFieldLabel.set((event.target as HTMLInputElement).value);
-  }
-
   protected async save(event: Event): Promise<void> {
     event.preventDefault();
+    const fields = this.customFields.customers();
+    this.fieldProblems.set(missingRequired(fields, this.customValues()));
+    if (this.fieldProblems().length) return;
     await submit(this.contactForm, async () => {
       const value = this.model();
       const shared = {
@@ -141,6 +137,7 @@ export class ContactDetailPage {
         quoteCents: parsePriceCents(value.quote),
         tagIds: this.tagIds(),
         attributes: this.attributes().filter((a) => a.value.trim()),
+        customValues: cleanValues(fields, this.customValues()),
       };
       const existing = this.contact();
       if (existing) {

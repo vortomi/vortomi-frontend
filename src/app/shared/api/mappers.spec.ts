@@ -43,7 +43,7 @@ describe('server -> panel mappers', () => {
     const row: ApiContact = {
       id: 'k-1', channelAccountId: 'ch-1', waId: '584145550187', name: null, displayName: null,
       stageId: 's-1', quoteCents: 4300, lastInboundAt: null, createdAt: '2026-10-01T00:00:00.000Z', tagIds: ['tag-1'],
-      ownerUserId: 'u-1', attributes: [{ key: 'talla', label: 'Talla', value: 'M' }],
+      ownerUserId: 'u-1', attributes: [{ key: 'talla', label: 'Talla', value: 'M' }], customValues: { 'f-1': ['o-1'] },
     };
     expect(toContact(TENANT, row)).toMatchObject({ phone: '+58 414-555-0187', stageId: 's-1', quoteCents: 4300, tagIds: ['tag-1'], ownerUserId: 'u-1', attributes: [{ key: 'talla', label: 'Talla', value: 'M' }] });
   });

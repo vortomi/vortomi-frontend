@@ -7,6 +7,7 @@ import type {
   ApiChannel,
   ApiCompany,
   ApiContact,
+  ApiCustomField,
   ApiConversation,
   ApiMessage,
   ApiMessageType,
@@ -26,6 +27,7 @@ import type {
 import type {
   ChannelAccount,
   Contact,
+  CustomField,
   Conversation,
   Id,
   Membership,
@@ -104,6 +106,7 @@ export function toContact(tenantId: Id, row: ApiContact): Contact {
     createdAt: row.createdAt,
     ownerUserId: row.ownerUserId,
     attributes: row.attributes,
+    customValues: row.customValues,
     // Purchases come with orders (documentations/09, B9).
     purchasesCount: 0,
     purchasesTotalCents: 0,
@@ -192,6 +195,7 @@ export function toProduct(tenantId: Id, row: ApiProduct): { product: Product; va
       saleUnit: row.saleUnit,
       minQuantity: row.minQuantity,
       quantityStep: row.quantityStep,
+      customValues: row.customValues,
       active: row.active,
       // Not on the server yet (needs file storage).
       photoDataUrl: null,
@@ -303,6 +307,9 @@ export function toContactStub(tenantId: Id, row: ApiConversation): Contact {
     purchasesCount: 0,
     purchasesTotalCents: 0,
     attributes: [],
+    customValues: {},
     createdAt: '',
   };
 }
+
+export const toCustomField = (tenantId: Id, row: ApiCustomField): CustomField => ({ ...row, tenantId });

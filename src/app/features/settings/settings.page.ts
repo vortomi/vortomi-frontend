@@ -2,18 +2,19 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { Workspace } from '../../core/workspace';
 import { CompanySettings } from './company-settings';
 import { ExchangeRateSettings } from './exchange-rate-settings';
+import { CustomFieldsSettings } from '../custom-fields/custom-fields-settings';
 import { QuickRepliesSettings } from './quick-replies-settings';
 import { StagesSettings } from './stages-settings';
 import { TagsSettings } from './tags-settings';
 import { BRAND } from '../../core/brand';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
 
-type Tab = 'company' | 'rate' | 'tags' | 'stages' | 'replies';
+type Tab = 'company' | 'rate' | 'product-fields' | 'contact-fields' | 'tags' | 'stages' | 'replies';
 
 /** Company settings, admins only. */
 @Component({
   selector: 'app-settings-page',
-  imports: [CompanySettings, ExchangeRateSettings, TagsSettings, StagesSettings, QuickRepliesSettings],
+  imports: [CompanySettings, ExchangeRateSettings, CustomFieldsSettings, TagsSettings, StagesSettings, QuickRepliesSettings],
   template: `
     <header class="page-top">
       <h1>Ajustes</h1>
@@ -28,6 +29,8 @@ type Tab = 'company' | 'rate' | 'tags' | 'stages' | 'replies';
       @switch (tab()) {
         @case ('company') { <app-company-settings /> }
         @case ('rate') { <app-exchange-rate-settings /> }
+        @case ('product-fields') { <app-custom-fields-settings entity="product" /> }
+        @case ('contact-fields') { <app-custom-fields-settings entity="contact" /> }
         @case ('tags') { <app-tags-settings /> }
         @case ('stages') { <app-stages-settings /> }
         @case ('replies') { <app-quick-replies-settings /> }
@@ -49,6 +52,8 @@ export class SettingsPage {
   private readonly allTabs: { id: Tab; label: string; salesOnly?: boolean }[] = [
     { id: 'company', label: 'Empresa' },
     { id: 'rate', label: 'Tasa de cambio', salesOnly: true },
+    { id: 'product-fields', label: 'Datos de productos', salesOnly: true },
+    { id: 'contact-fields', label: 'Datos de clientes' },
     { id: 'tags', label: 'Etiquetas' },
     { id: 'stages', label: 'Etapas del pipeline', salesOnly: true },
     { id: 'replies', label: 'Respuestas rápidas' },

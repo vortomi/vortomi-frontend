@@ -6,7 +6,7 @@ import type { Id, Product, ProductCategory, ProductVariant, StockMovement, Stock
 
 /** A variant as it is created: the opening count becomes an 'initial' movement on the server. */
 export type NewVariant = Pick<ProductVariant, 'optionIds' | 'name' | 'sku' | 'priceCents' | 'lowStockThreshold'> & { initialStock: number };
-export type ProductFields = Pick<Product, 'name' | 'categoryId' | 'variantTypeIds' | 'description' | 'saleUnit' | 'minQuantity' | 'quantityStep'>;
+export type ProductFields = Pick<Product, 'name' | 'categoryId' | 'variantTypeIds' | 'description' | 'saleUnit' | 'minQuantity' | 'quantityStep' | 'customValues'>;
 
 /**
  * Inventory against vortomi-backend ('api' mode). Everyone reads and sells; admins manage the

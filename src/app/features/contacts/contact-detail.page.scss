@@ -60,15 +60,19 @@
   }
 }
 
-.attr {
-  display: grid;
-  grid-template-columns: 140px minmax(0, 1fr) auto;
-  gap: 10px;
+.note {
+  display: flex;
   align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: var(--color-note-bg);
+  color: var(--color-note-text);
   font-size: 13px;
+  --icon-size: 16px;
 
-  &.add {
-    grid-template-columns: minmax(0, 1fr) auto;
+  span {
+    flex: 1;
   }
 }
 

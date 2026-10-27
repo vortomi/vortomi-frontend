@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { ApiClient } from '../../core/api/api-client';
 import type { ApiContact, Page } from '../../shared/api/contract';
 import { toContact } from '../../shared/api/mappers';
-import type { Contact, ContactAttribute, Id } from '../../shared/api/models';
+import type { Contact, ContactAttribute, CustomValues, Id } from '../../shared/api/models';
 
 const CONTACTS_PAGE = 100;
 
@@ -39,6 +39,11 @@ export class ContactsRemote {
     return this.api.put(this.contact(tenantId, contactId, 'attributes'), { attributes });
   }
 
+  /** Replaces the answers to the company's fields; the server checks them. */
+  setCustomValues(tenantId: Id, contactId: Id, values: CustomValues): Promise<unknown> {
+    return this.api.put(this.contact(tenantId, contactId, 'custom-values'), { values });
+  }
+
   rename(tenantId: Id, contactId: Id, name: string | null): Promise<unknown> {
     return this.api.put(this.contact(tenantId, contactId, 'name'), { name });
   }
@@ -53,6 +58,7 @@ export class ContactsRemote {
       tagIds: Id[];
       ownerUserId: Id | null;
       attributes: ContactAttribute[];
+      customValues: CustomValues;
     },
   ): Promise<Contact> {
     return toContact(

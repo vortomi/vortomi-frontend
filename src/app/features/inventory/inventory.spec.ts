@@ -4,7 +4,7 @@ import { analyzeProductImport, guessProductMapping } from './product-import';
 
 const product = (overrides: Partial<Product> = {}): Product => ({
   id: 'prd', tenantId: 't', name: 'Filtro', categoryId: 'cat', variantTypeIds: [], category: 'Filtros', description: '', photoDataUrl: null,
-  stockMode: 'units', saleUnit: 'unit', minQuantity: 1, quantityStep: 1, active: true, createdAt: '2026-10-01T00:00:00Z', ...overrides,
+  stockMode: 'units', saleUnit: 'unit', minQuantity: 1, quantityStep: 1, customValues: {}, active: true, createdAt: '2026-10-01T00:00:00Z', ...overrides,
 });
 const variant = (overrides: Partial<ProductVariant> = {}): ProductVariant => ({
   id: 'var', tenantId: 't', productId: 'prd', optionIds: [], name: 'Única', sku: 'FLT-1', priceCents: 800,

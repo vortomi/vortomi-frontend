@@ -40,6 +40,26 @@
   flex-shrink: 0;
 }
 
+.field-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 11px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+  font-size: 12.5px;
+
+  button {
+    display: inline-flex;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    --icon-size: 14px;
+  }
+}
+
 .filters {
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);

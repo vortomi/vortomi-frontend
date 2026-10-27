@@ -1,0 +1,133 @@
+[
+  {
+    "id": "fld_ra_fits",
+    "tenantId": "ten_ra",
+    "entity": "product",
+    "label": "Sirve para",
+    "kind": "multi_choice",
+    "required": false,
+    "position": 0,
+    "options": [
+      {
+        "id": "opt_ra_corolla15",
+        "value": "Corolla 2015"
+      },
+      {
+        "id": "opt_ra_corolla18",
+        "value": "Corolla 2018"
+      },
+      {
+        "id": "opt_ra_yaris18",
+        "value": "Yaris 2018"
+      },
+      {
+        "id": "opt_ra_hilux20",
+        "value": "Hilux 2020"
+      }
+    ],
+    "categoryIds": [
+      "cat_ra_frenos",
+      "cat_ra_filtros",
+      "cat_ra_suspension"
+    ]
+  },
+  {
+    "id": "fld_ra_side",
+    "tenantId": "ten_ra",
+    "entity": "product",
+    "label": "Lado",
+    "kind": "choice",
+    "required": false,
+    "position": 1,
+    "options": [
+      {
+        "id": "opt_ra_left",
+        "value": "Izquierdo"
+      },
+      {
+        "id": "opt_ra_right",
+        "value": "Derecho"
+      },
+      {
+        "id": "opt_ra_both",
+        "value": "Ambos"
+      }
+    ],
+    "categoryIds": [
+      "cat_ra_frenos",
+      "cat_ra_suspension"
+    ]
+  },
+  {
+    "id": "fld_ra_warranty",
+    "tenantId": "ten_ra",
+    "entity": "product",
+    "label": "Garantía (meses)",
+    "kind": "number",
+    "required": false,
+    "position": 2,
+    "options": [],
+    "categoryIds": [
+      "cat_ra_electrico"
+    ]
+  },
+  {
+    "id": "fld_ra_car",
+    "tenantId": "ten_ra",
+    "entity": "contact",
+    "label": "Vehículo",
+    "kind": "choice",
+    "required": false,
+    "position": 0,
+    "options": [
+      {
+        "id": "opt_ra_car_corolla15",
+        "value": "Corolla 2015"
+      },
+      {
+        "id": "opt_ra_car_yaris18",
+        "value": "Yaris 2018"
+      },
+      {
+        "id": "opt_ra_car_hilux20",
+        "value": "Hilux 2020"
+      }
+    ],
+    "categoryIds": []
+  },
+  {
+    "id": "fld_ra_zone",
+    "tenantId": "ten_ra",
+    "entity": "contact",
+    "label": "Zona",
+    "kind": "choice",
+    "required": false,
+    "position": 1,
+    "options": [
+      {
+        "id": "opt_ra_zone_valencia",
+        "value": "Valencia"
+      },
+      {
+        "id": "opt_ra_zone_caracas",
+        "value": "Caracas"
+      },
+      {
+        "id": "opt_ra_zone_maracay",
+        "value": "Maracay"
+      }
+    ],
+    "categoryIds": []
+  },
+  {
+    "id": "fld_ra_wholesale",
+    "tenantId": "ten_ra",
+    "entity": "contact",
+    "label": "Cliente mayorista",
+    "kind": "boolean",
+    "required": false,
+    "position": 2,
+    "options": [],
+    "categoryIds": []
+  }
+]

@@ -1,0 +1,140 @@
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.lead {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.lrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border-soft);
+  font-size: 13.5px;
+
+  &.product {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr) minmax(0, 1.3fr) auto;
+  }
+
+  &.lhead {
+    border-top: 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-faint);
+    font-weight: 600;
+  }
+
+  &.notes {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto;
+  }
+
+  .name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+  }
+}
+
+.empty {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.editor {
+  background: var(--color-surface-muted);
+}
+
+.ideas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.idea {
+  border: 1px dashed var(--color-border-strong);
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  padding: 4px 11px;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-primary);
+  }
+}
+
+.g2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  .input {
+    width: 170px;
+  }
+
+  &.add .input {
+    width: 190px;
+  }
+}
+
+.x {
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  --icon-size: 15px;
+}
+
+.cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .spacer {
+    flex: 1;
+  }
+}
+
+@media (max-width: 760px) {
+  .g2,
+  .lrow,
+  .lrow.product {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

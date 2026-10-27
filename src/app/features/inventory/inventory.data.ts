@@ -230,8 +230,8 @@ export class InventoryData {
    */
   private async saveRemote(remote: InventoryRemote, product: ProductDraft, drafts: VariantDraft[]): Promise<Id | null> {
     const tenantId = this.tenantId();
-    const { name, categoryId, variantTypeIds, description, saleUnit, minQuantity, quantityStep } = product;
-    const fields = { name, categoryId, variantTypeIds, description, saleUnit, minQuantity, quantityStep };
+    const { name, categoryId, variantTypeIds, description, saleUnit, minQuantity, quantityStep, customValues } = product;
+    const fields = { name, categoryId, variantTypeIds, description, saleUnit, minQuantity, quantityStep, customValues };
     const fresh = (draft: VariantDraft): NewVariant => ({
       optionIds: draft.optionIds,
       name: draft.name,
@@ -308,6 +308,7 @@ export class InventoryData {
             saleUnit: row.saleUnit,
             minQuantity: stepChoices(row.saleUnit)[0]!,
             quantityStep: stepChoices(row.saleUnit)[0]!,
+            customValues: {},
             active: true,
           },
           [],

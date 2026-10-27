@@ -84,18 +84,28 @@
         </div>
 
         <div class="field">
-          <span class="label">Campos de la empresa</span>
+          <span class="label">Datos del cliente</span>
+          @if (fieldProblems().length) {
+            <div class="form-alert" role="alert"><app-icon name="alert" /><span>{{ fieldProblems().join(' ') }}</span></div>
+          }
+          @if (customFields.customers().length) {
+            <app-custom-values-form [fields]="customFields.customers()" [values]="customValues()" (changed)="customValues.set($event); fieldProblems.set([])" />
+          } @else {
+            <p class="field-hint">
+              Tu empresa todavía no definió datos de clientes (por ejemplo Zona o Vehículo).
+              @if (session.isTenantAdmin()) { Se crean en <a class="link" routerLink="/settings">Ajustes → Datos de clientes</a>. }
+            </p>
+          }
           @for (attribute of attributes(); track attribute.key; let i = $index) {
-            <div class="attr">
-              <label [for]="'attr-' + i">{{ attribute.label }}</label>
-              <input [id]="'attr-' + i" class="input" [value]="attribute.value" (input)="setAttribute(i, $event)" />
+            <div class="note">
+              <app-icon name="note" />
+              <span>Anotado antes: <b>{{ attribute.label }}</b> · {{ attribute.value }}</span>
               <button type="button" class="link danger" (click)="removeAttribute(i)">Quitar</button>
             </div>
           }
-          <div class="attr add">
-            <input class="input" placeholder="Nuevo campo, p. ej. Dirección" aria-label="Nombre del campo nuevo" [value]="newFieldLabel()" (input)="onNewFieldLabel($event)" />
-            <button type="button" class="btn" (click)="addAttribute()"><app-icon name="plus" />Agregar campo</button>
-          </div>
+          @if (attributes().length && session.isTenantAdmin()) {
+            <p class="field-hint">Estas notas se pasan a un dato en <a class="link" routerLink="/settings">Ajustes → Datos de clientes</a>, para todos los clientes a la vez.</p>
+          }
         </div>
       </form>
 
