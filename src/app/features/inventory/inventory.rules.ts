@@ -50,10 +50,10 @@ export function movementError(variant: ProductVariant, quantity: number, unit: S
   return null;
 }
 
-/** SKUs are upper case, digits and dashes, unique inside the company. */
+/** Product codes (SKU) are upper case, digits and dashes, unique inside the company. */
 export function skuError(sku: string, taken: string[]): string | null {
-  if (!/^[A-Z0-9][A-Z0-9-]{1,39}$/.test(sku)) return 'SKU: mayúsculas, números y guiones (ej.: FRN-BOS-COR15).';
-  if (taken.includes(sku)) return `El SKU ${sku} ya existe.`;
+  if (!/^[A-Z0-9][A-Z0-9-]{1,39}$/.test(sku)) return 'Código: usa mayúsculas, números y guiones, de 2 a 40 (ej.: FRN-BOS-01).';
+  if (taken.includes(sku)) return `El código ${sku} ya existe en otro producto.`;
   return null;
 }
 

@@ -85,7 +85,7 @@ export function analyzeProductImport(rows: string[][], mapping: ProductImportFie
     const skuProblem = skuError(sku, []);
     if (skuProblem) return error(skuProblem);
     const firstLine = seen.get(sku);
-    if (firstLine) return error(`SKU repetido en el archivo (línea ${firstLine})`);
+    if (firstLine) return error(`Código repetido en el archivo (línea ${firstLine})`);
     seen.set(sku, line);
     if (base.priceCents === null) return error('Precio no válido');
     if (!saleUnit) return error('Unidad de venta no reconocida: usa Unidad, Kilo, Metro, Caja…');

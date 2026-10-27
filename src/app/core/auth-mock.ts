@@ -43,6 +43,9 @@ export class MockAuth extends Auth {
     effect(() => writeStored(STORAGE_KEY, this.state()));
   }
 
+  /** The prototype has no server to lose. */
+  override readonly serverUnreachable = signal(false).asReadonly();
+
   override restore(): Promise<void> {
     return Promise.resolve();
   }

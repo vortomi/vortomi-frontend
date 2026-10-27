@@ -7,7 +7,7 @@
   <label class="search">
     <app-icon name="search" />
     <span class="visually-hidden">Buscar producto</span>
-    <input type="search" placeholder="Buscar producto o SKU" [value]="search()" (input)="search.set(value($event))" />
+    <input type="search" placeholder="Buscar producto o código" [value]="search()" (input)="search.set(value($event))" />
   </label>
   @if (session.isTenantAdmin()) {
     @if (!data.onServer) {

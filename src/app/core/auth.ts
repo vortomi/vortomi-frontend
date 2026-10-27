@@ -1,7 +1,8 @@
 import type { Signal } from '@angular/core';
 import type { Id } from '../shared/api/models';
 
-export type SignInResult = 'signed_in' | 'mfa_required' | 'invalid' | 'locked';
+/** 'unavailable': our server did not answer (down, restarting, no network); nothing about the password. */
+export type SignInResult = 'signed_in' | 'mfa_required' | 'invalid' | 'locked' | 'unavailable';
 
 /**
  * Who is signed in and which company they are working on. Two implementations, picked by
@@ -14,6 +15,8 @@ export abstract class Auth {
   /** Password accepted, second factor still pending. */
   abstract readonly mfaPendingUserId: Signal<Id | null>;
   abstract readonly activeTenantId: Signal<Id | null>;
+  /** The last attempt could not reach our server: the sign-in page says so instead of a password error. */
+  abstract readonly serverUnreachable: Signal<boolean>;
 
   /** Picks up a session that survived a reload. Runs once, before the first route. */
   abstract restore(): Promise<void>;

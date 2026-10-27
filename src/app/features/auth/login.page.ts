@@ -19,6 +19,8 @@ const DEMO_ACCOUNTS = [
   { email: 'yornel@vortomi.com', label: 'Yornel · nuestro equipo' },
 ];
 
+const UNREACHABLE = 'No pudimos conectar con el servidor de Vortomi. No es tu contraseña: intenta de nuevo en un momento.';
+
 @Component({
   selector: 'app-login-page',
   imports: [FormField, RouterLink, FieldError, Icon],
@@ -36,6 +38,9 @@ export class LoginPage {
   /** Sample accounts exist only in the prototype; real sessions use Supabase. */
   protected readonly demoAccounts = inject(API_CONFIG).mode === 'mock' ? DEMO_ACCOUNTS : [];
   protected readonly error = signal<string | null>(null);
+  /** A session that could not be picked up because the server was down: explained before anyone types. */
+  protected readonly unreachable = this.auth.serverUnreachable;
+  protected readonly unreachableText = UNREACHABLE;
   protected readonly credentials = form(signal({ email: '', password: '' }), (path) => {
     required(path.email, { message: 'Escribe tu correo.' });
     email(path.email, { message: 'Ese correo no parece válido.' });
@@ -63,6 +68,9 @@ export class LoginPage {
           break;
         case 'locked':
           this.error.set('Demasiados intentos fallidos. Espera 15 minutos o recupera tu contraseña.');
+          break;
+        case 'unavailable':
+          this.error.set(UNREACHABLE);
           break;
         case 'invalid':
           // Same message whether the email exists or not: no account enumeration.

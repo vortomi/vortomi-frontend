@@ -39,7 +39,7 @@
               <dt>Categoría</dt><dd>{{ categoryName(f.categoryId) }}</dd>
               <dt>Se vende por</dt><dd>{{ saleSummary(f) }}</dd>
               <dt>Existencia</dt><dd>{{ f.stockMode === 'units' ? 'Se cuenta (se compra y se revende)' : 'Disponible hoy (se hace por encargo)' }}</dd>
-              <dt>Variantes por</dt><dd>{{ typeNames(f.variantTypeIds) }}</dd>
+              <dt>Versiones</dt><dd>{{ versionsSummary(f) }}</dd>
               <dt>Estado</dt><dd>{{ f.active ? 'Activo: se puede ofrecer y enviar' : 'Inactivo: no se ofrece' }}</dd>
               <dt>Descripción</dt><dd>{{ f.description || '—' }}</dd>
             </dl>
@@ -94,10 +94,10 @@
         </section>
 
         <section class="card box">
-          <h2>Variantes y precios</h2>
+          <h2>{{ editing() && !f.versions ? 'Precio y existencia' : 'Versiones y precios' }}</h2>
           @if (!editing()) {
             <div class="vtable">
-              <div class="vread head"><span>Variante</span><span>SKU</span><span>Precio</span><span>Aviso con</span><span>Disponible</span></div>
+              <div class="vread head"><span>Versión</span><span>Código</span><span>Precio</span><span>Avisar cuando queden</span><span>Disponible</span></div>
               @for (v of variants(); track v.id) {
                 <div class="vread">
                   <span class="vname">{{ v.name }}</span>
@@ -109,12 +109,21 @@
               }
             </div>
           } @else {
+            <div class="versions" role="radiogroup" aria-label="¿Viene en varias versiones?">
+              <span class="label">¿Viene en varias versiones? <small class="muted">Por ejemplo tallas, colores o marcas.</small></span>
+              <div class="seg">
+                <button type="button" role="radio" [class.on]="!f.versions" [attr.aria-checked]="!f.versions" (click)="setVersions(false)">No, una sola</button>
+                <button type="button" role="radio" [class.on]="f.versions" [attr.aria-checked]="f.versions" (click)="setVersions(true)">Sí, varias</button>
+              </div>
+            </div>
+
+            @if (f.versions) {
             <div class="types">
-              <span class="label">Las variantes se distinguen por</span>
+              <span class="label">¿En qué se diferencian?</span>
               <div class="type-slots">
                 @for (slot of typeSlots(); track $index; let i = $index) {
                   <select class="input" [attr.aria-label]="'Clase ' + (i + 1)" [disabled]="typesLocked()" (change)="setType(i, $event)">
-                    <option value="" [selected]="!slot">{{ i === 0 ? 'Sin clases: nombre libre' : (slot ? 'Quitar esta clase' : '+ Agregar otra clase') }}</option>
+                    <option value="" [selected]="!slot">{{ i === 0 ? 'Les pongo nombre yo' : (slot ? 'Quitar esta clase' : '+ Agregar otra (opcional)') }}</option>
                     @for (t of typeChoices(i); track t.type.id) {
                       <option [value]="t.type.id" [selected]="t.type.id === slot">{{ t.type.name }}</option>
                     }
@@ -124,7 +133,7 @@
               </div>
               <p class="field-hint">
                 @if (typesLocked()) { No se cambian: sus variantes ya usan estos valores. }
-                Hasta 3 clases combinadas, por ejemplo Talla × Color. <a class="link" routerLink="/inventory/variant-types">Administrar variantes</a>
+                Puedes combinar hasta 3, por ejemplo Talla × Color. Las tallas, colores y demás se crean una vez en <a class="link" routerLink="/inventory/variant-types">Variantes</a>.
               </p>
             </div>
 
@@ -144,23 +153,26 @@
                     </div>
                   </div>
                 }
-                <p class="field-hint">Marca los valores que vendes: se arma una variante por cada combinación. Quita las que no tengas.</p>
+                <p class="field-hint">Marca los que vendes: se arma una versión por cada combinación. Quita las que no tengas.</p>
               </div>
+            }
             }
 
             <div class="variants">
               <div class="vrow head">
-                <span>Variante</span><span>SKU</span><span>Precio USD{{ f.saleUnit === 'unit' ? '' : ' (' + unitText[f.saleUnit].per + ')' }}</span><span>Aviso con</span>
-                <span>{{ isNew() ? 'Existencia inicial' : 'Disponible' }}</span><span></span>
+                <span>{{ f.versions ? 'Versión' : '' }}</span><span>Código</span><span>Precio USD{{ f.saleUnit === 'unit' ? '' : ' (' + unitText[f.saleUnit].per + ')' }}</span>
+                <span>Avisar cuando queden</span><span>{{ isNew() ? 'Cantidad inicial' : 'Disponible' }}</span><span></span>
               </div>
               @for (row of f.rows; track $index; let i = $index) {
                 <div class="vrow">
-                  @if (f.variantTypeIds.length || row.optionIds.length) {
+                  @if (!f.versions) {
+                    <span class="combo muted">Única</span>
+                  } @else if (f.variantTypeIds.length || row.optionIds.length) {
                     <span class="combo">{{ rowName(row) }}</span>
                   } @else {
-                    <input class="input" aria-label="Variante" [value]="row.name" (input)="setRow(i, 'name', $event)" />
+                    <input class="input" aria-label="Nombre de la versión" placeholder="Ej.: Bosch" [value]="row.name" (input)="setRow(i, 'name', $event)" />
                   }
-                  <input class="input mono" aria-label="SKU" [value]="row.sku" (input)="setRow(i, 'sku', $event)" />
+                  <input class="input mono" aria-label="Código del producto" placeholder="Ej.: FRN-BOS-01" [value]="row.sku" (input)="setRow(i, 'sku', $event)" />
                   <input class="input" aria-label="Precio en dólares" inputmode="decimal" placeholder="38,00" [value]="row.price" (input)="setRow(i, 'price', $event)" />
                   <input class="input" aria-label="Avisar cuando queden" inputmode="decimal" [value]="row.threshold" (input)="setRow(i, 'threshold', $event)" />
                   @if (row.id && data.variantById().get(row.id); as v) {
@@ -169,14 +181,15 @@
                     <input class="input" aria-label="Existencia inicial" inputmode="decimal" [value]="row.initialStock" [disabled]="f.stockMode === 'availability'"
                       (input)="setRow(i, 'initialStock', $event)" />
                   }
-                  <button type="button" class="link danger" (click)="removeRow(i)">Quitar</button>
+                  @if (f.versions) { <button type="button" class="link danger" (click)="removeRow(i)">Quitar</button> } @else { <span></span> }
                 </div>
               } @empty {
-                <p class="field-hint">Marca al menos un valor de cada clase para armar las variantes.</p>
+                <p class="field-hint">{{ f.variantTypeIds.length ? 'Marca al menos un valor de cada una para armar las versiones.' : 'Agrega la primera versión.' }}</p>
               }
             </div>
-            @if (!f.variantTypeIds.length) {
-              <button type="button" class="btn add" (click)="addRow()"><app-icon name="plus" />Agregar variante</button>
+            <p class="field-hint">El código es el que usas para identificar el producto (en tu factura o etiqueta): mayúsculas, números y guiones.</p>
+            @if (f.versions && !f.variantTypeIds.length) {
+              <button type="button" class="btn add" (click)="addRow()"><app-icon name="plus" />Agregar versión</button>
             }
           }
         </section>

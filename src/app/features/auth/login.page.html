@@ -4,6 +4,8 @@
 
   @if (error(); as message) {
     <div class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</div>
+  } @else if (unreachable()) {
+    <div class="form-alert warn" role="status"><app-icon name="alert" />{{ unreachableText }}</div>
   }
 
   <form (submit)="onSubmit($event)" novalidate>

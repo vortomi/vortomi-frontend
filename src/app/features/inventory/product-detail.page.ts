@@ -36,6 +36,8 @@ interface VariantRow {
 /** Everything the edit form holds; empty ids mean "none chosen". */
 interface ProductForm extends SaleSettings {
   name: string;
+  /** «¿Viene en varias versiones?»: no means a single variant, «Única», with nothing else to decide. */
+  versions: boolean;
   categoryId: Id | '';
   /** Up to three types combined, in order. */
   variantTypeIds: Id[];
@@ -75,6 +77,7 @@ function formOf(product: Product | null, variants: ProductVariant[]): ProductFor
     : [emptyRow('Única')];
   return {
     name: product?.name ?? '',
+    versions: typeIds.length > 0 || rows.length > 1,
     categoryId: product?.categoryId ?? '',
     variantTypeIds: typeIds,
     picked: pickedOf(typeIds, rows),
@@ -189,12 +192,30 @@ export class ProductDetailPage {
     const chosen = this.value(event);
     const current = this.form().variantTypeIds;
     const variantTypeIds = chosen ? [...current.slice(0, slot), chosen, ...current.slice(slot + 1)] : current.filter((_, i) => i !== slot);
-    const kept = this.form().rows.filter((r) => r.id !== null);
-    this.patch({
-      variantTypeIds,
-      picked: variantTypeIds.map(() => []),
-      rows: variantTypeIds.length ? kept : kept.length ? kept : [emptyRow('Única')],
-    });
+    this.patch({ variantTypeIds, picked: variantTypeIds.map(() => []), rows: this.form().rows.filter((r) => r.id !== null) });
+  }
+
+  /**
+   * «Una sola» keeps one plain variant and nothing to decide; «Varias» opens the types and values.
+   * Saved versions are never merged: a product with several saved ones stays with several.
+   */
+  protected setVersions(versions: boolean): void {
+    const f = this.form();
+    if (versions === f.versions) return;
+    if (versions) {
+      // A blank «Única» gives way to the versions the person builds; one with data stays.
+      const only = f.rows.length === 1 ? f.rows[0]! : null;
+      const blank = only && only.id === null && !only.sku && !only.price;
+      this.patch({ versions, rows: blank ? [] : f.rows });
+      return;
+    }
+    const saved = f.rows.filter((r) => r.id !== null);
+    if (saved.length > 1 || this.typesLocked()) {
+      this.toaster.show('Ya tiene varias versiones guardadas: no se pueden juntar en una sola.', 'info');
+      return;
+    }
+    const keep = saved[0] ?? f.rows[0] ?? emptyRow();
+    this.patch({ versions, variantTypeIds: [], picked: [], rows: [{ ...keep, optionIds: [], name: keep.id ? keep.name : 'Única' }] });
   }
 
   /** Types already chosen in another slot are not offered again. */
@@ -325,24 +346,24 @@ export class ProductDetailPage {
     const problems: string[] = [];
     if (!f.name.trim()) problems.push('Escribe el nombre del producto.');
     if (!this.categories.byId().has(f.categoryId)) problems.push('Elige la categoría.');
-    if (!f.rows.length) problems.push(typed ? 'Marca al menos un valor de cada clase.' : 'Agrega al menos una variante.');
+    if (!f.rows.length) problems.push(typed ? 'Marca al menos un valor de cada clase.' : 'Agrega al menos una versión.');
     const amountHint = takesDecimals(f.saleUnit) ? 'un número de 0 o más, con hasta 3 decimales' : 'un número entero de 0 o más';
     const seen: string[] = [];
     const drafts: VariantDraft[] = [];
     f.rows.forEach((row, i) => {
       const name = this.rowName(row).trim();
-      const label = name || `Variante ${i + 1}`;
+      const label = name || `Versión ${i + 1}`;
       const price = parsePriceCents(row.price);
       const threshold = parseQuantity(row.threshold || '0', f.saleUnit);
       const initialStock = parseQuantity(row.initialStock || '0', f.saleUnit);
       const skuProblem = skuError(row.sku, [...takenElsewhere, ...seen]);
       // A saved variant from before the product had types keeps its typed name.
       if (typed && row.id === null && row.optionIds.length !== f.variantTypeIds.length) problems.push(`${label}: le falta un valor.`);
-      if (!name) problems.push(`${label}: escribe el nombre de la variante.`);
+      if (!name) problems.push(`${label}: escribe el nombre de la versión.`);
       if (skuProblem) problems.push(`${label}: ${skuProblem}`);
       if (price === null) problems.push(`${label}: precio no válido.`);
-      if (threshold === null) problems.push(`${label}: «Aviso con» debe ser ${amountHint}.`);
-      if (initialStock === null) problems.push(`${label}: la existencia inicial debe ser ${amountHint}.`);
+      if (threshold === null) problems.push(`${label}: «Avisar cuando queden» debe ser ${amountHint}.`);
+      if (initialStock === null) problems.push(`${label}: la cantidad inicial debe ser ${amountHint}.`);
       seen.push(row.sku);
       if (price !== null && threshold !== null && initialStock !== null) {
         drafts.push({ id: row.id, optionIds: row.optionIds, name, sku: row.sku, priceCents: price, lowStockThreshold: threshold, initialStock });
@@ -379,9 +400,10 @@ export class ProductDetailPage {
     return this.variantTypes.typeById().get(id)?.type.name ?? '';
   }
 
-  /** "Talla × Color", or how variants are told apart without types. */
-  protected typeNames(ids: Id[]): string {
-    return ids.length ? ids.map((id) => this.typeName(id)).join(' × ') : 'Sin clases: cada variante con su nombre';
+  /** "Por Talla × Color", "Una sola" or "Con nombre propio". */
+  protected versionsSummary(f: ProductForm): string {
+    if (!f.versions) return 'Una sola';
+    return f.variantTypeIds.length ? `Por ${f.variantTypeIds.map((id) => this.typeName(id)).join(' × ')}` : 'Varias, cada una con su nombre';
   }
 
   /** "Kilo · desde 0,5 kg, de 0,5 en 0,5" */

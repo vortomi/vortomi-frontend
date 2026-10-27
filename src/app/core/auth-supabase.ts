@@ -12,6 +12,15 @@ import { readStored, writeStored } from './storage';
 const ACTIVE_TENANT_KEY = 'vortomi.activeTenant';
 
 /**
+ * Our server did not answer, or failed on its side (no network, down, restarting): not the
+ * person's fault, so their Supabase session is kept for when it is back.
+ */
+function isUnreachable(error: unknown): boolean {
+  const { status } = toApiFailure(error);
+  return status === 0 || status >= 500;
+}
+
+/**
  * Real sign-in: Supabase Auth checks the password and keeps the session; vortomi-backend
  * then says who the person is and where they may enter (/me). Errors stay generic so the
  * page never reveals whether an email has an account.
@@ -35,6 +44,8 @@ export class SupabaseAuth extends Auth {
   override readonly userId = this.signedIn.asReadonly();
   override readonly mfaPendingUserId = this.mfaPending.asReadonly();
   override readonly activeTenantId = this.activeTenant.asReadonly();
+  private readonly unreachable = signal(false);
+  override readonly serverUnreachable = this.unreachable.asReadonly();
 
   constructor() {
     super();
@@ -46,11 +57,17 @@ export class SupabaseAuth extends Auth {
       const { data } = await this.supabase.auth.getSession();
       if (!data.session) return;
       const me = await this.remote.loadMe();
+      this.unreachable.set(false);
       this.signedIn.set(me.user.id);
       const tenantId = this.activeTenant();
       if (tenantId && me.companies.some((c) => c.tenantId === tenantId)) await this.openCompany(tenantId);
       else this.activeTenant.set(null);
-    } catch {
+    } catch (error) {
+      // Our server did not answer: the session stays, and the sign-in page says why.
+      if (isUnreachable(error)) {
+        this.unreachable.set(true);
+        return;
+      }
       // Expired or revoked session, or no account: start clean on the sign-in page.
       await this.forget();
     } finally {
@@ -60,10 +77,11 @@ export class SupabaseAuth extends Auth {
 
   override async signIn(email: string, password: string): Promise<SignInResult> {
     const { error } = await this.supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
-    // Supabase answers 429 when it rate-limits repeated attempts.
-    if (error) return error.status === 429 ? 'locked' : 'invalid';
+    // Supabase answers 429 when it rate-limits repeated attempts; no status or 5xx means it was not reached.
+    if (error) return error.status === 429 ? 'locked' : !error.status || error.status >= 500 ? 'unavailable' : 'invalid';
     try {
       const me = await this.remote.loadMe();
+      this.unreachable.set(false);
       this.activeTenant.set(null);
       // Our team with the authenticator app set up: the code comes before anything else.
       if (me.user.platformRole === 'super_admin' && (await this.secondFactor.state()) === 'needs_code') {
@@ -72,7 +90,12 @@ export class SupabaseAuth extends Auth {
       }
       this.signedIn.set(me.user.id);
       return 'signed_in';
-    } catch {
+    } catch (failure) {
+      // The password was right but our server did not answer: keep the session, say so.
+      if (isUnreachable(failure)) {
+        this.unreachable.set(true);
+        return 'unavailable';
+      }
       // A real Supabase user we never invited: same answer as a wrong password.
       await this.forget();
       return 'invalid';

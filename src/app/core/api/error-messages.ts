@@ -43,7 +43,7 @@ const MESSAGES: Record<string, string> = {
 
   // Inventory
   inventory_item_not_found: 'Ese producto ya no existe.',
-  sku_taken: 'Ese SKU ya lo usa otro producto de la empresa.',
+  sku_taken: 'Ese código ya lo usa otro producto de la empresa.',
   insufficient_stock: 'No hay suficientes unidades disponibles.',
   invalid_movement: 'La cantidad no corresponde al tipo de movimiento.',
   category_not_found: 'Esa categoría ya no existe.',

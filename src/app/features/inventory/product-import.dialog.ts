@@ -12,7 +12,7 @@ import { formatQuantity } from './sale-units';
 
 const MAX_FILE_BYTES = 2_000_000;
 const LABEL: Record<ProductImportField, string> = {
-  sku: 'SKU',
+  sku: 'Código (SKU)',
   product: 'Producto',
   category: 'Categoría',
   variant: 'Variante',
@@ -31,7 +31,7 @@ const LABEL: Record<ProductImportField, string> = {
       <div class="drop">
         <b>Archivo CSV</b>
         <input type="file" accept=".csv,text/csv" aria-label="Archivo CSV" (change)="onFile($event)" />
-        <span class="field-hint">Una fila por variante: SKU, producto, categoría, variante, precio y existencia. Las filas con un SKU que ya existe actualizan su precio y su existencia.
+        <span class="field-hint">Una fila por versión: código, producto, categoría, variante, precio y existencia. Las filas con un código que ya existe actualizan su precio y su existencia.
           <button type="button" class="link" (click)="downloadTemplate()">Descargar plantilla</button></span>
       </div>
       @if (fileError(); as message) {
@@ -51,7 +51,7 @@ const LABEL: Record<ProductImportField, string> = {
           }
         </div>
         @if (missing()) {
-          <div class="form-alert warn"><app-icon name="alert" />Indica qué columna tiene el SKU y cuál el precio.</div>
+          <div class="form-alert warn"><app-icon name="alert" />Indica qué columna tiene el código y cuál el precio.</div>
         } @else {
           <div class="summary">
             <app-pill tone="green">{{ counts().new }} nuevos</app-pill>
@@ -60,7 +60,7 @@ const LABEL: Record<ProductImportField, string> = {
           </div>
           <div class="preview">
             <table class="data-table">
-              <thead><tr><th>Línea</th><th>SKU</th><th>Producto</th><th>Precio</th><th>Existencia</th><th>Resultado</th></tr></thead>
+              <thead><tr><th>Línea</th><th>Código</th><th>Producto</th><th>Precio</th><th>Existencia</th><th>Resultado</th></tr></thead>
               <tbody>
                 @for (row of analysis(); track row.line) {
                   <tr [class.row-error]="row.status === 'error'">
