@@ -2,9 +2,8 @@ import { Component, computed, effect, inject, input, signal, untracked } from '@
 import { Router, RouterLink } from '@angular/router';
 import { Directory } from '../../core/directory';
 import { Session } from '../../core/session';
-import { Workspace } from '../../core/workspace';
 import { STOCK_STATUS } from '../../shared/api/labels';
-import type { Id, Product, ProductVariant, StockMode, StockMovementKind } from '../../shared/api/models';
+import type { Id, Product, ProductVariant, SaleUnit, StockMode, StockMovementKind } from '../../shared/api/models';
 import { formatShortDate } from '../../shared/format/date-time';
 import { formatUsdCents, formatVes } from '../../shared/format/money';
 import { imageFileError, readAsDataUrl } from '../../shared/files/image';
@@ -16,25 +15,32 @@ import { ExchangeRates } from '../exchange-rates/exchange-rates.data';
 import { CategoriesData } from './categories.data';
 import { InventoryData, type VariantDraft } from './inventory.data';
 import { MOVEMENT_LABEL, freeUnits, parsePriceCents, skuError, toBolivares, variantStatus } from './inventory.rules';
+import { SaleUnitPicker, type SaleSettings } from './sale-unit-picker';
+import { SALE_UNIT, formatNumber, formatQuantity, parseQuantity, perUnit, takesDecimals } from './sale-units';
+import { addValue, dropValue } from './variant-combinations';
 import { VariantTypesData } from './variant-types.data';
 
 interface VariantRow {
   id: Id | null;
-  /** A value of the product's type; empty while none is chosen. */
-  optionId: Id | '';
-  /** Used when the product has no type. */
+  /** One value of each of the product's types, in order; empty for a variant named freely. */
+  optionIds: Id[];
+  /** Used when the product has no types. */
   name: string;
   sku: string;
   price: string;
-  threshold: number;
-  initialStock: number;
+  /** Typed as text: "2,5" for a product sold by the kilo. */
+  threshold: string;
+  initialStock: string;
 }
 
 /** Everything the edit form holds; empty ids mean "none chosen". */
-interface ProductForm {
+interface ProductForm extends SaleSettings {
   name: string;
   categoryId: Id | '';
-  variantTypeId: Id | '';
+  /** Up to three types combined, in order. */
+  variantTypeIds: Id[];
+  /** The values picked for each type, in the same order: their combinations are the rows. */
+  picked: Id[][];
   description: string;
   photo: string | null;
   stockMode: StockMode;
@@ -43,33 +49,43 @@ interface ProductForm {
 }
 
 const PHOTO_MAX_BYTES = 800_000;
+const MAX_TYPES = 3;
 /** Kinds a person records by hand; "sale" also comes from paid orders later. */
 const MANUAL_KINDS: StockMovementKind[] = ['purchase', 'sale', 'loss', 'return', 'adjustment'];
-/** These always remove units: the person types how many, the sign is implied. */
+/** These always remove: the person types how much, the sign is implied. */
 const REMOVING: StockMovementKind[] = ['sale', 'loss'];
 
-const emptyRow = (name = ''): VariantRow => ({ id: null, optionId: '', name, sku: '', price: '', threshold: 0, initialStock: 0 });
+const emptyRow = (name = '', optionIds: Id[] = []): VariantRow => ({ id: null, optionIds, name, sku: '', price: '', threshold: '0', initialStock: '0' });
+
+/** The values each type uses in the rows, in the rows' order. */
+const pickedOf = (typeIds: Id[], rows: VariantRow[]): Id[][] => typeIds.map((_, i) => [...new Set(rows.map((r) => r.optionIds[i]).filter((id): id is Id => !!id))]);
 
 function formOf(product: Product | null, variants: ProductVariant[]): ProductForm {
+  const typeIds = product?.variantTypeIds ?? [];
+  const rows: VariantRow[] = variants.length
+    ? variants.map((v) => ({
+        id: v.id,
+        optionIds: v.optionIds,
+        name: v.name,
+        sku: v.sku,
+        price: (v.priceCents / 100).toFixed(2).replace('.', ','),
+        threshold: formatNumber(v.lowStockThreshold),
+        initialStock: '0',
+      }))
+    : [emptyRow('Única')];
   return {
     name: product?.name ?? '',
     categoryId: product?.categoryId ?? '',
-    variantTypeId: product?.variantTypeId ?? '',
+    variantTypeIds: typeIds,
+    picked: pickedOf(typeIds, rows),
     description: product?.description ?? '',
     photo: product?.photoDataUrl ?? null,
     stockMode: product?.stockMode ?? 'units',
+    saleUnit: product?.saleUnit ?? 'unit',
+    minQuantity: product?.minQuantity ?? 1,
+    quantityStep: product?.quantityStep ?? 1,
     active: product?.active ?? true,
-    rows: variants.length
-      ? variants.map((v) => ({
-          id: v.id,
-          optionId: v.optionId ?? '',
-          name: v.name,
-          sku: v.sku,
-          price: (v.priceCents / 100).toFixed(2).replace('.', ','),
-          threshold: v.lowStockThreshold,
-          initialStock: 0,
-        }))
-      : [emptyRow('Única')],
+    rows,
   };
 }
 
@@ -79,7 +95,7 @@ function formOf(product: Product | null, variants: ProductVariant[]): ProductFor
  */
 @Component({
   selector: 'app-product-detail-page',
-  imports: [RouterLink, Icon, Pill],
+  imports: [RouterLink, Icon, Pill, SaleUnitPicker],
   templateUrl: './product-detail.page.html',
   styleUrl: './product-detail.page.scss',
 })
@@ -88,7 +104,6 @@ export class ProductDetailPage {
   protected readonly categories = inject(CategoriesData);
   protected readonly variantTypes = inject(VariantTypesData);
   protected readonly session = inject(Session);
-  private readonly workspace = inject(Workspace);
   private readonly directory = inject(Directory);
   private readonly router = inject(Router);
   private readonly toaster = inject(Toaster);
@@ -104,6 +119,8 @@ export class ProductDetailPage {
   protected readonly statusLabel = STOCK_STATUS;
   protected readonly kindLabel = MOVEMENT_LABEL;
   protected readonly manualKinds = MANUAL_KINDS;
+  protected readonly unitText = SALE_UNIT;
+  protected readonly number = formatNumber;
 
   /** What is saved; the form starts from it and «Cancelar» goes back to it. */
   private readonly saved = computed(() => formOf(this.product(), this.variants()));
@@ -117,11 +134,17 @@ export class ProductDetailPage {
 
   /** On the server a product keeps the stock mode it was created with. */
   protected readonly stockModeLocked = computed(() => this.data.onServer && !this.isNew());
-  /** The type cannot change while its saved variants use its values. */
-  protected readonly typeLocked = computed(() => !this.isNew() && this.variants().some((v) => v.optionId));
-  protected readonly typeOptions = computed(() => this.variantTypes.typeById().get(this.form().variantTypeId)?.options ?? []);
+  /** The types cannot change while saved variants use their values. */
+  protected readonly typesLocked = computed(() => !this.isNew() && this.variants().some((v) => v.optionIds.length));
+  /** One select per chosen type, plus an empty one to add another (up to three). */
+  protected readonly typeSlots = computed(() => {
+    const ids = this.form().variantTypeIds;
+    return ids.length < MAX_TYPES && !this.typesLocked() ? [...ids, ''] : ids;
+  });
+  /** Values a saved variant uses: they stay picked (a saved variant is never deleted from here). */
+  private readonly savedValues = computed(() => new Set(this.variants().flatMap((v) => v.optionIds)));
 
-  protected readonly movement = signal({ variantId: '', kind: 'purchase' as StockMovementKind, quantity: 1, reason: '' });
+  protected readonly movement = signal({ variantId: '', kind: 'purchase' as StockMovementKind, quantity: '1', reason: '' });
   /** The form was filled once: from then on, while editing, only the person changes it. */
   private filled = false;
 
@@ -154,21 +177,64 @@ export class ProductDetailPage {
     this.form.update((f) => ({ ...f, ...change }));
   }
 
-  /** Another type means other values: the rows choose again. */
-  protected setType(event: Event): void {
-    const variantTypeId = this.value(event);
-    this.patch({ variantTypeId, rows: this.form().rows.map((r) => ({ ...r, optionId: '' })) });
+  protected setSale(sale: SaleSettings): void {
+    this.patch(sale);
+  }
+
+  /**
+   * Choosing, changing or removing a type («''») changes which values tell variants apart: the
+   * values are picked again and the new rows start over. Saved rows always stay.
+   */
+  protected setType(slot: number, event: Event): void {
+    const chosen = this.value(event);
+    const current = this.form().variantTypeIds;
+    const variantTypeIds = chosen ? [...current.slice(0, slot), chosen, ...current.slice(slot + 1)] : current.filter((_, i) => i !== slot);
+    const kept = this.form().rows.filter((r) => r.id !== null);
+    this.patch({
+      variantTypeIds,
+      picked: variantTypeIds.map(() => []),
+      rows: variantTypeIds.length ? kept : kept.length ? kept : [emptyRow('Única')],
+    });
+  }
+
+  /** Types already chosen in another slot are not offered again. */
+  protected typeChoices(slot: number) {
+    const others = new Set(this.form().variantTypeIds.filter((_, i) => i !== slot));
+    return this.variantTypes.list().filter((t) => !others.has(t.type.id));
+  }
+
+  protected optionsOf(typeId: Id) {
+    return this.variantTypes.typeById().get(typeId)?.options ?? [];
+  }
+
+  protected isPicked(typeIndex: number, optionId: Id): boolean {
+    return this.form().picked[typeIndex]?.includes(optionId) ?? false;
+  }
+
+  protected isSavedValue(optionId: Id): boolean {
+    return this.savedValues().has(optionId);
+  }
+
+  /** Picking a value adds its combinations; dropping it takes away the new rows that use it. */
+  protected toggleValue(typeIndex: number, optionId: Id): void {
+    const f = this.form();
+    const on = this.isPicked(typeIndex, optionId);
+    if (on && this.isSavedValue(optionId)) return;
+    const picked = f.picked.map((list, i) => (i !== typeIndex ? list : on ? list.filter((id) => id !== optionId) : [...list, optionId]));
+    const rows = on ? dropValue(f.rows, typeIndex, optionId) : addValue(f.rows, picked, typeIndex, optionId, (ids) => emptyRow('', ids));
+    this.patch({ picked, rows });
+  }
+
+  /** "M / Rojo": the row's values, or its typed name. */
+  protected rowName(row: VariantRow): string {
+    const options = this.variantTypes.optionById();
+    return row.optionIds.length ? row.optionIds.map((id) => options.get(id)?.value ?? '?').join(' / ') : row.name;
   }
 
   protected setRow(index: number, key: keyof VariantRow, event: Event): void {
     const raw = this.value(event);
-    const value = key === 'threshold' || key === 'initialStock' ? Math.max(0, Math.floor(Number(raw) || 0)) : key === 'sku' ? raw.toUpperCase() : raw;
+    const value = key === 'sku' ? raw.toUpperCase() : raw;
     this.patch({ rows: this.form().rows.map((r, i) => (i === index ? { ...r, [key]: value } : r)) });
-  }
-
-  /** Values another row of this product already uses: a product never repeats one. */
-  protected takenBy(index: number): Set<Id> {
-    return new Set(this.form().rows.filter((r, i) => i !== index && r.optionId).map((r) => r.optionId));
   }
 
   protected addRow(): void {
@@ -183,7 +249,7 @@ export class ProductDetailPage {
       return;
     }
     if (variant && (variant.onHand > 0 || variant.reserved > 0)) {
-      this.toaster.show('Tiene unidades en existencia: regístralas como merma o venta antes de quitarla.', 'info');
+      this.toaster.show('Tiene existencia: regístrala como merma o venta antes de quitarla.', 'info');
       return;
     }
     this.patch({ rows: this.form().rows.filter((_, i) => i !== index) });
@@ -231,10 +297,13 @@ export class ProductDetailPage {
         name: f.name.trim(),
         categoryId: f.categoryId || null,
         category: this.categories.byId().get(f.categoryId)?.name ?? '',
-        variantTypeId: f.variantTypeId || null,
+        variantTypeIds: f.variantTypeIds,
         description: f.description.trim(),
         photoDataUrl: f.photo,
         stockMode: f.stockMode,
+        saleUnit: f.saleUnit,
+        minQuantity: f.minQuantity,
+        quantityStep: f.quantityStep,
         active: f.active,
       },
       drafts,
@@ -252,33 +321,31 @@ export class ProductDetailPage {
   private validate(f: ProductForm): { problems: string[]; drafts: VariantDraft[] } {
     const ownIds = new Set(f.rows.map((r) => r.id));
     const takenElsewhere = this.data.variants().filter((v) => !ownIds.has(v.id)).map((v) => v.sku);
-    const options = this.variantTypes.optionById();
+    const typed = f.variantTypeIds.length > 0;
     const problems: string[] = [];
     if (!f.name.trim()) problems.push('Escribe el nombre del producto.');
     if (!this.categories.byId().has(f.categoryId)) problems.push('Elige la categoría.');
-    if (!f.rows.length) problems.push('Agrega al menos una variante.');
+    if (!f.rows.length) problems.push(typed ? 'Marca al menos un valor de cada clase.' : 'Agrega al menos una variante.');
+    const amountHint = takesDecimals(f.saleUnit) ? 'un número de 0 o más, con hasta 3 decimales' : 'un número entero de 0 o más';
     const seen: string[] = [];
     const drafts: VariantDraft[] = [];
     f.rows.forEach((row, i) => {
-      const name = f.variantTypeId ? (options.get(row.optionId)?.value ?? '') : row.name.trim();
+      const name = this.rowName(row).trim();
       const label = name || `Variante ${i + 1}`;
       const price = parsePriceCents(row.price);
+      const threshold = parseQuantity(row.threshold || '0', f.saleUnit);
+      const initialStock = parseQuantity(row.initialStock || '0', f.saleUnit);
       const skuProblem = skuError(row.sku, [...takenElsewhere, ...seen]);
-      if (f.variantTypeId && !options.has(row.optionId)) problems.push(`${label}: elige su valor.`);
-      if (!f.variantTypeId && !name) problems.push(`${label}: escribe el nombre de la variante.`);
+      // A saved variant from before the product had types keeps its typed name.
+      if (typed && row.id === null && row.optionIds.length !== f.variantTypeIds.length) problems.push(`${label}: le falta un valor.`);
+      if (!name) problems.push(`${label}: escribe el nombre de la variante.`);
       if (skuProblem) problems.push(`${label}: ${skuProblem}`);
       if (price === null) problems.push(`${label}: precio no válido.`);
+      if (threshold === null) problems.push(`${label}: «Aviso con» debe ser ${amountHint}.`);
+      if (initialStock === null) problems.push(`${label}: la existencia inicial debe ser ${amountHint}.`);
       seen.push(row.sku);
-      if (price !== null) {
-        drafts.push({
-          id: row.id,
-          optionId: f.variantTypeId ? row.optionId || null : null,
-          name,
-          sku: row.sku,
-          priceCents: price,
-          lowStockThreshold: row.threshold,
-          initialStock: row.initialStock,
-        });
+      if (price !== null && threshold !== null && initialStock !== null) {
+        drafts.push({ id: row.id, optionIds: row.optionIds, name, sku: row.sku, priceCents: price, lowStockThreshold: threshold, initialStock });
       }
     });
     return { problems, drafts };
@@ -286,15 +353,21 @@ export class ProductDetailPage {
 
   protected setMovement(key: 'variantId' | 'kind' | 'quantity' | 'reason', event: Event): void {
     const raw = this.value(event);
-    this.movement.update((m) => ({ ...m, [key]: key === 'quantity' ? Math.floor(Number(raw) || 0) : raw }));
+    this.movement.update((m) => ({ ...m, [key]: raw }));
   }
 
   protected async record(): Promise<void> {
     const { variantId, kind, quantity, reason } = this.movement();
-    const signed = REMOVING.includes(kind) ? -Math.abs(quantity) : kind === 'adjustment' ? quantity : Math.abs(quantity);
+    const unit = this.product()?.saleUnit ?? 'unit';
+    const negative = quantity.trim().startsWith('-');
+    const amount = parseQuantity(quantity.trim().replace(/^-/, ''), unit);
+    if (!amount) {
+      return this.toaster.show(takesDecimals(unit) ? 'Escribe una cantidad mayor que cero, con hasta 3 decimales.' : 'Escribe una cantidad entera mayor que cero.', 'info');
+    }
+    const signed = REMOVING.includes(kind) ? -amount : kind === 'adjustment' && negative ? -amount : amount;
     const error = await this.data.recordMovement(variantId, kind, signed, reason);
     if (error) return this.toaster.show(error, 'info');
-    this.movement.update((m) => ({ ...m, quantity: 1, reason: '' }));
+    this.movement.update((m) => ({ ...m, quantity: '1', reason: '' }));
     this.toaster.show('Movimiento registrado');
   }
 
@@ -303,7 +376,19 @@ export class ProductDetailPage {
   }
 
   protected typeName(id: Id | ''): string {
-    return this.variantTypes.typeById().get(id)?.type.name ?? 'Sin tipo: nombre libre';
+    return this.variantTypes.typeById().get(id)?.type.name ?? '';
+  }
+
+  /** "Talla × Color", or how variants are told apart without types. */
+  protected typeNames(ids: Id[]): string {
+    return ids.length ? ids.map((id) => this.typeName(id)).join(' × ') : 'Sin clases: cada variante con su nombre';
+  }
+
+  /** "Kilo · desde 0,5 kg, de 0,5 en 0,5" */
+  protected saleSummary(f: SaleSettings): string {
+    const label = SALE_UNIT[f.saleUnit].label;
+    if (!takesDecimals(f.saleUnit)) return f.minQuantity > 1 ? `${label} · desde ${formatQuantity(f.minQuantity, f.saleUnit)}` : label;
+    return `${label} · desde ${formatQuantity(f.minQuantity, f.saleUnit)}, de ${formatNumber(f.quantityStep)} en ${formatNumber(f.quantityStep)}`;
   }
 
   protected variantName(id: Id): string {
@@ -318,9 +403,21 @@ export class ProductDetailPage {
     return formatShortDate(iso, this.session.timezone());
   }
 
+  /** "$4,50 el kilo · 3.992,86 Bs" */
   protected money(cents: number): string {
     const rate = this.rate();
-    return rate ? `${formatUsdCents(cents)} · ${formatVes(toBolivares(cents, rate))}` : formatUsdCents(cents);
+    const per = perUnit(this.unit());
+    const usd = per ? `${formatUsdCents(cents)} ${per}` : formatUsdCents(cents);
+    return rate ? `${usd} · ${formatVes(toBolivares(cents, rate))}` : usd;
+  }
+
+  /** "12,5 kg", in the product's unit. */
+  protected qty(value: number): string {
+    return formatQuantity(value, this.unit());
+  }
+
+  private unit(): SaleUnit {
+    return this.product()?.saleUnit ?? this.form().saleUnit;
   }
 
   protected free = freeUnits;

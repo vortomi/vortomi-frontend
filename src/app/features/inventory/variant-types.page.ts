@@ -105,11 +105,11 @@ export class VariantTypesPage {
   });
 
   protected productsUsing(typeId: Id): number {
-    return this.inventory.products().filter((p) => p.variantTypeId === typeId).length;
+    return this.inventory.products().filter((p) => p.variantTypeIds.includes(typeId)).length;
   }
 
   protected variantsUsing(optionId: Id): number {
-    return this.inventory.variants().filter((v) => v.optionId === optionId).length;
+    return this.inventory.variants().filter((v) => v.optionIds.includes(optionId)).length;
   }
 
   protected openType(type: VariantType | null): void {

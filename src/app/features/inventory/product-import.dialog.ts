@@ -8,6 +8,7 @@ import { Pill } from '../../shared/ui/pill';
 import { Toaster } from '../../shared/ui/toaster';
 import { InventoryData } from './inventory.data';
 import { MAX_PRODUCT_ROWS, type ProductImportField, analyzeProductImport, guessProductMapping } from './product-import';
+import { formatQuantity } from './sale-units';
 
 const MAX_FILE_BYTES = 2_000_000;
 const LABEL: Record<ProductImportField, string> = {
@@ -17,6 +18,7 @@ const LABEL: Record<ProductImportField, string> = {
   variant: 'Variante',
   price: 'Precio USD',
   stock: 'Existencia',
+  unit: 'Se vende por',
   ignore: 'No importar',
 };
 
@@ -63,7 +65,7 @@ const LABEL: Record<ProductImportField, string> = {
                 @for (row of analysis(); track row.line) {
                   <tr [class.row-error]="row.status === 'error'">
                     <td>{{ row.line }}</td><td>{{ row.sku || '—' }}</td><td>{{ row.product || '—' }} · {{ row.variant }}</td>
-                    <td>{{ row.priceCents === null ? '—' : money(row.priceCents) }}</td><td>{{ row.stock ?? '—' }}</td>
+                    <td>{{ row.priceCents === null ? '—' : money(row.priceCents) }}</td><td>{{ row.stock === null ? '—' : quantity(row.stock, row.saleUnit) }}</td>
                     <td class="msg">{{ row.message }}</td>
                   </tr>
                 }
@@ -99,6 +101,7 @@ export class ProductImportDialog {
   readonly closed = output<void>();
 
   protected readonly labels = LABEL;
+  protected readonly quantity = formatQuantity;
   protected readonly fields = Object.keys(LABEL) as ProductImportField[];
   protected readonly money = formatUsdCents;
   protected readonly fileError = signal<string | null>(null);
@@ -136,7 +139,13 @@ export class ProductImportDialog {
   protected downloadTemplate(): void {
     downloadText(
       'plantilla-inventario.csv',
-      toCsv(['SKU', 'Producto', 'Categoría', 'Variante', 'Precio USD', 'Existencia'], [['FRN-BOS-COR15', 'Pastillas de freno Corolla 2015', 'Frenos', 'Bosch', '38,00', '6']]),
+      toCsv(
+        ['SKU', 'Producto', 'Categoría', 'Variante', 'Precio USD', 'Existencia', 'Se vende por'],
+        [
+          ['FRN-BOS-COR15', 'Pastillas de freno Corolla 2015', 'Frenos', 'Bosch', '38,00', '6', 'Unidad'],
+          ['TEL-LIN-BEI', 'Tela de lino', 'Telas', 'Beige', '7,50', '42,5', 'Metro'],
+        ],
+      ),
     );
   }
 

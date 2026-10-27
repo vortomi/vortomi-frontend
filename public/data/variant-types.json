@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "vt_valle_size",
+    "tenantId": "ten_valle",
+    "name": "Tamaño"
+  },
+  {
+    "id": "vt_valle_color",
+    "tenantId": "ten_valle",
+    "name": "Color"
+  }
+]

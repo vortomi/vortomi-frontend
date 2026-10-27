@@ -12,6 +12,7 @@ import { InventoryRemote, type NewVariant } from './inventory-remote';
 import { VariantTypesData } from './variant-types.data';
 import { type StockStatus, freeUnits, movementError, priceRange, productStatus } from './inventory.rules';
 import type { ProductImportRow } from './product-import';
+import { roundQuantity, stepChoices } from './sale-units';
 
 export interface InventoryItem {
   product: Product;
@@ -21,7 +22,7 @@ export interface InventoryItem {
   freeUnits: number;
 }
 
-export type VariantDraft = Pick<ProductVariant, 'optionId' | 'name' | 'sku' | 'priceCents' | 'lowStockThreshold'> & {
+export type VariantDraft = Pick<ProductVariant, 'optionIds' | 'name' | 'sku' | 'priceCents' | 'lowStockThreshold'> & {
   id: Id | null;
   /** Only for new variants: becomes an "initial" movement. */
   initialStock: number;
@@ -76,13 +77,15 @@ export class InventoryData {
       .map((p) => ({ ...p, category: (p.categoryId && categories.get(p.categoryId)?.name) || '' }))
       .sort((a, b) => a.name.localeCompare(b.name, 'es'));
   });
-  /** A variant with a value is named after it, so renaming the value shows everywhere at once. */
+  /** A variant with values is named after them ("M / Rojo"), so renaming a value shows everywhere at once. */
   readonly variants = computed(() => {
     const options = this.variantTypes.optionById();
     return this.variantTable
       .rows()
       .filter((v) => v.tenantId === this.tenantId())
-      .map((v) => (v.optionId && options.has(v.optionId) ? { ...v, name: options.get(v.optionId)!.value } : v));
+      .map((v) =>
+        v.optionIds.length && v.optionIds.every((id) => options.has(id)) ? { ...v, name: v.optionIds.map((id) => options.get(id)!.value).join(' / ') } : v,
+      );
   });
   readonly variantById = computed(() => new Map(this.variants().map((v) => [v.id, v])));
   readonly productById = computed(() => new Map(this.products().map((p) => [p.id, p])));
@@ -141,8 +144,8 @@ export class InventoryData {
 
     for (const draft of variants) {
       if (draft.id) {
-        const { optionId, name, sku, priceCents, lowStockThreshold } = draft;
-        this.variantTable.patch(draft.id, { optionId, name, sku, priceCents, lowStockThreshold });
+        const { optionIds, name, sku, priceCents, lowStockThreshold } = draft;
+        this.variantTable.patch(draft.id, { optionIds, name, sku, priceCents, lowStockThreshold });
         continue;
       }
       const id = newId('var');
@@ -156,7 +159,8 @@ export class InventoryData {
   async recordMovement(variantId: Id, kind: StockMovementKind, quantity: number, reason: string): Promise<string | null> {
     const variant = this.variantById().get(variantId);
     if (!variant) return 'Esa variante ya no existe.';
-    const error = movementError(variant, quantity);
+    const unit = this.productById().get(variant.productId)?.saleUnit ?? 'unit';
+    const error = movementError(variant, quantity, unit);
     if (error) return error;
     if (this.remote) {
       try {
@@ -183,7 +187,7 @@ export class InventoryData {
       userId: this.session.user()?.id ?? 'system',
       createdAt: this.clock.now().toISOString(),
     });
-    this.variantTable.patch(variantId, { onHand: variant.onHand + quantity });
+    this.variantTable.patch(variantId, { onHand: roundQuantity(variant.onHand + quantity) });
   }
 
   setAvailable(variantId: Id, available: boolean): void {
@@ -226,9 +230,10 @@ export class InventoryData {
    */
   private async saveRemote(remote: InventoryRemote, product: ProductDraft, drafts: VariantDraft[]): Promise<Id | null> {
     const tenantId = this.tenantId();
-    const fields = { name: product.name, categoryId: product.categoryId, variantTypeId: product.variantTypeId, description: product.description };
+    const { name, categoryId, variantTypeIds, description, saleUnit, minQuantity, quantityStep } = product;
+    const fields = { name, categoryId, variantTypeIds, description, saleUnit, minQuantity, quantityStep };
     const fresh = (draft: VariantDraft): NewVariant => ({
-      optionId: draft.optionId,
+      optionIds: draft.optionIds,
       name: draft.name,
       sku: draft.sku,
       priceCents: draft.priceCents,
@@ -252,7 +257,7 @@ export class InventoryData {
           continue;
         }
         const changed =
-          variant.optionId !== draft.optionId ||
+          variant.optionIds.join() !== draft.optionIds.join() ||
           variant.name !== draft.name || variant.sku !== draft.sku || variant.priceCents !== draft.priceCents || variant.lowStockThreshold !== draft.lowStockThreshold;
         if (changed) await remote.updateVariant(tenantId, { ...variant, ...fresh(draft) });
       }
@@ -281,8 +286,9 @@ export class InventoryData {
       const existing = this.variants().find((v) => v.sku === row.sku);
       if (existing) {
         this.variantTable.patch(existing.id, { priceCents: row.priceCents });
-        if (row.stock !== null && row.stock !== existing.onHand && !movementError(existing, row.stock - existing.onHand)) {
-          this.recordLocal(existing, 'adjustment', row.stock - existing.onHand, 'Importación desde archivo');
+        const unit = this.productById().get(existing.productId)?.saleUnit ?? 'unit';
+        if (row.stock !== null && row.stock !== existing.onHand && !movementError(existing, roundQuantity(row.stock - existing.onHand), unit)) {
+          this.recordLocal(existing, 'adjustment', roundQuantity(row.stock - existing.onHand), 'Importación desde archivo');
         }
         updated++;
         continue;
@@ -294,11 +300,14 @@ export class InventoryData {
             id: null,
             name: row.product,
             categoryId: this.categoryList.ensureLocal(row.category),
-            variantTypeId: null,
+            variantTypeIds: [],
             category: row.category,
             description: '',
             photoDataUrl: null,
             stockMode: 'units',
+            saleUnit: row.saleUnit,
+            minQuantity: stepChoices(row.saleUnit)[0]!,
+            quantityStep: stepChoices(row.saleUnit)[0]!,
             active: true,
           },
           [],
@@ -308,7 +317,7 @@ export class InventoryData {
         id: variantId,
         tenantId: this.tenantId(),
         productId,
-        optionId: null,
+        optionIds: [],
         name: row.variant,
         sku: row.sku,
         priceCents: row.priceCents,

@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "id": "vo_valle_40",
+    "tenantId": "ten_valle",
+    "typeId": "vt_valle_size",
+    "value": "40 x 40 cm"
+  },
+  {
+    "id": "vo_valle_50",
+    "tenantId": "ten_valle",
+    "typeId": "vt_valle_size",
+    "value": "50 x 50 cm"
+  },
+  {
+    "id": "vo_valle_beige",
+    "tenantId": "ten_valle",
+    "typeId": "vt_valle_color",
+    "value": "Beige"
+  },
+  {
+    "id": "vo_valle_gris",
+    "tenantId": "ten_valle",
+    "typeId": "vt_valle_color",
+    "value": "Gris"
+  }
+]

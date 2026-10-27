@@ -17,6 +17,7 @@ import { formatUsdCents, formatVes } from '../../../shared/format/money';
 import { ExchangeRates } from '../../exchange-rates/exchange-rates.data';
 import { InventoryData } from '../../inventory/inventory.data';
 import { toBolivares, variantStatus } from '../../inventory/inventory.rules';
+import { perUnit } from '../../inventory/sale-units';
 
 interface DayGroup {
   day: string;
@@ -63,9 +64,10 @@ export class ChatPanel {
         : variants.map((variant) => {
             const status = variantStatus(product, variant);
             const label = STOCK_STATUS[status];
-            const price = rate
-              ? `${formatUsdCents(variant.priceCents)} (≈ ${formatVes(toBolivares(variant.priceCents, rate))})`
-              : formatUsdCents(variant.priceCents);
+            // "$4,50 el kilo (≈ 3.992,86 Bs)": the price is per the product's unit.
+            const per = perUnit(product.saleUnit);
+            const usd = per ? `${formatUsdCents(variant.priceCents)} ${per}` : formatUsdCents(variant.priceCents);
+            const price = rate ? `${usd} (≈ ${formatVes(toBolivares(variant.priceCents, rate))})` : usd;
             return {
               variantId: variant.id,
               title: product.name,

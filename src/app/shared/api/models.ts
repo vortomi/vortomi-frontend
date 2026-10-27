@@ -280,25 +280,33 @@ export interface Product {
   name: string;
   /** Null: no category yet. */
   categoryId: Id | null;
-  /** Null: variants are named freely (a single "Única", or products from before types existed). */
-  variantTypeId: Id | null;
+  /** Up to three types combined (Talla x Color), in order. None: variants are named freely. */
+  variantTypeIds: Id[];
   /** Name of that category, filled in by the store from the list (empty without one). */
   category: string;
   description: string;
   /** Prototype keeps the image inline; production stores it in Storage. */
   photoDataUrl: string | null;
   stockMode: StockMode;
+  /** The price is per this unit and quantities count in it. */
+  saleUnit: SaleUnit;
+  /** The least a customer can order, and the size of each step above it. */
+  minQuantity: number;
+  quantityStep: number;
   active: boolean;
   createdAt: IsoDate;
 }
+
+/** How a product is sold; labels and rules in features/inventory/sale-units.ts. */
+export type SaleUnit = 'unit' | 'pair' | 'dozen' | 'box' | 'pack' | 'roll' | 'kg' | 'g' | 'm' | 'm2' | 'l' | 'hour' | 'service' | 'session';
 
 export interface ProductVariant {
   id: Id;
   tenantId: Id;
   productId: Id;
-  /** A value of the product's type; its name is that value. Null: named freely. */
-  optionId: Id | null;
-  /** Option that tells variants apart: brand, model, size... */
+  /** One value of each of the product's types, in order; its name is them ("M / Rojo"). None: named freely. */
+  optionIds: Id[];
+  /** What tells variants apart: brand, model, size... */
   name: string;
   sku: string;
   priceCents: number;

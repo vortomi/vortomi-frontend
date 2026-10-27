@@ -169,7 +169,7 @@ export interface ApiTemplate {
 export interface ApiVariant {
   id: string;
   productId: string;
-  optionId: string | null;
+  optionIds: string[];
   name: string;
   sku: string;
   priceCents: number;
@@ -192,14 +192,20 @@ export interface ApiVariantType {
   options: { id: string; value: string; variantCount: number }[];
 }
 
+/** vortomi-backend SALE_UNITS (src/db/schema/enums.ts). */
+export type ApiSaleUnit = 'unit' | 'pair' | 'dozen' | 'box' | 'pack' | 'roll' | 'kg' | 'g' | 'm' | 'm2' | 'l' | 'hour' | 'service' | 'session';
+
 export interface ApiProduct {
   id: string;
   name: string;
   categoryId: string | null;
-  variantTypeId: string | null;
+  variantTypeIds: string[];
   category: string;
   description: string;
   stockMode: 'availability' | 'units';
+  saleUnit: ApiSaleUnit;
+  minQuantity: number;
+  quantityStep: number;
   active: boolean;
   createdAt: string;
   variants: ApiVariant[];

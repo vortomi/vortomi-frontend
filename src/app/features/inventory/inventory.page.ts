@@ -14,6 +14,7 @@ import { ExchangeRates } from '../exchange-rates/exchange-rates.data';
 import { type InventoryItem, InventoryData } from './inventory.data';
 import { type StockStatus, toBolivares } from './inventory.rules';
 import { ProductImportDialog } from './product-import.dialog';
+import { SALE_UNIT, formatNumber, formatQuantity, perUnit } from './sale-units';
 
 const normalize = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
 
@@ -55,7 +56,14 @@ export class InventoryPage {
   protected price(item: InventoryItem): string {
     if (!item.range) return '—';
     const { min, max } = item.range;
-    return min === max ? formatUsdCents(min) : `${formatUsdCents(min)} – ${formatUsdCents(max)}`;
+    const per = perUnit(item.product.saleUnit);
+    const usd = min === max ? formatUsdCents(min) : `${formatUsdCents(min)} – ${formatUsdCents(max)}`;
+    return per ? `${usd} ${per}` : usd;
+  }
+
+  /** "12,5 kg", "3 unidades". */
+  protected stock(item: InventoryItem): string {
+    return formatQuantity(item.freeUnits, item.product.saleUnit);
   }
 
   protected priceVes(item: InventoryItem): string | null {
@@ -77,9 +85,18 @@ export class InventoryPage {
 
   protected exportCsv(): void {
     const csv = toCsv(
-      ['SKU', 'Producto', 'Categoría', 'Variante', 'Precio USD', 'Existencia', 'Apartadas'],
+      ['SKU', 'Producto', 'Categoría', 'Variante', 'Precio USD', 'Existencia', 'Apartadas', 'Se vende por'],
       this.rows().flatMap(({ product, variants }) =>
-        variants.map((v) => [v.sku, product.name, product.category, v.name, (v.priceCents / 100).toFixed(2).replace('.', ','), String(v.onHand), String(v.reserved)]),
+        variants.map((v) => [
+          v.sku,
+          product.name,
+          product.category,
+          v.name,
+          (v.priceCents / 100).toFixed(2).replace('.', ','),
+          formatNumber(v.onHand),
+          formatNumber(v.reserved),
+          SALE_UNIT[product.saleUnit].label,
+        ]),
       ),
     );
     downloadText(`inventario-${this.session.tenant()?.slug ?? 'empresa'}.csv`, csv);

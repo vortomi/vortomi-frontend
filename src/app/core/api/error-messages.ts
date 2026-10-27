@@ -31,6 +31,8 @@ const MESSAGES: Record<string, string> = {
   tag_name_taken: 'Ya existe una etiqueta con ese nombre.',
   unknown_tag: 'Una de las etiquetas ya no existe.',
   contact_exists: 'Ya hay un contacto con ese teléfono en ese número.',
+  invalid_quantity: 'Ese producto se cuenta entero: usa cantidades sin decimales.',
+  fractional_stock: 'Hay existencias con decimales (por ejemplo 12,5): ajústalas a un número entero antes de vender por esa unidad.',
   owner_not_member: 'El responsable tiene que ser alguien activo de tu equipo.',
   channel_not_attended: 'No atiendes ese número de WhatsApp. Elige uno de los tuyos.',
   quick_reply_not_found: 'Esa respuesta rápida ya no existe.',

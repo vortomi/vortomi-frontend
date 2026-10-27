@@ -48,5 +48,10 @@
     "id": "cat_valle_sala",
     "tenantId": "ten_valle",
     "name": "Sala"
+  },
+  {
+    "id": "cat_valle_telas",
+    "tenantId": "ten_valle",
+    "name": "Telas y decoración"
   }
 ]

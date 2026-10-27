@@ -3,11 +3,11 @@ import { movementError, parsePriceCents, productStatus, skuError, toBolivares, v
 import { analyzeProductImport, guessProductMapping } from './product-import';
 
 const product = (overrides: Partial<Product> = {}): Product => ({
-  id: 'prd', tenantId: 't', name: 'Filtro', categoryId: 'cat', variantTypeId: null, category: 'Filtros', description: '', photoDataUrl: null,
-  stockMode: 'units', active: true, createdAt: '2026-10-01T00:00:00Z', ...overrides,
+  id: 'prd', tenantId: 't', name: 'Filtro', categoryId: 'cat', variantTypeIds: [], category: 'Filtros', description: '', photoDataUrl: null,
+  stockMode: 'units', saleUnit: 'unit', minQuantity: 1, quantityStep: 1, active: true, createdAt: '2026-10-01T00:00:00Z', ...overrides,
 });
 const variant = (overrides: Partial<ProductVariant> = {}): ProductVariant => ({
-  id: 'var', tenantId: 't', productId: 'prd', optionId: null, name: 'Única', sku: 'FLT-1', priceCents: 800,
+  id: 'var', tenantId: 't', productId: 'prd', optionIds: [], name: 'Única', sku: 'FLT-1', priceCents: 800,
   onHand: 10, reserved: 0, available: true, lowStockThreshold: 3, ...overrides,
 });
 
@@ -31,10 +31,16 @@ describe('stock status', () => {
 
 describe('movements and SKUs', () => {
   it('never leaves fewer units than those set aside', () => {
-    expect(movementError(variant({ onHand: 3, reserved: 2 }), -2)).toContain('apartadas');
-    expect(movementError(variant({ onHand: 3 }), -5)).toContain('quedan 3');
-    expect(movementError(variant(), 0)).toContain('cantidad');
-    expect(movementError(variant(), 5)).toBeNull();
+    expect(movementError(variant({ onHand: 3, reserved: 2 }), -2, 'unit')).toContain('apartado');
+    expect(movementError(variant({ onHand: 3 }), -5, 'unit')).toContain('quedan 3 unidades');
+    expect(movementError(variant(), 0, 'unit')).toContain('cantidad');
+    expect(movementError(variant(), 5, 'unit')).toBeNull();
+  });
+
+  it('counts fractions only where the unit takes them', () => {
+    expect(movementError(variant({ onHand: 12.5 }), -0.75, 'kg')).toBeNull();
+    expect(movementError(variant({ onHand: 12.5 }), -13, 'kg')).toContain('quedan 12,5 kg');
+    expect(movementError(variant(), 1.5, 'box')).toContain('entero');
   });
 
   it('validates SKUs', () => {
@@ -67,8 +73,8 @@ describe('prices', () => {
 
 describe('product import', () => {
   it('guesses columns', () => {
-    expect(guessProductMapping(['SKU', 'Producto', 'Categoría', 'Marca', 'Precio USD', 'Existencia'])).toEqual([
-      'sku', 'product', 'category', 'variant', 'price', 'stock',
+    expect(guessProductMapping(['SKU', 'Producto', 'Categoría', 'Marca', 'Precio USD', 'Existencia', 'Se vende por'])).toEqual([
+      'sku', 'product', 'category', 'variant', 'price', 'stock', 'unit',
     ]);
   });
 
@@ -84,5 +90,18 @@ describe('product import', () => {
     const result = analyzeProductImport(rows, ['sku', 'product', 'price', 'stock'], [variant()]);
     expect(result.map((r) => r.status)).toEqual(['new', 'update', 'error', 'error', 'error', 'error']);
     expect(result[0]?.priceCents).toBe(1250);
+  });
+
+  it('reads the sale unit; fractions only for units that take them', () => {
+    const rows = [
+      ['TEL-1', 'Tela', '7,50', '42,5', 'Metro'],
+      ['TEL-2', 'Tela', '7,50', '42,5', ''],
+      ['TEL-3', 'Tela', '7,50', '3', 'Bultos'],
+      ['TEL-4', 'Tela', '7,50', '3', 'kg'],
+    ];
+    const result = analyzeProductImport(rows, ['sku', 'product', 'price', 'stock', 'unit'], []);
+    expect(result.map((r) => r.status)).toEqual(['new', 'error', 'error', 'new']);
+    expect(result[0]).toMatchObject({ saleUnit: 'm', stock: 42.5 });
+    expect(result[3]?.saleUnit).toBe('kg');
   });
 });

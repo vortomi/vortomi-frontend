@@ -1,5 +1,6 @@
 // Pure inventory rules (documentations/05-inventario.md).
-import type { Product, ProductVariant, StockMovementKind } from '../../shared/api/models';
+import type { Product, ProductVariant, SaleUnit, StockMovementKind } from '../../shared/api/models';
+import { formatQuantity, roundQuantity, takesDecimals } from './sale-units';
 export { parsePriceCents } from '../../shared/format/money';
 
 export type StockStatus = 'available' | 'low' | 'out' | 'unavailable' | 'inactive';
@@ -13,9 +14,9 @@ export const MOVEMENT_LABEL: Record<StockMovementKind, string> = {
   return: 'Devolución',
 };
 
-/** Units that can still be sold: what is on the shelf minus what is set aside for quotes. */
+/** What can still be sold: what is on the shelf minus what is set aside for quotes. */
 export function freeUnits(variant: ProductVariant): number {
-  return Math.max(0, variant.onHand - variant.reserved);
+  return Math.max(0, roundQuantity(variant.onHand - variant.reserved));
 }
 
 export function variantStatus(product: Product, variant: ProductVariant): StockStatus {
@@ -39,11 +40,13 @@ export function productStatus(product: Product, variants: ProductVariant[]): Sto
  * A movement never leaves fewer units than those already set aside: that would sell what was
  * promised to someone else. The backend repeats it with a CHECK (on_hand >= reserved).
  */
-export function movementError(variant: ProductVariant, quantity: number): string | null {
-  if (!Number.isInteger(quantity) || quantity === 0) return 'Escribe una cantidad entera distinta de cero.';
-  const next = variant.onHand + quantity;
-  if (next < 0) return `No hay tantas unidades: quedan ${variant.onHand}.`;
-  if (next < variant.reserved) return `Quedarían menos unidades que las apartadas (${variant.reserved}).`;
+export function movementError(variant: ProductVariant, quantity: number, unit: SaleUnit): string | null {
+  if (quantity === 0 || !Number.isFinite(quantity)) return 'Escribe una cantidad distinta de cero.';
+  if (!takesDecimals(unit) && !Number.isInteger(quantity)) return 'Este producto se cuenta entero: escribe una cantidad sin decimales.';
+  if (Math.abs(quantity * 1000 - Math.round(quantity * 1000)) > 1e-6) return 'Usa hasta 3 decimales.';
+  const next = roundQuantity(variant.onHand + quantity);
+  if (next < 0) return `No hay tanto: quedan ${formatQuantity(variant.onHand, unit)}.`;
+  if (next < variant.reserved) return `Quedaría menos de lo apartado (${formatQuantity(variant.reserved, unit)}).`;
   return null;
 }
 

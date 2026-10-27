@@ -73,7 +73,7 @@
                   </span>
                 }
               } @else {
-                {{ item.freeUnits }} {{ item.freeUnits === 1 ? 'unidad' : 'unidades' }}
+                {{ stock(item) }}
               }
             </td>
             <td><app-pill [tone]="statusLabel[item.status].tone">{{ statusLabel[item.status].text }}</app-pill></td>
@@ -94,7 +94,7 @@
       </tbody>
     </table>
   </div>
-  <p class="field-hint foot">Existencia = unidades en el estante menos las apartadas para cotizaciones sin pagar.</p>
+  <p class="field-hint foot">Existencia = lo que hay en el estante menos lo apartado para cotizaciones sin pagar.</p>
 </div>
 
 <app-product-import-dialog [open]="importing()" (closed)="importing.set(false)" />

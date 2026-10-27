@@ -5,8 +5,8 @@ import { toCategory, toMovement, toProduct, toVariant, toVariantType } from '../
 import type { Id, Product, ProductCategory, ProductVariant, StockMovement, StockMovementKind, VariantOption, VariantType } from '../../shared/api/models';
 
 /** A variant as it is created: the opening count becomes an 'initial' movement on the server. */
-export type NewVariant = Pick<ProductVariant, 'optionId' | 'name' | 'sku' | 'priceCents' | 'lowStockThreshold'> & { initialStock: number };
-export type ProductFields = Pick<Product, 'name' | 'categoryId' | 'variantTypeId' | 'description'>;
+export type NewVariant = Pick<ProductVariant, 'optionIds' | 'name' | 'sku' | 'priceCents' | 'lowStockThreshold'> & { initialStock: number };
+export type ProductFields = Pick<Product, 'name' | 'categoryId' | 'variantTypeIds' | 'description' | 'saleUnit' | 'minQuantity' | 'quantityStep'>;
 
 /**
  * Inventory against vortomi-backend ('api' mode). Everyone reads and sells; admins manage the
@@ -40,8 +40,8 @@ export class InventoryRemote {
   }
 
   async updateVariant(tenantId: Id, variant: ProductVariant): Promise<ProductVariant> {
-    const { optionId, name, sku, priceCents, available, lowStockThreshold } = variant;
-    const row = await this.api.put<ApiVariant>(this.variant(tenantId, variant.id), { optionId, name, sku, priceCents, available, lowStockThreshold });
+    const { optionIds, name, sku, priceCents, available, lowStockThreshold } = variant;
+    const row = await this.api.put<ApiVariant>(this.variant(tenantId, variant.id), { optionIds, name, sku, priceCents, available, lowStockThreshold });
     return toVariant(tenantId, row);
   }
 
