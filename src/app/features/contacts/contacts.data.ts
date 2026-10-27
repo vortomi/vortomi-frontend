@@ -58,9 +58,8 @@ export class ContactsData {
   }
 
   /**
-   * Saves what changed. 'api' mode: name, stage and quote, and tags go to the server, each its
-   * own request; the owner and free fields have no place there yet and stay as they were.
-   * Resolves to whether everything that could be saved was.
+   * Saves what changed. 'api' mode: name, stage and quote, tags, owner and extra facts go to the
+   * server, each its own request. Resolves to whether all of them were saved.
    */
   async update(id: Id, patch: Partial<Omit<Contact, 'id' | 'tenantId'>>): Promise<boolean> {
     const current = this.byId().get(id);
@@ -70,9 +69,6 @@ export class ContactsData {
       return true;
     }
     const changed = (key: keyof typeof patch) => patch[key] !== undefined && JSON.stringify(patch[key]) !== JSON.stringify(current[key]);
-    if (changed('ownerUserId') || changed('attributes')) {
-      this.toaster.show('El responsable y los datos extra todavía no se guardan en el servidor. Lo demás sí se guarda.', 'info');
-    }
     const steps: (() => Promise<boolean>)[] = [];
     if (changed('name')) {
       const name = patch.name!.trim() || null;
@@ -84,6 +80,13 @@ export class ContactsData {
       steps.push(() => this.save(id, { stageId, quoteCents }, (r, tenantId) => r.setOpportunity(tenantId, id, stageId, quoteCents ?? null)));
     }
     if (changed('tagIds')) steps.push(() => this.save(id, { tagIds: patch.tagIds! }, (r, tenantId) => r.setTags(tenantId, id, patch.tagIds!)));
+    if (changed('ownerUserId')) {
+      const ownerUserId = patch.ownerUserId ?? null;
+      steps.push(() => this.save(id, { ownerUserId }, (r, tenantId) => r.setOwner(tenantId, id, ownerUserId)));
+    }
+    if (changed('attributes')) {
+      steps.push(() => this.save(id, { attributes: patch.attributes! }, (r, tenantId) => r.setAttributes(tenantId, id, patch.attributes!)));
+    }
     for (const step of steps) if (!(await step())) return false;
     return true;
   }
@@ -143,8 +146,8 @@ export class ContactsData {
     const tenantId = this.session.tenant()?.id;
     if (this.remote && tenantId) {
       try {
-        const { channelAccountId, waId, name, stageId, tagIds } = input;
-        let contact = await this.remote.create(tenantId, { channelAccountId, waId, name: name.trim() || null, stageId, tagIds });
+        const { channelAccountId, waId, name, stageId, tagIds, ownerUserId, attributes } = input;
+        let contact = await this.remote.create(tenantId, { channelAccountId, waId, name: name.trim() || null, stageId, tagIds, ownerUserId, attributes });
         if (input.quoteCents) {
           await this.remote.setOpportunity(tenantId, contact.id, stageId, input.quoteCents);
           contact = { ...contact, quoteCents: input.quoteCents };

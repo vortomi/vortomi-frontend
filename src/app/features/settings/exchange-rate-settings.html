@@ -1,0 +1,110 @@
+<section class="card box" aria-labelledby="rate-title">
+  <div>
+    <h2 id="rate-title">Tasa de cambio</h2>
+    <p class="lead">Convierte los precios en USD a bolívares. Los pedidos guardarán la tasa del día en que se hicieron.</p>
+  </div>
+
+  <!-- Two choices that read as such: the chosen one in blue, with «En uso». Saved on the spot. -->
+  <div class="sources" role="radiogroup" aria-label="Origen de la tasa">
+    @for (option of sources; track option.value) {
+      @let chosen = source() === option.value;
+      <button type="button" role="radio" class="source" [class.on]="chosen" [attr.aria-checked]="chosen" [disabled]="rates.busy()" (click)="choose(option.value)">
+        <span class="radio" aria-hidden="true">@if (chosen) { <span></span> }</span>
+        <span class="text">
+          <span class="title"><b>{{ option.label }}</b> @if (chosen) { <app-pill tone="blue">En uso</app-pill> }</span>
+          <small>{{ option.detail }}</small>
+        </span>
+      </button>
+    }
+  </div>
+
+  @if (source() === 'bcv') {
+    @if (bcv(); as status) {
+      <div class="auto">
+        <p>El sistema consulta la página del Banco Central de Venezuela cada hora y aplica cada tasa nueva en su fecha valor, el día desde el que rige.</p>
+        @if (status.checkedAt) {
+          <p class="muted">
+            Última consulta: {{ stamp(status.checkedAt) }}
+            @if (status.bsPerUsd && status.effectiveDate) {
+              · publicó {{ formatRate(status.bsPerUsd) }} para el {{ formatIsoDay(status.effectiveDate) }}
+            }
+          </p>
+        }
+        @if (status.error) {
+          <p class="form-alert warn" role="status">
+            <app-icon name="alert" />
+            <span>No pudimos consultar el BCV: {{ status.error }} La empresa sigue con la última tasa.</span>
+          </p>
+        }
+        <div><button type="button" class="btn" [disabled]="rates.busy()" (click)="rates.refreshBcv()">Actualizar ahora</button></div>
+      </div>
+    }
+  } @else {
+    <div class="manual">
+      <div class="field">
+        <label for="rate">Bolívares por dólar</label>
+        <input id="rate" class="input" inputmode="decimal" placeholder="0,00" [value]="rateDraft()" (input)="rateDraft.set(value($event))" />
+      </div>
+      <div class="field">
+        <label for="rate-date">Vigente desde</label>
+        <input id="rate-date" type="date" class="input" [value]="rateDate()" (change)="rateDate.set(value($event))" />
+      </div>
+      <button type="button" class="btn btn--primary" [disabled]="rates.busy() || !rateDraft() || !rateDate()" (click)="addRate()">
+        Registrar tasa
+      </button>
+    </div>
+    <p class="field-hint">Cada tasa queda en el historial: no se edita ni se borra.</p>
+  }
+
+  <!-- What the customer sees, in words. -->
+  @if (current(); as rate) {
+    <div class="customer" role="status">
+      <app-icon name="eye" />
+      <div>
+        <p class="head">Tus clientes ven los precios en bolívares con esta tasa:</p>
+        <p class="amount">{{ formatRate(rate.bsPerUsd) }} <span>por USD</span></p>
+        <p class="origin">
+          {{ rate.source === 'bcv' ? 'Tasa vigente del BCV' : 'Tasa personalizada' }}, desde el {{ formatIsoDay(rate.effectiveDate) }}.
+          @if (pendingBcv() && !upcoming()) {
+            Pasará a la tasa del BCV en cuanto el sistema la lea.
+          } @else if (source() === 'custom' && rate.source === 'bcv') {
+            Seguirá así hasta que registres una tasa personalizada.
+          }
+        </p>
+        @if (upcoming(); as next) {
+          <p class="next">
+            <b>Próxima tasa del BCV:</b> {{ formatRate(next.bsPerUsd) }} · vigente desde el {{ weekdayOf(next.effectiveDate) }}
+            {{ formatIsoDay(next.effectiveDate) }}. <span class="muted">Se aplicará sola ese día.</span>
+          </p>
+        }
+      </div>
+    </div>
+  } @else {
+    <p class="form-alert warn">Aún no hay tasa: tus clientes ven solo precios en USD.</p>
+  }
+
+  <div class="history">
+    <h3>Historial</h3>
+    <div class="scroll">
+      <table class="data-table">
+        <thead>
+          <tr><th>Vigente desde</th><th class="num">Tasa</th><th>Origen</th><th>Fecha de registro</th></tr>
+        </thead>
+        <tbody>
+          @for (rate of history(); track rate.createdAt) {
+            <tr>
+              <td>{{ formatIsoDay(rate.effectiveDate) }}</td>
+              <td class="num"><b>{{ formatRate(rate.bsPerUsd) }}</b></td>
+              <td>
+                @if (rate.source === 'bcv') { <app-pill tone="blue">BCV</app-pill> } @else { {{ rate.changedBy ?? 'Sistema' }} }
+              </td>
+              <td>{{ stamp(rate.createdAt) }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="empty">La primera tasa aparecerá aquí.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

@@ -18,7 +18,6 @@ export class SettingsRemote {
       workMode: settings.workMode ?? 'sales_and_support',
       businessHours: settings.businessHours,
       awayMessage: settings.awayMessage,
-      exchangeRateVes: settings.exchangeRateVes ?? null,
     };
     return toSettings(tenantId, await this.api.put<ApiSettings>(this.api.company(tenantId, 'settings'), body));
   }

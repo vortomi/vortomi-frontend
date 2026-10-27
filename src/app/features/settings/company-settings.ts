@@ -5,7 +5,6 @@ import { TIMEZONES, WEEKDAYS } from '../../shared/api/labels';
 import type { DayHours, WorkMode } from '../../shared/api/models';
 import { Avatar } from '../../shared/ui/avatar';
 import { Icon } from '../../shared/ui/icon';
-import { parsePriceCents } from '../../shared/format/money';
 import { Toaster } from '../../shared/ui/toaster';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
 import { SettingsActions } from './settings.actions';
@@ -17,7 +16,6 @@ interface CompanyForm {
   logo: string | null;
   hours: DayHours[];
   away: string;
-  rate: string;
   workMode: WorkMode;
 }
 
@@ -51,7 +49,6 @@ const WORK_MODES: { id: WorkMode; title: string; detail: string }[] = [
         <dl class="facts">
           <dt>Nombre comercial</dt><dd>{{ f.name }}</dd>
           <dt>Zona horaria</dt><dd>{{ timezoneLabel(f.timezone) }}</dd>
-          <dt>Tasa del día</dt><dd>{{ f.rate ? f.rate + ' Bs por dólar' : 'Sin tasa: precios solo en dólares' }}</dd>
         </dl>
       } @else {
         @if (logoEditable) {
@@ -81,12 +78,6 @@ const WORK_MODES: { id: WorkMode; title: string; detail: string }[] = [
                 <option [value]="tz[0]" [selected]="tz[0] === f.timezone">{{ tz[1] }}</option>
               }
             </select>
-          </div>
-          <div class="field">
-            <label for="rate">Tasa del día (bolívares por dólar)</label>
-            <input id="rate" class="input" inputmode="decimal" placeholder="Vacío: precios solo en dólares" [value]="f.rate" (input)="patch({ rate: value($event) })" />
-            <p class="field-hint">Los precios se cargan en dólares; con la tasa también se muestran en bolívares.</p>
-            @if (rateInvalid()) { <span class="field-error">Escribe un número, por ejemplo 185,50.</span> }
           </div>
         </div>
       }
@@ -184,7 +175,6 @@ export class CompanySettings {
       logo: settings?.logoDataUrl ?? null,
       hours: fullWeek(settings?.businessHours ?? []),
       away: settings?.awayMessage ?? '',
-      rate: settings?.exchangeRateVes ? String(settings.exchangeRateVes).replace('.', ',') : '',
       workMode: settings?.workMode ?? 'sales_and_support',
     };
   });
@@ -193,14 +183,7 @@ export class CompanySettings {
   protected readonly saving = signal(false);
   private readonly dirty = computed(() => this.editing() && JSON.stringify(this.form()) !== JSON.stringify(this.saved()));
 
-  private readonly parsedRate = computed(() => {
-    const raw = this.form().rate.trim();
-    if (!raw) return null;
-    const cents = parsePriceCents(raw);
-    return cents === null ? NaN : cents / 100;
-  });
-  protected readonly rateInvalid = computed(() => Number.isNaN(this.parsedRate()));
-  protected readonly hasErrors = computed(() => !this.form().name.trim() || this.form().hours.some((h) => hoursError(h)) || this.rateInvalid());
+  protected readonly hasErrors = computed(() => !this.form().name.trim() || this.form().hours.some((h) => hoursError(h)));
 
   constructor() {
     inject(UnsavedChanges).track(this.dirty);
@@ -277,7 +260,6 @@ export class CompanySettings {
       logoDataUrl: f.logo,
       businessHours: f.hours,
       awayMessage: f.away.trim(),
-      exchangeRateVes: this.parsedRate(),
       workMode: f.workMode,
     });
     this.saving.set(false);

@@ -102,11 +102,11 @@ export function toContact(tenantId: Id, row: ApiContact): Contact {
     tagIds: row.tagIds,
     quoteCents: row.quoteCents,
     createdAt: row.createdAt,
-    // Not on the server yet (documentations/08, B.2).
-    ownerUserId: null,
+    ownerUserId: row.ownerUserId,
+    attributes: row.attributes,
+    // Purchases come with orders (documentations/09, B9).
     purchasesCount: 0,
     purchasesTotalCents: 0,
-    attributes: [],
   };
 }
 
@@ -158,7 +158,6 @@ export function toSettings(tenantId: Id, row: ApiSettings): TenantSettings {
     workMode: row.workMode,
     businessHours: row.businessHours,
     awayMessage: row.awayMessage,
-    exchangeRateVes: row.exchangeRateVes,
     // Not on the server yet (needs file storage).
     logoDataUrl: null,
   };

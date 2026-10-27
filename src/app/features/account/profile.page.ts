@@ -22,7 +22,7 @@ interface PasswordChange {
   templateUrl: './profile.page.html',
   styles: `
     :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; max-width: 980px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
     .card { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
     h2 { font-size: 15.5px; }
     .muted-row { display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; }

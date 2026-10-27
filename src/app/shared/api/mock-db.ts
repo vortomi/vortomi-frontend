@@ -22,6 +22,7 @@ export type MockTable =
   | 'product-variants'
   | 'stock-movements'
   | 'tenant-settings'
+  | 'exchange-rates'
   | 'usage'
   | 'report-days';
 

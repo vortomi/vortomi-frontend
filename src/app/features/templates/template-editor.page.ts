@@ -24,7 +24,7 @@ interface EditorModel {
   styles: `
     :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
     .back { display: inline-flex; color: var(--color-text-muted); --icon-size: 22px; }
-    .layout { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: start; max-width: 1080px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: start; }
     .box { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
     .g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; }
     .issues { display: flex; flex-direction: column; gap: 8px; }

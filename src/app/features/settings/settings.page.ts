@@ -1,18 +1,19 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Workspace } from '../../core/workspace';
 import { CompanySettings } from './company-settings';
+import { ExchangeRateSettings } from './exchange-rate-settings';
 import { QuickRepliesSettings } from './quick-replies-settings';
 import { StagesSettings } from './stages-settings';
 import { TagsSettings } from './tags-settings';
 import { BRAND } from '../../core/brand';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
 
-type Tab = 'company' | 'tags' | 'stages' | 'replies';
+type Tab = 'company' | 'rate' | 'tags' | 'stages' | 'replies';
 
 /** Company settings, admins only. */
 @Component({
   selector: 'app-settings-page',
-  imports: [CompanySettings, TagsSettings, StagesSettings, QuickRepliesSettings],
+  imports: [CompanySettings, ExchangeRateSettings, TagsSettings, StagesSettings, QuickRepliesSettings],
   template: `
     <header class="page-top">
       <h1>Ajustes</h1>
@@ -26,6 +27,7 @@ type Tab = 'company' | 'tags' | 'stages' | 'replies';
     <div class="page-body">
       @switch (tab()) {
         @case ('company') { <app-company-settings /> }
+        @case ('rate') { <app-exchange-rate-settings /> }
         @case ('tags') { <app-tags-settings /> }
         @case ('stages') { <app-stages-settings /> }
         @case ('replies') { <app-quick-replies-settings /> }
@@ -46,6 +48,7 @@ export class SettingsPage {
   private readonly workspace = inject(Workspace);
   private readonly allTabs: { id: Tab; label: string; salesOnly?: boolean }[] = [
     { id: 'company', label: 'Empresa' },
+    { id: 'rate', label: 'Tasa de cambio', salesOnly: true },
     { id: 'tags', label: 'Etiquetas' },
     { id: 'stages', label: 'Etapas del pipeline', salesOnly: true },
     { id: 'replies', label: 'Respuestas rápidas' },

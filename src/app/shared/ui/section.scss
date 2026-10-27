@@ -1,7 +1,7 @@
 // Shared look of list sections: settings, inventory categories. Read mode first, edits in a dialog.
+// Full width: screens use the whole window.
 :host {
   display: block;
-  max-width: 900px;
 }
 
 .box {

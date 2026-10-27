@@ -29,6 +29,7 @@ const PATHS = {
   building: '<path d="M4 21V4h11v17M15 9h5v12M8 8h3M8 12h3M8 16h3"/>',
   filter: '<path d="M4 5h16l-6 8v6l-4-2v-4z"/>',
   alert: '<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/>',
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   dollar:
     '<path d="M12 3v18M16 7c-1-1.3-2.4-2-4-2-2.2 0-4 1.3-4 3s1.8 2.7 4 3 4 1.3 4 3-1.8 3-4 3c-1.8 0-3.3-.8-4.2-2"/>',
   mail: '<path d="M3 6h18v12H3z"/><path d="M3 7l9 6 9-6"/>',

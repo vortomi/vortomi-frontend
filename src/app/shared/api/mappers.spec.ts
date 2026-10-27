@@ -43,8 +43,9 @@ describe('server -> panel mappers', () => {
     const row: ApiContact = {
       id: 'k-1', channelAccountId: 'ch-1', waId: '584145550187', name: null, displayName: null,
       stageId: 's-1', quoteCents: 4300, lastInboundAt: null, createdAt: '2026-10-01T00:00:00.000Z', tagIds: ['tag-1'],
+      ownerUserId: 'u-1', attributes: [{ key: 'talla', label: 'Talla', value: 'M' }],
     };
-    expect(toContact(TENANT, row)).toMatchObject({ phone: '+58 414-555-0187', stageId: 's-1', quoteCents: 4300, tagIds: ['tag-1'], attributes: [] });
+    expect(toContact(TENANT, row)).toMatchObject({ phone: '+58 414-555-0187', stageId: 's-1', quoteCents: 4300, tagIds: ['tag-1'], ownerUserId: 'u-1', attributes: [{ key: 'talla', label: 'Talla', value: 'M' }] });
   });
 
   it('messages: direction, numeric id and kinds the panel does not draw', () => {
@@ -69,7 +70,7 @@ describe('server -> panel mappers', () => {
   });
 
   it('settings and team rows become the shapes the screens use', () => {
-    const settings: ApiSettings = { workMode: 'support_only', businessHours: [], awayMessage: '', exchangeRateVes: null };
+    const settings: ApiSettings = { workMode: 'support_only', businessHours: [], awayMessage: '' };
     expect(toSettings(TENANT, settings)).toMatchObject({ tenantId: TENANT, workMode: 'support_only', logoDataUrl: null });
     const member: ApiTeamMember = { userId: 'u-1', name: 'Carlos', role: 'agent', status: 'active', canSeeOthers: false, channelAccountIds: ['ch-1'] };
     expect(toTeamMember(TENANT, member)).toEqual({

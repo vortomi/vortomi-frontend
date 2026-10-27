@@ -31,6 +31,7 @@ const MESSAGES: Record<string, string> = {
   tag_name_taken: 'Ya existe una etiqueta con ese nombre.',
   unknown_tag: 'Una de las etiquetas ya no existe.',
   contact_exists: 'Ya hay un contacto con ese teléfono en ese número.',
+  owner_not_member: 'El responsable tiene que ser alguien activo de tu equipo.',
   channel_not_attended: 'No atiendes ese número de WhatsApp. Elige uno de los tuyos.',
   quick_reply_not_found: 'Esa respuesta rápida ya no existe.',
   shortcut_taken: 'Ese atajo ya lo usa otra respuesta rápida.',

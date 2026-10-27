@@ -10,6 +10,7 @@ import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
 import { Switch } from '../../shared/ui/switch';
 import { Toaster } from '../../shared/ui/toaster';
+import { ExchangeRates } from '../exchange-rates/exchange-rates.data';
 import { type InventoryItem, InventoryData } from './inventory.data';
 import { type StockStatus, toBolivares } from './inventory.rules';
 import { ProductImportDialog } from './product-import.dialog';
@@ -36,7 +37,7 @@ export class InventoryPage {
   protected readonly status = signal<StockStatus | ''>('');
   protected readonly importing = signal(false);
 
-  protected readonly rate = computed(() => this.workspace.settings()?.exchangeRateVes ?? null);
+  protected readonly rate = inject(ExchangeRates).current;
   protected readonly rows = computed(() => {
     const needle = normalize(this.search());
     return this.data.items().filter(

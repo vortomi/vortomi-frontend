@@ -12,6 +12,7 @@ import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
 import { Toaster } from '../../shared/ui/toaster';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
+import { ExchangeRates } from '../exchange-rates/exchange-rates.data';
 import { CategoriesData } from './categories.data';
 import { InventoryData, type VariantDraft } from './inventory.data';
 import { MOVEMENT_LABEL, freeUnits, parsePriceCents, skuError, toBolivares, variantStatus } from './inventory.rules';
@@ -99,7 +100,7 @@ export class ProductDetailPage {
   protected readonly canEdit = computed(() => this.session.isTenantAdmin());
   protected readonly variants = computed(() => this.data.variants().filter((v) => v.productId === this.productId()));
   protected readonly movements = computed(() => (this.productId() ? this.data.movementsOf(this.productId()!) : []));
-  protected readonly rate = computed(() => this.workspace.settings()?.exchangeRateVes ?? null);
+  protected readonly rate = inject(ExchangeRates).current;
   protected readonly statusLabel = STOCK_STATUS;
   protected readonly kindLabel = MOVEMENT_LABEL;
   protected readonly manualKinds = MANUAL_KINDS;

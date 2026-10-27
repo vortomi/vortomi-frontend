@@ -213,8 +213,40 @@ export interface TenantSettings {
   businessHours: DayHours[];
   /** Sent automatically when someone writes outside business hours. Empty = disabled. */
   awayMessage: string;
-  /** Bolívares per dollar the company uses today; null hides Bs prices. */
-  exchangeRateVes?: number | null;
+}
+
+/** bcv: read from the Banco Central de Venezuela every hour. custom: typed by an admin. */
+export type RateSource = 'bcv' | 'custom';
+
+/** One rate of a company's history (bolívares per dollar, as text: no floating point on the way). */
+export interface ExchangeRate {
+  bsPerUsd: string;
+  previousBsPerUsd: string | null;
+  /** «Vigente desde»: "2026-10-27". */
+  effectiveDate: string;
+  /** Name of the admin who typed it; null for the BCV's. */
+  changedBy: string | null;
+  createdAt: IsoDate;
+  source: 'bcv' | 'manual';
+}
+
+/** The platform's last read of the BCV (the same for every company). */
+export interface BcvStatus {
+  bsPerUsd: string | null;
+  effectiveDate: string | null;
+  checkedAt: IsoDate | null;
+  /** Why the last read failed, in Spanish; null when it worked. */
+  error: string | null;
+}
+
+/** A company's exchange rate card: where it comes from and its last 20 rates (the first is in use). */
+export interface ExchangeRateBook {
+  /** The company id: one book per company. */
+  id: Id;
+  tenantId: Id;
+  rateSource: RateSource;
+  bcv: BcvStatus;
+  exchangeRates: ExchangeRate[];
 }
 
 /** "units": counted stock (resale). "availability": made to order, only an "available today" switch. */

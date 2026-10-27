@@ -69,7 +69,6 @@ interface CategoryForm {
   styleUrl: '../../shared/ui/section.scss',
   styles: `
     :host { max-width: none; }
-    .page-body > .box { max-width: 900px; }
     .back { display: inline-flex; color: var(--color-text-muted); --icon-size: 20px; }
   `,
 })

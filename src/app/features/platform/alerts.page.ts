@@ -25,7 +25,7 @@ import { PlatformData } from './platform.data';
   `,
   styleUrl: './platform-pages.scss',
   styles: `
-    .list { max-width: 820px; overflow: hidden; }
+    .list { overflow: hidden; }
     .seg { display: inline-flex; background: #eef0f4; border-radius: 9px; padding: 3px; gap: 2px; }
     .seg button { border: 0; background: none; font-size: 12.5px; padding: 6px 11px; border-radius: 7px; color: #4b5565; cursor: pointer; }
     .seg button.on { background: #fff; color: var(--color-text); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.08); }

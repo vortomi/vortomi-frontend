@@ -14,6 +14,7 @@ import { MessageBubble } from './message-bubble';
 import { MessageComposer, type ProductOption } from './message-composer';
 import { STOCK_STATUS } from '../../../shared/api/labels';
 import { formatUsdCents, formatVes } from '../../../shared/format/money';
+import { ExchangeRates } from '../../exchange-rates/exchange-rates.data';
 import { InventoryData } from '../../inventory/inventory.data';
 import { toBolivares, variantStatus } from '../../inventory/inventory.rules';
 
@@ -35,6 +36,7 @@ export class ChatPanel {
   private readonly clock = inject(Clock);
   private readonly session = inject(Session);
   protected readonly workspace = inject(Workspace);
+  private readonly rates = inject(ExchangeRates);
 
   readonly item = input.required<InboxItem>();
 
@@ -54,7 +56,7 @@ export class ChatPanel {
   /** Active products ready to send as a card; out-of-stock ones are listed but cannot be sent. */
   protected readonly productOptions = computed<ProductOption[]>(() => {
     if (!this.workspace.sells()) return [];
-    const rate = this.workspace.settings()?.exchangeRateVes ?? null;
+    const rate = this.rates.current();
     return this.inventory.items().flatMap(({ product, variants }) =>
       !product.active
         ? []

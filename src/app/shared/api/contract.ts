@@ -107,6 +107,8 @@ export interface ApiContact {
   displayName: string | null;
   stageId: string | null;
   quoteCents: number | null;
+  ownerUserId: string | null;
+  attributes: { key: string; label: string; value: string }[];
   lastInboundAt: string | null;
   createdAt: string;
   tagIds: string[];
@@ -136,7 +138,19 @@ export interface ApiSettings {
   workMode: 'sales_and_support' | 'support_only';
   businessHours: { day: 0 | 1 | 2 | 3 | 4 | 5 | 6; open: string | null; close: string | null }[];
   awayMessage: string;
-  exchangeRateVes: number | null;
+}
+
+export interface ApiExchangeRates {
+  rateSource: 'bcv' | 'custom';
+  bcv: { bsPerUsd: string | null; effectiveDate: string | null; checkedAt: string | null; error: string | null };
+  exchangeRates: {
+    bsPerUsd: string;
+    previousBsPerUsd: string | null;
+    effectiveDate: string;
+    changedBy: string | null;
+    createdAt: string;
+    source: 'bcv' | 'manual';
+  }[];
 }
 
 export interface ApiTemplate {

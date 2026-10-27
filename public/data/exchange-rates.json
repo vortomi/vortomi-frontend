@@ -1,0 +1,18 @@
+[
+  {
+    "id": "ten_ra", "tenantId": "ten_ra", "rateSource": "bcv",
+    "bcv": { "bsPerUsd": "887.30200000", "effectiveDate": "2026-10-27", "checkedAt": "2026-10-27T13:17:00.000Z", "error": null },
+    "exchangeRates": [
+      { "bsPerUsd": "887.30200000", "previousBsPerUsd": "886.22710000", "effectiveDate": "2026-10-27", "changedBy": null, "createdAt": "2026-10-27T04:13:00.000Z", "source": "bcv" },
+      { "bsPerUsd": "886.22710000", "previousBsPerUsd": "884.74960000", "effectiveDate": "2026-10-23", "changedBy": null, "createdAt": "2026-10-23T13:30:00.000Z", "source": "bcv" },
+      { "bsPerUsd": "884.74960000", "previousBsPerUsd": null, "effectiveDate": "2026-10-22", "changedBy": null, "createdAt": "2026-10-22T19:33:00.000Z", "source": "bcv" }
+    ]
+  },
+  {
+    "id": "ten_valle", "tenantId": "ten_valle", "rateSource": "custom",
+    "bcv": { "bsPerUsd": "887.30200000", "effectiveDate": "2026-10-27", "checkedAt": "2026-10-27T13:17:00.000Z", "error": null },
+    "exchangeRates": [
+      { "bsPerUsd": "890.00000000", "previousBsPerUsd": null, "effectiveDate": "2026-10-26", "changedBy": "Gabriela Torres", "createdAt": "2026-10-26T12:05:00.000Z", "source": "manual" }
+    ]
+  }
+]
