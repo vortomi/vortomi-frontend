@@ -13,11 +13,9 @@ export const EMPTY_CONTACT_FILTERS: ContactFilters = { search: '', channelId: nu
 
 const normalize = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
 
-/** Admins see every contact; agents only those who wrote to the numbers they attend. */
+/** Everyone in the company sees every contact; someone without a membership, none. */
 export function visibleContacts(contacts: Contact[], membership: Membership | null): Contact[] {
-  if (!membership) return [];
-  if (membership.role === 'admin') return contacts;
-  return contacts.filter((c) => membership.channelAccountIds.includes(c.channelAccountId));
+  return membership ? contacts : [];
 }
 
 export function applyContactFilters(contacts: Contact[], filters: ContactFilters): Contact[] {

@@ -2,7 +2,7 @@
   <app-avatar [name]="contact().name" [seed]="contact().id" size="lg" />
   <b>{{ contact().name }}</b>
   <span>{{ contact().phone }}</span>
-  <span>Cliente desde {{ since() }}</span>
+  @if (since()) { <span>Cliente desde {{ since() }}</span> }
 </div>
 
 @if (workspace.sells()) {

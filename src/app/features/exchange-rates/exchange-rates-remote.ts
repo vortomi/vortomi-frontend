@@ -17,6 +17,10 @@ export class ExchangeRatesRemote {
     return toBook(tenantId, await this.api.put<ApiExchangeRates>(this.path(tenantId, '/source'), { rateSource }));
   }
 
+  async setUseSystemRate(tenantId: Id, useSystemRate: boolean): Promise<ExchangeRateBook> {
+    return toBook(tenantId, await this.api.put<ApiExchangeRates>(this.path(tenantId, '/system'), { useSystemRate }));
+  }
+
   async addRate(tenantId: Id, bsPerUsd: string, effectiveDate: string): Promise<ExchangeRateBook> {
     return toBook(tenantId, await this.api.post<ApiExchangeRates>(this.path(tenantId), { bsPerUsd, effectiveDate }));
   }

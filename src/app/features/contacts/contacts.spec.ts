@@ -34,9 +34,9 @@ const ana = contact({ id: 'con_ana', name: 'Ana', waId: '584245550100', channelA
 const tags: Tag[] = [{ id: 'tag_vip', tenantId: 'ten_a', name: 'Cliente frecuente', tone: 'teal' }];
 
 describe('contact rules', () => {
-  it('shows agents only the contacts of their numbers', () => {
-    expect(visibleContacts([jose, ana], agent)).toEqual([jose]);
-    expect(visibleContacts([jose, ana], { ...agent, role: 'admin' })).toHaveLength(2);
+  it('shows every contact to anyone in the company, on any number', () => {
+    expect(visibleContacts([jose, ana], agent)).toHaveLength(2);
+    expect(visibleContacts([jose, ana], null)).toEqual([]);
   });
 
   it('searches by name without accents and by phone digits', () => {

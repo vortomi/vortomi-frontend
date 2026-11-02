@@ -24,6 +24,7 @@ const STATUS_MARK: Record<MessageStatus, { icon: IconName; label: string }> = {
       <span class="product"><app-icon name="tag" /><span>{{ msg.body }}</span></span>
     } @else if (msg.type === 'image') {
       <span class="media"><app-icon name="image" />Foto</span>
+      @if (msg.body) { <p>{{ msg.body }}</p> }
     } @else {
       <p>{{ msg.body }}</p>
     }

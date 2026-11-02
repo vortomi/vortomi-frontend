@@ -12,7 +12,7 @@ export interface SaleSettings {
 const COMMON: SaleUnit[] = ['unit', 'kg', 'm', 'l'];
 
 /** What a unit starts with when chosen: one at a time, or half a kilo/metre at a time. */
-function defaultsFor(saleUnit: SaleUnit): SaleSettings {
+export function defaultsFor(saleUnit: SaleUnit): SaleSettings {
   return takesDecimals(saleUnit) ? { saleUnit, minQuantity: 0.5, quantityStep: 0.5 } : { saleUnit, minQuantity: 1, quantityStep: 1 };
 }
 

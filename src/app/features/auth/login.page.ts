@@ -6,6 +6,7 @@ import { resolveLanding, safeReturnUrl } from '../../core/landing';
 import { Session } from '../../core/session';
 import { FieldError } from '../../shared/ui/field-error';
 import { Icon } from '../../shared/ui/icon';
+import { PasswordField } from '../../shared/ui/password-field';
 import { BRAND } from '../../core/brand';
 import { API_CONFIG } from '../../core/api/api-config';
 
@@ -23,7 +24,7 @@ const UNREACHABLE = 'No pudimos conectar con el servidor de Vortomi. No es tu co
 
 @Component({
   selector: 'app-login-page',
-  imports: [FormField, RouterLink, FieldError, Icon],
+  imports: [PasswordField, FormField, RouterLink, FieldError, Icon],
   templateUrl: './login.page.html',
 })
 export class LoginPage {

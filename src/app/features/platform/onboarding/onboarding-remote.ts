@@ -29,7 +29,8 @@ export class OnboardingRemote {
   async saveCompany(tenantId: Id | null, draft: CompanyDraft): Promise<Outcome<Id>> {
     const fields: TenantFields = {
       name: draft.name.trim(),
-      industry: draft.industry,
+      businessType: draft.businessType,
+      businessTypeOther: draft.businessType === 'other' ? draft.businessTypeOther.trim() : '',
       city: draft.city.trim(),
       timezone: draft.timezone,
       plan: draft.plan,

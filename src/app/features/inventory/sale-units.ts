@@ -41,9 +41,9 @@ const DECIMAL_UNITS: readonly SaleUnit[] = ['kg', 'm', 'm2', 'l', 'hour'];
 
 /** The choices for «Venta mínima» and «De cuánto en cuánto» (the server accepts only these). */
 const MIN_QUANTITIES = [0.1, 0.25, 0.5, 1, 2, 3, 5, 6, 10, 12];
-const QUANTITY_STEPS = [0.1, 0.25, 0.5, 1];
+const QUANTITY_STEPS = [0.05, 0.1, 0.25, 0.5, 1];
 
-const NUMBER = new Intl.NumberFormat('es-VE', { maximumFractionDigits: 3 });
+const NUMBER = new Intl.NumberFormat('es-VE', { maximumFractionDigits: 2 });
 
 export function takesDecimals(unit: SaleUnit): boolean {
   return DECIMAL_UNITS.includes(unit);
@@ -59,7 +59,7 @@ export function minChoices(unit: SaleUnit, step: number): number[] {
   return MIN_QUANTITIES.filter((min) => (takesDecimals(unit) ? isWhole(min / step) : Number.isInteger(min)));
 }
 
-/** "12,5"; up to 3 decimals, rounded so 0,1 + 0,2 shows as 0,3. */
+/** "12,5"; up to 2 decimals, rounded so 0,1 + 0,2 shows as 0,3. */
 export function formatNumber(value: number): string {
   return NUMBER.format(roundQuantity(value));
 }
@@ -78,14 +78,14 @@ export function perUnit(unit: SaleUnit): string {
 /** What a person typed ("12,5"), as a quantity of that unit; null when it does not fit it. */
 export function parseQuantity(raw: string | number, unit: SaleUnit): number | null {
   const text = String(raw).trim().replace(',', '.');
-  if (!/^\d{1,10}(\.\d{1,3})?$/.test(text)) return null;
+  if (!/^\d{1,10}(\.\d{1,2})?$/.test(text)) return null;
   const value = Number(text);
   return takesDecimals(unit) || Number.isInteger(value) ? value : null;
 }
 
-/** Quantities keep 3 decimals, as the server does: sums of fractions never drift. */
+/** Quantities keep 2 decimals, as the server does: sums of fractions never drift. */
 export function roundQuantity(value: number): number {
-  return Math.round(value * 1000) / 1000;
+  return Math.round(value * 100) / 100;
 }
 
 function isWhole(value: number): boolean {

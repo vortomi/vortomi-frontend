@@ -1,5 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Workspace } from '../../core/workspace';
+import { AgentSettingsPage } from '../agent/agent-settings';
+import { DeliverySettingsPage } from '../delivery/delivery-settings';
+import { ReceiptSettingsPage } from '../receipts/receipt-settings';
 import { CompanySettings } from './company-settings';
 import { ExchangeRateSettings } from './exchange-rate-settings';
 import { CustomFieldsSettings } from '../custom-fields/custom-fields-settings';
@@ -9,12 +12,12 @@ import { TagsSettings } from './tags-settings';
 import { BRAND } from '../../core/brand';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
 
-type Tab = 'company' | 'rate' | 'product-fields' | 'contact-fields' | 'tags' | 'stages' | 'replies';
+type Tab = 'company' | 'agent' | 'delivery' | 'rate' | 'receipt' | 'product-fields' | 'contact-fields' | 'tags' | 'stages' | 'replies';
 
 /** Company settings, admins only. */
 @Component({
   selector: 'app-settings-page',
-  imports: [CompanySettings, ExchangeRateSettings, CustomFieldsSettings, TagsSettings, StagesSettings, QuickRepliesSettings],
+  imports: [AgentSettingsPage, DeliverySettingsPage, ReceiptSettingsPage, CompanySettings, ExchangeRateSettings, CustomFieldsSettings, TagsSettings, StagesSettings, QuickRepliesSettings],
   template: `
     <header class="page-top">
       <h1>Ajustes</h1>
@@ -28,7 +31,10 @@ type Tab = 'company' | 'rate' | 'product-fields' | 'contact-fields' | 'tags' | '
     <div class="page-body">
       @switch (tab()) {
         @case ('company') { <app-company-settings /> }
+        @case ('agent') { <app-agent-settings /> }
+        @case ('delivery') { <app-delivery-settings /> }
         @case ('rate') { <app-exchange-rate-settings /> }
+        @case ('receipt') { <app-receipt-settings /> }
         @case ('product-fields') { <app-custom-fields-settings entity="product" /> }
         @case ('contact-fields') { <app-custom-fields-settings entity="contact" /> }
         @case ('tags') { <app-tags-settings /> }
@@ -51,7 +57,10 @@ export class SettingsPage {
   private readonly workspace = inject(Workspace);
   private readonly allTabs: { id: Tab; label: string; salesOnly?: boolean }[] = [
     { id: 'company', label: 'Empresa' },
+    { id: 'agent', label: 'Agente' },
+    { id: 'delivery', label: 'Delivery' },
     { id: 'rate', label: 'Tasa de cambio', salesOnly: true },
+    { id: 'receipt', label: 'Recibo', salesOnly: true },
     { id: 'product-fields', label: 'Datos de productos', salesOnly: true },
     { id: 'contact-fields', label: 'Datos de clientes' },
     { id: 'tags', label: 'Etiquetas' },

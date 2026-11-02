@@ -1,0 +1,92 @@
+@if (!remote) {
+  <section class="card box"><p class="lead">El recibo se configura con el servidor.</p></section>
+} @else if (draft(); as d) {
+  <section class="card box">
+    <div>
+      <h2>Recibo de compra</h2>
+      <p class="lead">Cuando marcas un pedido como <b>Completado</b>, tu cliente recibe su recibo por WhatsApp.</p>
+    </div>
+    <app-option-cards label="Quién hace el recibo" [options]="modes" [value]="d.mode" (picked)="setMode($event)" />
+  </section>
+
+  @if (d.mode === 'vortomi') {
+    <div class="layout">
+      <section class="card box">
+        @if (saved(); as s) {
+          <div class="business">
+            <span class="badge" aria-hidden="true"><app-icon name="building" /></span>
+            <div>
+              <b>{{ s.business.name }}</b>
+              <small>RIF {{ s.business.taxId }}@if (s.business.address) { · {{ s.business.address }} }</small>
+              <small class="muted">Vienen de los datos de tu empresa.</small>
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="label">Logo</span>
+            <div class="logo-row">
+              <label class="btn" [class.disabled]="uploading()">
+                <app-icon name="image" />{{ s.hasLogo ? 'Cambiar logo' : 'Subir logo' }}
+                <input type="file" accept="image/png,image/jpeg" hidden [disabled]="uploading()" (change)="pickLogo($event)" />
+              </label>
+              @if (s.hasLogo) { <button type="button" class="btn" [disabled]="uploading()" (click)="removeLogo()">Quitar</button> }
+            </div>
+            <p class="field-hint">PNG o JPG de hasta 1 MB. Se guarda en el momento.</p>
+          </div>
+        }
+
+        <div class="field">
+          <label for="receipt-subtitle">Sucursal o subtítulo <span class="optional">(opcional)</span></label>
+          <input id="receipt-subtitle" class="input" maxlength="60" placeholder="Sucursal Naguanagua" [value]="d.subtitle" (input)="patch({ subtitle: value($event) })" />
+        </div>
+        <div class="field">
+          <label for="receipt-phone">Teléfono <span class="optional">(opcional)</span></label>
+          <input id="receipt-phone" class="input short" maxlength="30" inputmode="tel" placeholder="0412-1234567" [value]="d.phone" (input)="patch({ phone: value($event) })" />
+        </div>
+        <div class="field">
+          <label for="receipt-prefix">Prefijo del número</label>
+          <input id="receipt-prefix" class="input prefix" maxlength="6" autocomplete="off" [value]="d.prefix" (input)="setPrefix($event)" />
+          <p class="field-hint">Tu próximo recibo será el <b>{{ nextCode() }}</b>. Los números siguen solos, sin saltos.</p>
+        </div>
+        <div class="field">
+          <label for="receipt-footer">Texto al pie</label>
+          <textarea id="receipt-footer" class="input" rows="3" maxlength="300" [value]="d.footer" (input)="patch({ footer: value($event) })"></textarea>
+          <p class="field-hint">Garantía, cambios o un agradecimiento. Te lo sugerimos según tu rubro: cámbialo si quieres.</p>
+        </div>
+        <div class="toggle">
+          <div><b>Mostrar quién lo atendió</b><small>El nombre de quien marca el pedido como completado.</small></div>
+          <app-switch label="Mostrar quién lo atendió" [checked]="d.showAttendedBy" (toggled)="patch({ showAttendedBy: $event })" />
+        </div>
+        <div class="toggle">
+          <div><b>Mostrar la referencia del pago</b><small>La que anotas en el pedido al revisar el pago.</small></div>
+          <app-switch label="Mostrar la referencia del pago" [checked]="d.showPaymentReference" (toggled)="patch({ showPaymentReference: $event })" />
+        </div>
+        <p class="note"><app-icon name="alert" />Es un comprobante informativo de la venta, no una factura fiscal. Así lo dice el propio recibo.</p>
+      </section>
+
+      <section class="card box preview">
+        <h3>Así lo verá tu cliente</h3>
+        @if (preview(); as url) {
+          <img [src]="url" alt="Vista previa del recibo, con una venta de ejemplo" />
+          <p class="field-hint">Con una venta de ejemplo. @if (dirty()) { <b>Guarda para ver tus cambios.</b> }</p>
+        } @else {
+          <div class="placeholder">Preparando la vista previa…</div>
+        }
+      </section>
+    </div>
+  } @else if (d.mode === 'own') {
+    <section class="card box"><p class="lead">Al completar un pedido, en su detalle aparece <b>«Subir recibo»</b>: eliges la imagen y se la enviamos a tu cliente por WhatsApp.</p></section>
+  } @else {
+    <section class="card box"><p class="lead">Tus clientes no reciben recibo al completar el pedido.</p></section>
+  }
+
+  <div class="actions">
+    @if (dirty()) { <button type="button" class="btn" [disabled]="saving()" (click)="reset()">Descartar</button> }
+    <button type="button" class="btn btn--primary" [disabled]="saving() || !dirty()" [attr.aria-busy]="saving()" (click)="save()">
+      @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
+      Guardar
+    </button>
+  </div>
+} @else {
+  <section class="card box"><p class="lead">Cargando…</p></section>
+}

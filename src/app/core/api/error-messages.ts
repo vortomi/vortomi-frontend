@@ -16,7 +16,10 @@ const MESSAGES: Record<string, string> = {
   // Inbox
   conversation_not_found: 'Esta conversación ya no está disponible para ti.',
   contact_not_found: 'Este contacto ya no está disponible para ti.',
-  assignee_cannot_attend: 'Esa persona no atiende este número. Elige a alguien de este número.',
+  assignee_cannot_attend: 'Esa persona ya no está activa en el equipo. Elige a otra.',
+  order_not_found: 'Ese pedido ya no existe o no lo puedes ver.',
+  payment_method_not_found: 'Ese método de pago ya no existe.',
+  order_mismatch: 'La lista de métodos cambió mientras la ordenabas. Vuelve a intentarlo.',
   mention_not_member: 'Solo puedes mencionar a alguien de tu equipo.',
   service_window_closed: 'Pasaron más de 24 horas desde el último mensaje del cliente. Solo puedes enviarle una plantilla aprobada.',
   send_in_progress: 'Este mensaje ya se está enviando.',
@@ -34,7 +37,19 @@ const MESSAGES: Record<string, string> = {
   invalid_quantity: 'Ese producto se cuenta entero: usa cantidades sin decimales.',
   fractional_stock: 'Hay existencias con decimales (por ejemplo 12,5): ajústalas a un número entero antes de vender por esa unidad.',
   owner_not_member: 'El responsable tiene que ser alguien activo de tu equipo.',
-  channel_not_attended: 'No atiendes ese número de WhatsApp. Elige uno de los tuyos.',
+
+  // Company fields (block B)
+  custom_field_not_found: 'Ese dato ya no existe.',
+  field_limit: 'Llegaste al máximo de 30 datos: borra uno que no uses para crear otro.',
+  invalid_field: 'Revisa el dato: una lista necesita al menos una opción, y solo los datos de productos van por categoría.',
+  invalid_field_value: 'Falta un dato obligatorio o una respuesta no es válida. Revisa los datos de la ficha.',
+  field_label_taken: 'Ya tienes un dato con ese nombre.',
+  field_option_taken: 'Esa opción ya está en la lista.',
+  unknown_category: 'Una de las categorías elegidas ya no existe.',
+
+  // Business types and the welcome (block C)
+  unknown_business_type: 'Ese rubro ya no está en la lista. Elige otro.',
+  business_type_exists: 'Ya hay un rubro con ese nombre en la lista.',
   quick_reply_not_found: 'Esa respuesta rápida ya no existe.',
   shortcut_taken: 'Ese atajo ya lo usa otra respuesta rápida.',
   stage_not_found: 'Esa etapa ya no existe.',

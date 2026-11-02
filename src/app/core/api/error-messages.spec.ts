@@ -8,7 +8,7 @@ import { errorMessage } from './error-messages';
 const SERVER_CODES = [
   'missing_token', 'invalid_token', 'unauthorized', 'no_account', 'not_a_member', 'admin_required',
   'platform_admin_required', 'second_factor_required', 'conversation_not_found', 'contact_not_found',
-  'assignee_cannot_attend', 'mention_not_member', 'service_window_closed', 'send_in_progress',
+  'assignee_cannot_attend', 'order_not_found', 'mention_not_member', 'service_window_closed', 'send_in_progress',
   'template_not_usable', 'invalid_template', 'template_exists', 'tag_not_found', 'tag_name_taken',
   'unknown_tag', 'quick_reply_not_found', 'shortcut_taken', 'stage_not_found', 'stage_name_taken',
   'stage_in_use', 'inventory_item_not_found', 'sku_taken', 'insufficient_stock', 'invalid_movement',
@@ -18,7 +18,9 @@ const SERVER_CODES = [
   'unknown_channel', 'last_admin', 'cannot_disable_self', 'already_member', 'invitation_exists',
   'invitation_not_found', 'invitation_expired', 'invitation_email_mismatch', 'email_in_use',
   'company_unavailable', 'tenant_not_found', 'no_channel', 'waba_taken', 'phone_number_taken',
-  'contact_exists', 'channel_not_attended', 'owner_not_member', 'invalid_quantity', 'fractional_stock',
+  'contact_exists', 'owner_not_member', 'invalid_quantity', 'fractional_stock',
+  'custom_field_not_found', 'field_limit', 'invalid_field', 'invalid_field_value', 'field_label_taken', 'field_option_taken', 'unknown_category',
+  'unknown_business_type', 'business_type_exists',
   'invalid_request', 'bad_request', 'internal',
 ];
 

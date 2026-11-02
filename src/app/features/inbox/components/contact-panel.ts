@@ -23,7 +23,10 @@ export class ContactPanel {
 
   readonly contact = input.required<Contact>();
 
-  protected readonly since = computed(() => formatMonthYear(this.contact().createdAt, this.session.timezone()));
+  protected readonly since = computed(() => {
+    const createdAt = this.contact().createdAt;
+    return createdAt ? formatMonthYear(createdAt, this.session.timezone()) : '';
+  });
   protected readonly stage = computed(() => {
     const id = this.contact().stageId;
     return id ? this.workspace.stageById().get(id) : undefined;

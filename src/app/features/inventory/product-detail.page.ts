@@ -18,7 +18,8 @@ import { ExchangeRates } from '../exchange-rates/exchange-rates.data';
 import { CategoriesData } from './categories.data';
 import { InventoryData, type VariantDraft } from './inventory.data';
 import { MOVEMENT_LABEL, freeUnits, parsePriceCents, skuError, toBolivares, variantStatus } from './inventory.rules';
-import { SaleUnitPicker, type SaleSettings } from './sale-unit-picker';
+import { SaleUnitPicker, type SaleSettings, defaultsFor } from './sale-unit-picker';
+import { Workspace } from '../../core/workspace';
 import { SALE_UNIT, formatNumber, formatQuantity, parseQuantity, perUnit, takesDecimals } from './sale-units';
 import { addValue, dropValue } from './variant-combinations';
 import { VariantTypesData } from './variant-types.data';
@@ -67,7 +68,14 @@ const emptyRow = (name = '', optionIds: Id[] = []): VariantRow => ({ id: null, o
 /** The values each type uses in the rows, in the rows' order. */
 const pickedOf = (typeIds: Id[], rows: VariantRow[]): Id[][] => typeIds.map((_, i) => [...new Set(rows.map((r) => r.optionIds[i]).filter((id): id is Id => !!id))]);
 
-function formOf(product: Product | null, variants: ProductVariant[]): ProductForm {
+/** What a new product starts with: the company's usual way of selling (set by the welcome). */
+interface NewProductDefaults {
+  saleUnit: SaleUnit;
+  stockMode: StockMode;
+}
+
+function formOf(product: Product | null, variants: ProductVariant[], defaults: NewProductDefaults = { saleUnit: 'unit', stockMode: 'units' }): ProductForm {
+  const sale = defaultsFor(defaults.saleUnit);
   const typeIds = product?.variantTypeIds ?? [];
   const rows: VariantRow[] = variants.length
     ? variants.map((v) => ({
@@ -88,10 +96,10 @@ function formOf(product: Product | null, variants: ProductVariant[]): ProductFor
     picked: pickedOf(typeIds, rows),
     description: product?.description ?? '',
     photo: product?.photoDataUrl ?? null,
-    stockMode: product?.stockMode ?? 'units',
-    saleUnit: product?.saleUnit ?? 'unit',
-    minQuantity: product?.minQuantity ?? 1,
-    quantityStep: product?.quantityStep ?? 1,
+    stockMode: product?.stockMode ?? defaults.stockMode,
+    saleUnit: product?.saleUnit ?? sale.saleUnit,
+    minQuantity: product?.minQuantity ?? sale.minQuantity,
+    quantityStep: product?.quantityStep ?? sale.quantityStep,
     active: product?.active ?? true,
     rows,
     customValues: product?.customValues ?? {},
@@ -113,6 +121,7 @@ export class ProductDetailPage {
   protected readonly categories = inject(CategoriesData);
   protected readonly variantTypes = inject(VariantTypesData);
   private readonly customFields = inject(CustomFields);
+  private readonly workspace = inject(Workspace);
   protected readonly session = inject(Session);
   private readonly directory = inject(Directory);
   private readonly router = inject(Router);
@@ -133,7 +142,10 @@ export class ProductDetailPage {
   protected readonly number = formatNumber;
 
   /** What is saved; the form starts from it and «Cancelar» goes back to it. */
-  private readonly saved = computed(() => formOf(this.product(), this.variants()));
+  private readonly saved = computed(() => {
+    const settings = this.workspace.settings();
+    return formOf(this.product(), this.variants(), { saleUnit: settings?.defaultSaleUnit ?? 'unit', stockMode: settings?.defaultStockMode ?? 'units' });
+  });
   protected readonly form = signal<ProductForm>(formOf(null, []));
   private readonly editingExisting = signal(false);
   /** A new product is always being edited; an existing one after «Editar». */
@@ -362,7 +374,7 @@ export class ProductDetailPage {
     if (!this.categories.byId().has(f.categoryId)) problems.push('Elige la categoría.');
     if (!f.rows.length) problems.push(typed ? 'Marca al menos un valor de cada clase.' : 'Agrega al menos una versión.');
     problems.push(...missingRequired(this.customFields.products(), f.customValues, f.categoryId || null));
-    const amountHint = takesDecimals(f.saleUnit) ? 'un número de 0 o más, con hasta 3 decimales' : 'un número entero de 0 o más';
+    const amountHint = takesDecimals(f.saleUnit) ? 'un número de 0 o más, con hasta 2 decimales' : 'un número entero de 0 o más';
     const seen: string[] = [];
     const drafts: VariantDraft[] = [];
     f.rows.forEach((row, i) => {
@@ -398,7 +410,7 @@ export class ProductDetailPage {
     const negative = quantity.trim().startsWith('-');
     const amount = parseQuantity(quantity.trim().replace(/^-/, ''), unit);
     if (!amount) {
-      return this.toaster.show(takesDecimals(unit) ? 'Escribe una cantidad mayor que cero, con hasta 3 decimales.' : 'Escribe una cantidad entera mayor que cero.', 'info');
+      return this.toaster.show(takesDecimals(unit) ? 'Escribe una cantidad mayor que cero, con hasta 2 decimales.' : 'Escribe una cantidad entera mayor que cero.', 'info');
     }
     const signed = REMOVING.includes(kind) ? -amount : kind === 'adjustment' && negative ? -amount : amount;
     const error = await this.data.recordMovement(variantId, kind, signed, reason);

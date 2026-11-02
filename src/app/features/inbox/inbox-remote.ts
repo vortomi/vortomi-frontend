@@ -54,8 +54,13 @@ export class InboxRemote {
     return this.api.post(this.conversation(tenantId, conversationId, 'notes'), { body, mentionUserId });
   }
 
-  assign(tenantId: Id, conversationId: Id, userId: Id | null): Promise<unknown> {
-    return this.api.put(this.conversation(tenantId, conversationId, 'assignee'), { userId });
+  assign(tenantId: Id, conversationId: Id, userIds: Id[]): Promise<unknown> {
+    return this.api.put(this.conversation(tenantId, conversationId, 'assignees'), { userIds });
+  }
+
+  /** «Devolver al agente»: admins only. */
+  resumeAgent(tenantId: Id, conversationId: Id): Promise<unknown> {
+    return this.api.delete(this.conversation(tenantId, conversationId, 'handoff'));
   }
 
   setStatus(tenantId: Id, conversationId: Id, status: Conversation['status']): Promise<unknown> {

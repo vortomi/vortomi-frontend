@@ -11,6 +11,7 @@
 </header>
 
 <div class="page-body">
+  <app-unclassified-types (changed)="data.load()" />
   <div class="kpis">
     <div class="card kpi"><p>Empresas activas</p><b>{{ data.kpis().activeTenants }}</b></div>
     <div class="card kpi"><p>Números conectados</p><b>{{ data.kpis().connectedNumbers }}</b></div>
@@ -32,7 +33,7 @@
                   <app-avatar class="logo" [name]="row.tenant.name" [seed]="row.tenant.id" />
                   <div>
                     <p>{{ row.tenant.name }}</p>
-                    <span>{{ row.tenant.industry }}{{ row.tenant.industry && row.tenant.city ? ' · ' : '' }}{{ row.tenant.city }}</span>
+                    <span>{{ typeOf(row.tenant) }}{{ typeOf(row.tenant) && row.tenant.city ? ' · ' : '' }}{{ row.tenant.city }}</span>
                   </div>
                   @if (row.tenant.status !== 'active') {
                     <app-pill [tone]="labels.status[row.tenant.status].tone">{{ labels.status[row.tenant.status].text }}</app-pill>

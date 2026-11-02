@@ -1,4 +1,5 @@
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { BusinessTypes } from '../../core/business-types';
 import { FormField, apply, form, required, submit, validate } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { API_CONFIG } from '../../core/api/api-config';
@@ -12,6 +13,7 @@ import { Avatar } from '../../shared/ui/avatar';
 import { FieldError } from '../../shared/ui/field-error';
 import { Icon } from '../../shared/ui/icon';
 import { PasswordMeter } from '../../shared/ui/password-meter';
+import { PasswordField } from '../../shared/ui/password-field';
 import { InvitationAcceptance } from './invitation-acceptance';
 import { InvitationRemote } from './invitation-remote';
 import { invitationStatus } from './invitation-status';
@@ -41,7 +43,7 @@ type PageState = { status: 'loading' } | { status: 'valid'; view: InvitationView
 /** Where an invited person creates their password, or enters with the one they have (mockup web-13). */
 @Component({
   selector: 'app-invitation-page',
-  imports: [FormField, RouterLink, Avatar, FieldError, Icon, PasswordMeter],
+  imports: [PasswordField, FormField, RouterLink, Avatar, FieldError, Icon, PasswordMeter],
   templateUrl: './invitation.page.html',
   styles: `
     .company { display: flex; align-items: center; gap: 12px; border: 1px solid var(--color-border); background: var(--color-surface);
@@ -56,6 +58,7 @@ export class InvitationPage {
   protected readonly brand = BRAND;
   protected readonly demo = inject(API_CONFIG).mode === 'mock';
   private readonly directory = inject(Directory);
+  private readonly businessTypes = inject(BusinessTypes);
   private readonly clock = inject(Clock);
   private readonly acceptance = inject(InvitationAcceptance);
   private readonly remote = this.demo ? null : inject(InvitationRemote);
@@ -77,7 +80,7 @@ export class InvitationPage {
       status: 'valid',
       view: {
         companyName: tenant?.name ?? '',
-        companyDetail: tenant ? `${tenant.industry} · ${tenant.city}` : null,
+        companyDetail: tenant ? [this.businessTypes.labelOf(tenant.businessType, tenant.businessTypeOther), tenant.city].filter(Boolean).join(' · ') : null,
         companySeed: invitation.tenantId,
         inviter: this.directory.userById().get(invitation.invitedByUserId)?.name ?? null,
         email: invitation.email,

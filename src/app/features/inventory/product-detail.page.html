@@ -193,7 +193,7 @@
                     <input class="input" aria-label="Nombre de la versión" placeholder="Ej.: Bosch" [value]="row.name" (input)="setRow(i, 'name', $event)" />
                   }
                   <input class="input mono" aria-label="Código del producto" placeholder="Ej.: FRN-BOS-01" [value]="row.sku" (input)="setRow(i, 'sku', $event)" />
-                  <input class="input" aria-label="Precio en dólares" inputmode="decimal" placeholder="38,00" [value]="row.price" (input)="setRow(i, 'price', $event)" />
+                  <input class="input" aria-label="Precio en dólares" inputmode="decimal" placeholder="0,00" [value]="row.price" (input)="setRow(i, 'price', $event)" />
                   <input class="input" aria-label="Avisar cuando queden" inputmode="decimal" [value]="row.threshold" (input)="setRow(i, 'threshold', $event)" />
                   @if (row.id && data.variantById().get(row.id); as v) {
                     <span class="stock">{{ qty(free(v)) }} <small>({{ number(v.onHand) }} en estante, {{ number(v.reserved) }} apartado)</small></span>

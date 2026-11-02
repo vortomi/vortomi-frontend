@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { BusinessTypes } from '../../../core/business-types';
 import { RouterLink } from '@angular/router';
 import { TENANT_PLAN, WHATSAPP_VERTICAL } from '../../../shared/api/labels';
 import { Icon } from '../../../shared/ui/icon';
@@ -43,6 +44,7 @@ import { BRAND } from '../../../core/brand';
 export class StepActivate {
   protected readonly brand = BRAND;
   protected readonly state = inject(OnboardingState);
+  protected readonly businessTypes = inject(BusinessTypes);
   protected readonly planLabel = computed(() => TENANT_PLAN[this.state.company().plan]);
   protected readonly firstName = computed(() => this.state.company().adminName.split(' ')[0] ?? '');
   protected readonly unverifiedLimit = UNVERIFIED_MESSAGING_LIMIT;

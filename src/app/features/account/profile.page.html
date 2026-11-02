@@ -30,18 +30,18 @@
         <form (submit)="changePassword($event)" novalidate>
           <div class="field">
             <label for="current">Contraseña actual</label>
-            <input id="current" class="input" type="password" autocomplete="current-password" [formField]="passwordForm.current" />
+            <app-password-field><input id="current" class="input" type="password" autocomplete="current-password" [formField]="passwordForm.current" /></app-password-field>
             <app-field-error [state]="passwordForm.current()" />
           </div>
           <div class="field">
             <label for="next">Contraseña nueva</label>
-            <input id="next" class="input" type="password" autocomplete="new-password" [formField]="passwordForm.next.password" />
+            <app-password-field><input id="next" class="input" type="password" autocomplete="new-password" [formField]="passwordForm.next.password" /></app-password-field>
             <app-password-meter [password]="passwordForm.next.password().value()" />
             <app-field-error [state]="passwordForm.next.password()" />
           </div>
           <div class="field">
             <label for="confirm">Repítela</label>
-            <input id="confirm" class="input" type="password" autocomplete="new-password" [formField]="passwordForm.next.confirm" />
+            <app-password-field><input id="confirm" class="input" type="password" autocomplete="new-password" [formField]="passwordForm.next.confirm" /></app-password-field>
             <app-field-error [state]="passwordForm.next.confirm()" />
           </div>
           <div class="actions"><button type="submit" class="btn btn--primary">Cambiar contraseña</button></div>

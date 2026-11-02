@@ -67,6 +67,8 @@ export class ContactDetailPage {
       value() && !toWaId(value()) ? { kind: 'phone', message: 'Teléfono no válido. Ejemplo: 0414-555-0187' } : undefined,
     );
     required(path.channelAccountId, { message: 'Elige el número.' });
+    // Only admins choose who is in charge of a customer (the server enforces it too).
+    readonly(path.ownerUserId, () => !this.session.isTenantAdmin());
     validate(path.quote, ({ value }) =>
       value().trim() && parsePriceCents(value()) === null ? { kind: 'price', message: 'Monto no válido. Ejemplo: 43,50' } : undefined,
     );
@@ -104,7 +106,7 @@ export class ContactDetailPage {
   }
 
   protected since(contact: Contact): string {
-    return formatMonthYear(contact.createdAt, this.session.timezone());
+    return contact.createdAt ? formatMonthYear(contact.createdAt, this.session.timezone()) : '';
   }
 
   protected purchases(contact: Contact): string {

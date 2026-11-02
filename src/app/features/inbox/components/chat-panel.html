@@ -8,17 +8,15 @@
     }
   </div>
   <div class="actions">
-    <label class="assign">
-      <span class="visually-hidden">Asignar a</span>
-      <select class="select" (change)="onAssign($event)">
-        <option value="" [selected]="!conversation().assignedUserId">Sin asignar</option>
-        @for (member of attendants(); track member.user.id) {
-          <option [value]="member.user.id" [selected]="conversation().assignedUserId === member.user.id">
-            {{ member.user.name }}
-          </option>
-        }
-      </select>
-    </label>
+    @if (isAdmin() && conversation().handoffReason) {
+      <button type="button" class="btn" (click)="resumeAgent()"><app-icon name="sparkles" />Devolver al agente</button>
+    }
+    @if (isAdmin()) {
+      <app-multi-select-menu class="assign" label="Quién la atiende" placeholder="Sin asignar" noneLabel="Sin asignar" [searchable]="attendants().length > 6"
+        [options]="attendants()" [values]="conversation().assigneeIds" (changed)="onAssign($event)" />
+    } @else if (conversation().assigneeIds.length > 1) {
+      <span class="assigned">La atiendes con {{ partners() }}</span>
+    }
     @if (conversation().status === 'open') {
       <button type="button" class="btn btn--success" (click)="toggleResolved()"><app-icon name="check" />Resolver</button>
     } @else {
@@ -26,6 +24,16 @@
     }
   </div>
 </header>
+
+@if (conversation().handoffReason; as reason) {
+  @if (reason === 'order_placed') {
+    <p class="handoff" role="status"><app-icon name="alert" />Pedido en curso: el agente solo le dice al cliente cómo va su pedido; cualquier otra cosa te la pasa. Vuelve a vender cuando completes o canceles el pedido.</p>
+  } @else {
+    <p class="handoff" role="status"><app-icon name="alert" />El agente pasó esta conversación a tu equipo: {{ handoffLabel[reason].toLowerCase() }}. Ya no responde aquí hasta que resuelvas la conversación, cierres su pedido o la devuelvas al agente.</p>
+  }
+}
+
+<app-conversation-orders [conversationId]="conversation().id" [version]="conversation().lastMessageAt + (conversation().handoffReason ?? '')" />
 
 <div class="timeline" #scroller>
   <div class="window" [class.closed]="!window().isOpen">

@@ -207,6 +207,9 @@ textarea.input {
   }
 }
 
+// A dialog's buttons wrapper must not box them in: they line up in the dialog footer, whatever
+// element carries the attribute (a div left as a block aligned them by text baseline, uneven).
+[dialog-actions],
 .dialog-actions {
   display: contents;
 }

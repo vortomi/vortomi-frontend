@@ -31,6 +31,8 @@ export const TENANT_NAV: NavGroup[] = [
   {
     title: 'Ventas',
     items: [
+      { path: '/orders', icon: 'package', label: 'Pedidos', salesOnly: true },
+      { path: '/payment-methods', icon: 'dollar', label: 'Métodos de pago', adminOnly: true, salesOnly: true },
       { path: '/pipeline', icon: 'kanban', label: 'Pipeline', mobile: true, salesOnly: true },
       { path: '/inventory', icon: 'tag', label: 'Inventario', badge: 'outOfStock', salesOnly: true },
     ],

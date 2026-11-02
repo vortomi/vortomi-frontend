@@ -34,7 +34,7 @@
         }
         <p class="d">Revisa antes de activar. Después todo se puede cambiar desde la ficha de la empresa.</p>
         <table>
-          <tr><td>Empresa</td><td><b>{{ company.name }}</b><span class="x">{{ company.industry }} · {{ company.city }} · {{ company.timezone }}</span></td></tr>
+          <tr><td>Empresa</td><td><b>{{ company.name }}</b><span class="x">{{ businessTypes.labelOf(company.businessType, company.businessTypeOther) }} · {{ company.city }} · {{ company.timezone }}</span></td></tr>
           <tr><td>Datos fiscales</td><td>{{ company.legalName }} · <span class="mono">{{ company.taxId }}</span><span class="x">{{ company.fiscalAddress }}</span></td></tr>
           <tr><td>Plan</td><td>{{ planLabel().text }}<span class="x">{{ planLabel().detail }}</span></td></tr>
           <tr><td>Administración</td><td>{{ company.adminName }}<span class="x">{{ company.adminEmail }}</span></td></tr>

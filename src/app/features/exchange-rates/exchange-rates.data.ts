@@ -8,6 +8,7 @@ import { editableTable } from '../../shared/api/editable-table';
 import { calendarDay } from '../../shared/format/date-time';
 import { Toaster } from '../../shared/ui/toaster';
 import { ExchangeRatesRemote } from './exchange-rates-remote';
+import { rateInUse } from './rate-format';
 
 const EMPTY_BCV = { bsPerUsd: null, effectiveDate: null, checkedAt: null, error: null };
 
@@ -29,12 +30,13 @@ export class ExchangeRates {
   readonly book = computed<ExchangeRateBook | null>(() => {
     const tenantId = this.session.tenant()?.id;
     if (!tenantId) return null;
-    return this.table.rows().find((b) => b.tenantId === tenantId) ?? { id: tenantId, tenantId, rateSource: 'custom', bcv: EMPTY_BCV, exchangeRates: [] };
+    return this.table.rows().find((b) => b.tenantId === tenantId) ?? { id: tenantId, tenantId, rateSource: 'custom', bcv: EMPTY_BCV, exchangeRates: [], system: null };
   });
   /** The rate in use, as a number for price conversions; null hides prices in bolívares. */
   readonly current = computed(() => {
-    const latest = this.book()?.exchangeRates[0];
-    return latest ? Number(latest.bsPerUsd) : null;
+    const book = this.book();
+    const rate = book ? rateInUse(book) : null;
+    return rate ? Number(rate) : null;
   });
 
   constructor() {
@@ -51,6 +53,16 @@ export class ExchangeRates {
       const next = { ...book, rateSource: source };
       return source === 'bcv' ? this.applyBcv(next) : next;
     });
+  }
+
+  /** «Usar la tasa de mi sistema»: only offered to a company with its own catalog system. */
+  setUseSystemRate(useSystemRate: boolean): Promise<boolean> {
+    const message = useSystemRate
+      ? 'Los precios en bolívares usan la tasa de tu sistema.'
+      : 'Los precios en bolívares usan la tasa que configures aquí.';
+    return this.run((remote, tenantId) => remote.setUseSystemRate(tenantId, useSystemRate), message, (book) =>
+      book.system ? { ...book, system: { ...book.system, useSystemRate } } : book,
+    );
   }
 
   addRate(bsPerUsd: string, effectiveDate: string): Promise<boolean> {

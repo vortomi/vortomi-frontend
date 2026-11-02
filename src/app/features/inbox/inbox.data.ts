@@ -194,7 +194,8 @@ export class InboxData {
   addNote(conversationId: Id, body: string): void {
     const author = this.session.user();
     if (!author) return;
-    const mentionUserId = this.findItem(conversationId)?.conversation.assignedUserId ?? null;
+    // The note reaches whoever attends the conversation, other than its author.
+    const mentionUserId = this.findItem(conversationId)?.conversation.assigneeIds.find((id) => id !== author.id) ?? null;
     if (this.remote) {
       return void this.run((remote, tenantId) => remote.addNote(tenantId, conversationId, body, mentionUserId), conversationId);
     }
@@ -209,15 +210,23 @@ export class InboxData {
     });
   }
 
-  assign(conversationId: Id, userId: Id | null): void {
-    if (this.remote) return void this.run((remote, tenantId) => remote.assign(tenantId, conversationId, userId), conversationId);
-    this.conversationTable.patch(conversationId, { assignedUserId: userId });
+  /** Admins only: everyone who attends the conversation; empty leaves it unassigned. */
+  assign(conversationId: Id, userIds: Id[]): void {
+    if (this.remote) return void this.run((remote, tenantId) => remote.assign(tenantId, conversationId, userIds), conversationId);
+    this.conversationTable.patch(conversationId, { assigneeIds: userIds });
+  }
+
+  /** Admins only: the sales agent may answer this conversation again. */
+  resumeAgent(conversationId: Id): void {
+    if (this.remote) return void this.run((remote, tenantId) => remote.resumeAgent(tenantId, conversationId), conversationId);
+    this.conversationTable.patch(conversationId, { handoffReason: null });
   }
 
   toggleResolved(conversationId: Id): void {
     const status = this.findItem(conversationId)?.conversation.status === 'resolved' ? 'open' : 'resolved';
     if (this.remote) return void this.run((remote, tenantId) => remote.setStatus(tenantId, conversationId, status), conversationId);
-    this.conversationTable.patch(conversationId, { status });
+    // As the server does: resolving gives the conversation back to the sales agent.
+    this.conversationTable.patch(conversationId, status === 'resolved' ? { status, handoffReason: null } : { status });
   }
 
   markRead(conversationId: Id): void {

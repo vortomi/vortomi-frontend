@@ -5,7 +5,6 @@ import { CHANNEL_STATUS, QUALITY, ROLE } from '../../shared/api/labels';
 import type { ChannelAccount, Id } from '../../shared/api/models';
 import { formatShortDate } from '../../shared/format/date-time';
 import { Avatar } from '../../shared/ui/avatar';
-import { ChannelBadge } from '../../shared/ui/channel-badge';
 import { Confirm } from '../../shared/ui/confirm';
 import { Dialog } from '../../shared/ui/dialog';
 import { Icon } from '../../shared/ui/icon';
@@ -24,7 +23,7 @@ import { PLAN_SEATS } from './team.rules';
  */
 @Component({
   selector: 'app-channels-team-page',
-  imports: [Avatar, ChannelBadge, Dialog, Icon, Pill, InviteDialog, InvitationLinkDialog, MemberAccessDialog],
+  imports: [Avatar, Dialog, Icon, Pill, InviteDialog, InvitationLinkDialog, MemberAccessDialog],
   templateUrl: './channels-team.page.html',
   styleUrl: './channels-team.page.scss',
 })
@@ -54,11 +53,6 @@ export class ChannelsTeamPage {
 
   protected approvedTemplates(): number {
     return this.workspace.templates().filter((t) => t.status === 'approved').length;
-  }
-
-  protected channelsOf(row: TeamMemberRow): ChannelAccount[] {
-    if (row.membership.role === 'admin') return this.workspace.channels();
-    return this.workspace.channels().filter((c) => row.membership.channelAccountIds.includes(c.id));
   }
 
   protected expires(invitation: PendingInvitation): string {

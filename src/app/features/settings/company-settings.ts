@@ -1,4 +1,6 @@
 import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { BusinessTypes } from '../../core/business-types';
 import { Session } from '../../core/session';
 import { Workspace } from '../../core/workspace';
 import { TIMEZONES, WEEKDAYS } from '../../shared/api/labels';
@@ -7,6 +9,7 @@ import { Avatar } from '../../shared/ui/avatar';
 import { Icon } from '../../shared/ui/icon';
 import { Toaster } from '../../shared/ui/toaster';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
+import { SetupData } from '../setup/setup.data';
 import { SettingsActions } from './settings.actions';
 import { fullWeek, hoursError, logoError } from './settings.rules';
 
@@ -27,7 +30,7 @@ const WORK_MODES: { id: WorkMode; title: string; detail: string }[] = [
 /** The company's general settings: shown read-only, changed only after «Editar» and kept with «Guardar». */
 @Component({
   selector: 'app-company-settings',
-  imports: [Avatar, Icon],
+  imports: [Avatar, Icon, RouterLink],
   template: `
     @let f = form();
     <div class="bar">
@@ -42,6 +45,19 @@ const WORK_MODES: { id: WorkMode; title: string; detail: string }[] = [
         <button type="button" class="btn btn--primary" (click)="edit()"><app-icon name="edit" />Editar</button>
       }
     </div>
+
+    @if (!editing()) {
+      <section class="card box">
+        <div class="setup">
+          <span class="setup-ic"><app-icon name="wand" /></span>
+          <div class="grow">
+            <h2>Preparar según mi rubro</h2>
+            <p class="setup-text">{{ setupText() }}</p>
+          </div>
+          <a class="btn" routerLink="/welcome">Abrir la bienvenida</a>
+        </div>
+      </section>
+    }
 
     <section class="card box">
       <h2>Empresa</h2>
@@ -145,6 +161,11 @@ const WORK_MODES: { id: WorkMode; title: string; detail: string }[] = [
     .day { width: 130px; }
     .time { width: 120px; }
     .mode-read { font-size: 13.5px; color: var(--color-text-2); }
+    .setup { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .setup-ic { width: 40px; height: 40px; border-radius: 10px; background: var(--color-primary-soft); color: var(--color-primary-strong);
+      display: flex; align-items: center; justify-content: center; --icon-size: 20px; flex-shrink: 0; }
+    .setup .grow { flex: 1; min-width: 220px; }
+    .setup-text { font-size: 13px; color: var(--color-text-muted); margin-top: 2px; }
     .modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .mode { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md);
       padding: 10px 12px; cursor: pointer; }
@@ -161,6 +182,17 @@ export class CompanySettings {
   private readonly toaster = inject(Toaster);
 
   protected readonly logoEditable = this.actions.logoEditable;
+  private readonly setup = inject(SetupData);
+  private readonly businessTypes = inject(BusinessTypes);
+
+  /** Where the company stands with the welcome, in one sentence. */
+  protected readonly setupText = computed(() => {
+    const status = this.setup.status();
+    const label = this.businessTypes.labelOf(status?.businessType ?? null, status?.businessTypeOther ?? '');
+    return label
+      ? `Rubro: ${label}. Vuelve a hacer las 3 preguntas y agrega lo que falte, sin tocar lo que ya tienes.`
+      : 'Todavía no respondiste la bienvenida: 3 preguntas para dejar tu panel listo según tu negocio.';
+  });
   protected readonly timezones = TIMEZONES;
   protected readonly weekdays = WEEKDAYS;
   protected readonly workModes = WORK_MODES;

@@ -62,20 +62,6 @@ export const ROLE: Record<TenantRole, string> = {
   agent: 'Agente',
 };
 
-export const INDUSTRIES = [
-  'Repuestos',
-  'Repostería',
-  'Comida y delivery',
-  'Salud',
-  'Óptica',
-  'Farmacia',
-  'Mecánica',
-  'Hogar',
-  'Moda',
-  'Servicios',
-  'Otro',
-];
-
 export const TIMEZONES = [
   ['America/Caracas', 'Caracas (UTC−4)'],
   ['America/Bogota', 'Bogotá (UTC−5)'],
@@ -127,17 +113,17 @@ export const WHATSAPP_VERTICAL: Record<WhatsAppVertical, string> = {
   OTHER: 'Otro',
 };
 
-/** Starting point for the WhatsApp category, from the industry typed in step 1. Can be changed. */
-export const INDUSTRY_VERTICAL: Record<string, WhatsAppVertical> = {
-  Repuestos: 'AUTO',
-  Repostería: 'GROCERY',
-  'Comida y delivery': 'RESTAURANT',
-  Salud: 'HEALTH',
-  Óptica: 'HEALTH',
-  Farmacia: 'HEALTH',
-  Mecánica: 'AUTO',
-  Hogar: 'RETAIL',
-  Moda: 'APPAREL',
-  Servicios: 'PROF_SERVICES',
-  Otro: 'OTHER',
+/** Starting point for the WhatsApp category, from the business type chosen in step 1. Can be changed. */
+export const BUSINESS_VERTICAL: Record<string, WhatsAppVertical> = {
+  auto_parts: 'AUTO',
+  hardware: 'RETAIL',
+  apparel: 'APPAREL',
+  food: 'GROCERY',
+  pharmacy: 'HEALTH',
+  furniture: 'RETAIL',
+  electronics: 'RETAIL',
+  beauty: 'BEAUTY',
+  health: 'HEALTH',
+  technical_services: 'PROF_SERVICES',
+  other: 'OTHER',
 };

@@ -7,6 +7,10 @@ import type { Message, MessageTemplate } from '../../../shared/api/models';
 import { calendarDay, formatDayLabel, formatTime } from '../../../shared/format/date-time';
 import { Avatar } from '../../../shared/ui/avatar';
 import { Icon } from '../../../shared/ui/icon';
+import { MultiSelectMenu } from '../../../shared/ui/multi-select-menu';
+import { HANDOFF_LABEL } from '../../agent/agent.models';
+import { ConversationOrders } from '../../orders/conversation-orders';
+import type { MenuOption } from '../../../shared/ui/select-menu';
 import { InboxData, type TimelineEntry } from '../inbox.data';
 import type { InboxItem } from '../inbox.filters';
 import { formatRemaining, getServiceWindow } from '../service-window';
@@ -27,7 +31,7 @@ interface DayGroup {
 
 @Component({
   selector: 'app-chat-panel',
-  imports: [RouterLink, Avatar, Icon, MessageBubble, MessageComposer],
+  imports: [ConversationOrders, MultiSelectMenu, RouterLink, Avatar, Icon, MessageBubble, MessageComposer],
   templateUrl: './chat-panel.html',
   styleUrl: './chat-panel.scss',
 })
@@ -46,7 +50,22 @@ export class ChatPanel {
   protected readonly conversation = computed(() => this.item().conversation);
   protected readonly contact = computed(() => this.item().contact);
   protected readonly channel = computed(() => this.workspace.channelById().get(this.conversation().channelAccountId));
-  protected readonly attendants = computed(() => this.workspace.attendantsOf(this.conversation().channelAccountId));
+  /** Only admins hand conversations out (the server enforces it too); an agent only sees theirs. */
+  protected readonly isAdmin = this.session.isTenantAdmin;
+  protected readonly handoffLabel = HANDOFF_LABEL;
+  /** Anyone active in the company, on any number; several people may attend one conversation. */
+  protected readonly attendants = computed<MenuOption[]>(() =>
+    this.workspace.activeTeam().map((m) => ({ value: m.user.id, label: m.user.name })),
+  );
+  /** For an agent who shares the conversation: "Ana" or "Ana y Luis". */
+  protected readonly partners = computed(() => {
+    const me = this.session.user()?.id;
+    const names = this.workspace.userById();
+    return this.conversation()
+      .assigneeIds.filter((id) => id !== me)
+      .map((id) => names.get(id)?.name ?? 'otra persona')
+      .join(' y ');
+  });
   protected readonly timezone = this.session.timezone;
 
   protected readonly window = computed(() =>
@@ -117,6 +136,7 @@ export class ChatPanel {
       const name = this.workspace.templates().find((t) => t.id === message.templateId)?.name;
       return name ? `Plantilla · ${name}` : 'Plantilla';
     }
+    if (message.automatic) return 'Respuesta automática';
     return this.firstName(message.authorUserId);
   }
 
@@ -128,8 +148,12 @@ export class ChatPanel {
     return entry.kind === 'message' ? entry.message.id : entry.note.id;
   }
 
-  protected onAssign(event: Event): void {
-    this.data.assign(this.conversation().id, (event.target as HTMLSelectElement).value || null);
+  protected onAssign(userIds: string[]): void {
+    this.data.assign(this.conversation().id, userIds);
+  }
+
+  protected resumeAgent(): void {
+    this.data.resumeAgent(this.conversation().id);
   }
 
   protected toggleResolved(): void {

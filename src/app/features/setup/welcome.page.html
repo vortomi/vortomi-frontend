@@ -1,0 +1,86 @@
+@let a = answers();
+<div class="welcome">
+  <header class="top">
+    <span class="logo">V</span>
+    <div>
+      <b>Bienvenido a {{ brand.name }}</b>
+      <span class="sub">{{ session.tenant()?.name }}</span>
+    </div>
+    <span class="spacer"></span>
+    <span class="progress">{{ step() < 3 ? 'Paso ' + (position() + 1) + ' de ' + (steps().length - 1) : 'Listo para preparar' }}</span>
+  </header>
+  <div class="bar" aria-hidden="true">
+    @for (s of steps(); track s; let i = $index) { <span [class.on]="i <= position()"></span> }
+  </div>
+
+  <main class="card body">
+    @switch (step()) {
+      @case (0) {
+        <h1>¿Qué vendes?</h1>
+        <p class="lead">Así sabemos qué partes del panel necesitas.</p>
+        <app-option-cards label="Qué vendes" [options]="sellsOptions" [value]="a.sells" (picked)="setSells($event)" />
+      }
+      @case (1) {
+        <h1>¿Cuál es tu rubro?</h1>
+        <p class="lead">Preparamos categorías y datos típicos de tu negocio. Todo se puede cambiar después.</p>
+        <app-option-cards label="Rubro" [searchable]="true" searchLabel="Busca tu rubro: óptica, papelería…" [pinned]="['other']"
+          [options]="businessTypes.options()" [value]="a.businessType || null" (picked)="patch({ businessType: $event })" />
+        @if (a.businessType === 'other') {
+          <div class="other">
+            <label for="other">¿Cuál es tu rubro?</label>
+            <input id="other" class="input" maxlength="60" placeholder="Ej.: óptica, papelería, venta de mascotas" [value]="a.businessTypeOther"
+              (input)="patch({ businessTypeOther: value($event) })" />
+            <p class="field-hint">Te preparamos lo general. Nuestro equipo revisa tu rubro para sumarlo a la lista con lo que necesite.</p>
+          </div>
+        }
+      }
+      @case (2) {
+        <h1>¿Cómo vendes casi siempre?</h1>
+        <p class="lead">Es la forma con la que empiezan tus productos nuevos. Cada uno se puede cambiar.</p>
+        <app-option-cards label="Cómo vendes" [options]="methodOptions" [value]="a.sellMethod" (picked)="setMethod($event)" />
+      }
+      @case (3) {
+        <h1>Esto es lo que vamos a preparar</h1>
+        <p class="lead">Para {{ businessLabel().toLowerCase() }}. Desmarca lo que no quieras. Lo que ya tienes con el mismo nombre no se toca.</p>
+        @if (a.businessType === 'other') {
+          <p class="form-alert info"><app-icon name="alert" />Rubro «{{ a.businessTypeOther.trim() }}» enviado a nuestro equipo para clasificarlo.</p>
+        }
+        <div class="plan">
+          @for (line of lines(); track line.part) {
+            <label class="line" [class.off]="!kept().has(line.part)">
+              <input type="checkbox" [checked]="kept().has(line.part)" [disabled]="!line.adds" (change)="toggle(line.part)" />
+              <b>{{ line.label }}</b>
+              <span>
+                {{ line.adds || 'Ya lo tienes todo' }}
+                @if (line.keeps) { <small>Ya tienes: {{ line.keeps }}</small> }
+              </span>
+            </label>
+          } @empty {
+            <p class="field-hint">No hay nada que preparar: guardamos tus respuestas.</p>
+          }
+        </div>
+      }
+    }
+
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+
+    <footer class="actions">
+      <button type="button" class="link" [disabled]="busy()" (click)="later()">Lo hago después</button>
+      <span class="spacer"></span>
+      @if (step() > 0) { <button type="button" class="btn" [disabled]="busy()" (click)="back()">Atrás</button> }
+      @if (step() < 3) {
+        <button type="button" class="btn btn--primary" [disabled]="busy()" [attr.aria-busy]="busy()" (click)="next()">
+          @if (busy()) { <span class="spinner" aria-hidden="true"></span> }
+          Siguiente
+        </button>
+      } @else {
+        <button type="button" class="btn btn--primary" [disabled]="busy()" [attr.aria-busy]="busy()" (click)="apply()">
+          @if (busy()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
+          Preparar mi panel
+        </button>
+      }
+    </footer>
+  </main>
+</div>

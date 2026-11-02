@@ -1,6 +1,6 @@
 <div class="toolbar">
   <div class="seg" role="tablist" aria-label="Vista de la bandeja">
-    @for (view of views; track view.id) {
+    @for (view of views(); track view.id) {
       <button type="button" role="tab" [class.on]="filters().view === view.id" [attr.aria-selected]="filters().view === view.id"
         (click)="setView(view.id)">
         {{ view.label }} · {{ counts()[view.id] }}
@@ -43,10 +43,16 @@
             }
             @if (conversation.status === 'resolved') {
               <app-pill tone="green">Resuelta</app-pill>
-            } @else if (conversation.assignedUserId) {
-              <app-avatar size="sm" [name]="userName(conversation.assignedUserId)" [seed]="conversation.assignedUserId" />
+            } @else if (conversation.assigneeIds.length) {
+              <span class="assignees">
+                @for (id of conversation.assigneeIds.slice(0, 3); track id) { <app-avatar size="sm" [name]="userName(id)" [seed]="id" /> }
+                @if (conversation.assigneeIds.length > 3) { <span class="more">+{{ conversation.assigneeIds.length - 3 }}</span> }
+              </span>
             } @else {
               <app-pill tone="amber">Sin asignar</app-pill>
+            }
+            @if (conversation.handoffReason && conversation.status === 'open') {
+              <app-pill tone="amber">{{ handoffLabel[conversation.handoffReason] }}</app-pill>
             }
             @if (conversation.unreadCount) {
               <span class="badge" [attr.aria-label]="conversation.unreadCount + ' sin leer'">{{ conversation.unreadCount }}</span>

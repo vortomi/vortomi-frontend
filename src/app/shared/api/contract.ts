@@ -38,7 +38,6 @@ export interface ApiMember {
   userId: string;
   role: 'admin' | 'agent';
   canSeeOthers: boolean;
-  channelAccountIds: string[];
 }
 
 export interface ApiTeamMember {
@@ -59,7 +58,9 @@ export type ApiMessageType =
 export interface ApiConversation {
   id: string;
   status: 'open' | 'resolved';
-  assignedUserId: string | null;
+  assigneeIds: string[];
+  handoffReason: 'customer_asked' | 'purchase' | 'order_placed' | 'agent_unsure' | 'agent_error' | 'limit_reached' | null;
+  handoffAt: string | null;
   lastActivityAt: string;
   channelAccountId: string;
   contact: { id: string; waId: string; name: string | null; displayName: string | null };
@@ -139,6 +140,9 @@ export interface ApiSettings {
   workMode: 'sales_and_support' | 'support_only';
   businessHours: { day: 0 | 1 | 2 | 3 | 4 | 5 | 6; open: string | null; close: string | null }[];
   awayMessage: string;
+  /** Read-only: what a new product starts with (set by the welcome). */
+  defaultSaleUnit?: ApiSaleUnit;
+  defaultStockMode?: 'availability' | 'units';
 }
 
 export interface ApiExchangeRates {
@@ -152,6 +156,7 @@ export interface ApiExchangeRates {
     createdAt: string;
     source: 'bcv' | 'manual';
   }[];
+  system: { useSystemRate: boolean; bsPerUsd: string | null; rateDate: string | null } | null;
 }
 
 export interface ApiTemplate {
@@ -279,7 +284,8 @@ export interface ApiPlatformTenant {
   slug: string;
   status: 'draft' | 'awaiting_channel' | 'active' | 'suspended' | 'cancelled';
   plan: 'internal' | 'basic' | 'team';
-  industry: string;
+  businessType: string | null;
+  businessTypeOther: string;
   city: string;
   timezone: string;
   legalName: string;

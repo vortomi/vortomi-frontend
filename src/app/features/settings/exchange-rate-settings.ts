@@ -5,6 +5,7 @@ import type { RateSource } from '../../shared/api/models';
 import { calendarDay, formatShortDate, formatTime } from '../../shared/format/date-time';
 import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
+import { Switch } from '../../shared/ui/switch';
 import { Toaster } from '../../shared/ui/toaster';
 import { ExchangeRates } from '../exchange-rates/exchange-rates.data';
 import { formatIsoDay, formatRate, normalizeRate, weekdayOf } from '../exchange-rates/rate-format';
@@ -22,7 +23,7 @@ const SOURCES: { value: RateSource; label: string; detail: string }[] = [
  */
 @Component({
   selector: 'app-exchange-rate-settings',
-  imports: [Icon, Pill],
+  imports: [Icon, Pill, Switch],
   templateUrl: './exchange-rate-settings.html',
   styleUrls: ['../../shared/ui/section.scss', './exchange-rate-settings.scss'],
 })
@@ -42,6 +43,13 @@ export class ExchangeRateSettings {
   protected readonly bcv = computed(() => this.rates.book()?.bcv ?? null);
   protected readonly history = computed(() => this.rates.book()?.exchangeRates ?? []);
   protected readonly current = computed(() => this.history()[0] ?? null);
+  /** Only for a company with its own catalog system: its rate and whether prices use it. */
+  protected readonly system = computed(() => this.rates.book()?.system ?? null);
+  /** "Tasa de tu sistema, del 28 oct 2026, 19:10." */
+  protected readonly systemOrigin = computed(() => {
+    const date = this.system()?.rateDate;
+    return date ? `Tasa de tu sistema, del ${this.stamp(date)}.` : 'Tasa de tu sistema.';
+  });
   /** The BCV is chosen but the company still uses a rate typed by hand. */
   protected readonly pendingBcv = computed(() => this.source() === 'bcv' && this.current()?.source === 'manual');
   /**

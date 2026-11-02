@@ -46,7 +46,7 @@
   </div>
   <div class="card table-card">
     <table class="data-table">
-      <thead><tr><th>Persona</th><th>Rol</th><th>Números que atiende</th><th>Ve las de otros</th><th></th></tr></thead>
+      <thead><tr><th>Persona</th><th>Rol</th><th></th></tr></thead>
       <tbody>
         @for (row of active(); track row.user.id) {
           <tr>
@@ -57,13 +57,6 @@
               </div>
             </td>
             <td>{{ labels.role[row.membership.role] }}</td>
-            <td>
-              <div class="chips">
-                @for (channel of channelsOf(row); track channel.id) { <app-channel-badge [channel]="channel" /> }
-                @empty { <span class="muted sm">Ninguno</span> }
-              </div>
-            </td>
-            <td>{{ row.membership.canSeeOthers ? 'Sí' : 'No' }}</td>
             <td class="actions">
               @if (session.isTenantAdmin()) {
                 <button type="button" class="link" (click)="editingMember.set(row)">Editar</button>
@@ -77,7 +70,7 @@
       </tbody>
     </table>
   </div>
-  <p class="field-hint foot">Administración ve todas las conversaciones. Un agente ve las suyas y las sin asignar de sus números, y las de otros solo si lo activas.</p>
+  <p class="field-hint foot">Administración ve todas las conversaciones y las reparte desde la bandeja. Un agente solo ve y responde las que le asignan; una conversación puede tener varios agentes.</p>
 
   @if (session.isTenantAdmin() && team.pendingInvitations().length) {
     <div class="sec-title"><h2>Invitaciones pendientes</h2><span class="muted sm">Todavía no crearon su contraseña</span></div>

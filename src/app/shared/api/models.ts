@@ -9,6 +9,18 @@ export type IsoDate = string;
 /** Colour families shared by tags, statuses and badges. */
 export type Tone = 'green' | 'red' | 'amber' | 'blue' | 'violet' | 'neutral' | 'pink' | 'teal';
 
+/** One of the platform's business types (block C): a closed list our team extends from «Otro». */
+export interface BusinessType {
+  code: string;
+  label: string;
+  /** One of the panel's icon names; unknown ones fall back to a generic icon. */
+  icon: string;
+}
+
+/** What a company sells and how, as it answered the welcome. */
+export type Sells = 'products' | 'services' | 'both' | 'none';
+export type SellMethod = 'unit' | 'weight' | 'measure' | 'time' | 'mixed';
+
 export type TenantStatus = 'draft' | 'awaiting_channel' | 'active' | 'suspended' | 'cancelled';
 export type TenantPlan = 'internal' | 'basic' | 'team';
 
@@ -18,7 +30,10 @@ export interface Tenant {
   slug: string;
   status: TenantStatus;
   plan: TenantPlan;
-  industry: string;
+  /** Code of one of the platform's business types (BusinessTypes); null until it is set. */
+  businessType: string | null;
+  /** What the company wrote under «Otro», for our team to classify. */
+  businessTypeOther: string;
   city: string;
   timezone: string;
   currency: 'USD';
@@ -114,7 +129,10 @@ export interface Conversation {
   tenantId: Id;
   channelAccountId: Id;
   contactId: Id;
-  assignedUserId: Id | null;
+  /** Who attends it (admins hand it out); empty = unassigned. */
+  assigneeIds: Id[];
+  /** The sales agent passed it to a person, and why; null while the agent may answer. */
+  handoffReason?: HandoffReason | null;
   status: 'open' | 'resolved';
   lastMessageAt: IsoDate;
   lastMessagePreview: string;
@@ -136,6 +154,8 @@ export interface Message {
   body: string;
   /** Agent who wrote it; null for customer messages. */
   authorUserId: Id | null;
+  /** Written by the system itself (the sales agent or the away message), not by a person. */
+  automatic?: boolean;
   templateId: Id | null;
   /** Product card sent from the inventory. */
   productVariantId?: Id | null;
@@ -215,6 +235,9 @@ export interface TenantSettings {
   businessHours: DayHours[];
   /** Sent automatically when someone writes outside business hours. Empty = disabled. */
   awayMessage: string;
+  /** What a new product starts with (the welcome sets it from «¿Cómo vendes?»). */
+  defaultSaleUnit?: SaleUnit;
+  defaultStockMode?: StockMode;
 }
 
 /** bcv: read from the Banco Central de Venezuela every hour. custom: typed by an admin. */
@@ -249,6 +272,17 @@ export interface ExchangeRateBook {
   rateSource: RateSource;
   bcv: BcvStatus;
   exchangeRates: ExchangeRate[];
+  /** Only for a company with its own catalog system (La Campiña): its rate and whether it is used. */
+  system: SystemRateStatus | null;
+}
+
+/** The rate a company's own system prices with. bsPerUsd null: the system cannot be read now. */
+export interface SystemRateStatus {
+  /** «Usar la tasa de mi sistema»: on, every price in bolívares uses this rate instead of the history. */
+  useSystemRate: boolean;
+  bsPerUsd: string | null;
+  /** When the system dated its rate (ISO). */
+  rateDate: IsoDate | null;
 }
 
 /** "units": counted stock (resale). "availability": made to order, only an "available today" switch. */
@@ -431,4 +465,137 @@ export interface AuditEntry {
   action: AuditAction;
   detail: string;
   createdAt: IsoDate;
+}
+
+/** Why the sales agent passed a conversation to a person (same codes as the server). */
+export type HandoffReason = 'customer_asked' | 'purchase' | 'order_placed' | 'agent_unsure' | 'agent_error' | 'limit_reached';
+export type AgentTone = 'friendly' | 'formal' | 'brief';
+export type AgentSchedule = 'always' | 'after_hours';
+
+/** «Ajustes → Agente». */
+export interface AgentSettings {
+  enabled: boolean;
+  assistantName: string;
+  tone: AgentTone;
+  schedule: AgentSchedule;
+  businessInfo: string;
+  /** False when the platform has no model: the agent cannot answer anywhere. */
+  modelReady: boolean;
+  usage: { replies: number; cap: number };
+}
+
+export type DeliveryMode = 'flat' | 'zones';
+
+/** «Ajustes → Delivery»: prices in US cents. */
+export interface DeliverySettings {
+  /** False until the company saves it once. */
+  configured: boolean;
+  enabled: boolean;
+  mode: DeliveryMode;
+  flatPriceCents: number;
+  zones: { name: string; priceCents: number }[];
+}
+
+export type PaymentMethodType =
+  | 'pago_movil'
+  | 'transfer_national'
+  | 'zelle'
+  | 'paypal'
+  | 'binance'
+  | 'transfer_international'
+  | 'cash_usd'
+  | 'cash_ves'
+  | 'cash_eur'
+  | 'arrange';
+/** The currency the customer pays a method in: it follows the type. */
+export type PaymentCurrency = 'VES' | 'USD' | 'EUR';
+export type PaymentFieldKind = 'text' | 'bank' | 'document' | 'phone';
+/** Whether the customer must send the payment reference or the receipt. */
+export type PaymentProofRule = 'required' | 'optional' | 'none';
+
+/** One datum the customer sees to pay ("Banco: 0134 · Banesco"). */
+export interface PaymentField {
+  kind: PaymentFieldKind;
+  label: string;
+  value: string;
+  copyable: boolean;
+}
+
+/** «Métodos de pago»: how the company gets paid. Hidden, never deleted. */
+export interface PaymentMethod {
+  id: Id;
+  type: PaymentMethodType;
+  name: string;
+  currency: PaymentCurrency;
+  fields: PaymentField[];
+  instructions: string;
+  referenceRule: PaymentProofRule;
+  receiptRule: PaymentProofRule;
+  /** Offered to customers. */
+  isActive: boolean;
+  sortOrder: number;
+}
+
+/**
+ * Waiting for the customer's payment, receipt to review, confirmed by a person (the customer is
+ * told), done (delivered or picked up) or cancelled.
+ */
+export type OrderStatus = 'awaiting_payment' | 'payment_review' | 'confirmed' | 'done' | 'cancelled';
+
+/** An order taken in a conversation (by the sales agent, for now): prices as they were then, in US cents. */
+export interface OrderLine {
+  name: string;
+  quantity: number;
+  saleUnit: SaleUnit;
+  unitPriceCents: number;
+}
+
+export interface Order {
+  id: Id;
+  code: string;
+  status: OrderStatus;
+  conversationId: Id;
+  contactName: string | null;
+  customerName: string;
+  fulfillment: 'pickup' | 'delivery';
+  zone: string | null;
+  address: string | null;
+  paymentMethod: { id: Id; name: string; type: PaymentMethodType; currency: PaymentCurrency } | null;
+  notes: string;
+  /** The bank reference of the payment, typed by whoever checked it (it goes on the receipt). */
+  paymentReference: string | null;
+  /** Quantity in the product's sale unit (0.15 kg); the price is per one of it. */
+  lines: OrderLine[];
+  subtotalCents: number;
+  /** Null: delivery whose cost a person confirms. */
+  deliveryCents: number | null;
+  bsPerUsd: string | null;
+  /** Payment receipts the customer sent. */
+  receiptCount: number;
+  createdAt: IsoDate;
+}
+
+/** One order with its payment receipts (each file is fetched on its own) and its sale receipt. */
+export interface OrderDetail extends Order {
+  receipts: { mediaId: Id; mimeType: string; sizeBytes: number; createdAt: IsoDate }[];
+  /** Null until completed (or when the company gives none). Code null: the team uploaded its own. */
+  saleReceipt: { code: string | null; createdAt: IsoDate } | null;
+}
+
+/** Who makes an order's sale receipt: Vortomi, the team (its own picture), or nobody. */
+export type ReceiptMode = 'vortomi' | 'own' | 'off';
+
+/** «Ajustes → Recibo». The business name, RIF and address come from the company itself. */
+export interface ReceiptSettings {
+  mode: ReceiptMode;
+  subtitle: string;
+  phone: string;
+  prefix: string;
+  footer: string;
+  showAttendedBy: boolean;
+  showPaymentReference: boolean;
+  hasLogo: boolean;
+  /** "APC-000001": the code the next receipt gets. */
+  nextCode: string;
+  business: { name: string; legalName: string; taxId: string; address: string };
 }

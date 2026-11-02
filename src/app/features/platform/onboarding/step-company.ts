@@ -1,11 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormField, email, form, maxLength, pattern, required, submit, validate } from '@angular/forms/signals';
 import { Router } from '@angular/router';
-import { INDUSTRIES, TENANT_PLAN, TIMEZONES } from '../../../shared/api/labels';
+import { BusinessTypes } from '../../../core/business-types';
+import { TENANT_PLAN, TIMEZONES } from '../../../shared/api/labels';
 import type { TenantPlan } from '../../../shared/api/models';
 import { FieldError } from '../../../shared/ui/field-error';
 import { Icon } from '../../../shared/ui/icon';
 import { Pill } from '../../../shared/ui/pill';
+import { SelectMenu } from '../../../shared/ui/select-menu';
 import { Toaster } from '../../../shared/ui/toaster';
 import { PROFILE_ADDRESS_MAX, WEBSITE, normalizeTaxId } from './onboarding.rules';
 import { type CompanyDraft, OnboardingState } from './onboarding.state';
@@ -13,7 +15,7 @@ import { type CompanyDraft, OnboardingState } from './onboarding.state';
 /** Step 1 (mockup web-9). */
 @Component({
   selector: 'app-step-company',
-  imports: [FormField, FieldError, Icon, Pill],
+  imports: [FormField, FieldError, Icon, Pill, SelectMenu],
   templateUrl: './step-company.html',
   styleUrl: './steps.scss',
   styles: `
@@ -30,14 +32,18 @@ export class StepCompany {
   private readonly router = inject(Router);
   private readonly toaster = inject(Toaster);
 
-  protected readonly industries = INDUSTRIES;
+  protected readonly businessTypes = inject(BusinessTypes);
   protected readonly timezones = TIMEZONES;
   protected readonly plans = Object.entries(TENANT_PLAN) as [TenantPlan, (typeof TENANT_PLAN)[TenantPlan]][];
 
   private readonly model = signal<CompanyDraft>({ ...this.state.company() });
   protected readonly companyForm = form(this.model, (path) => {
     required(path.name, { message: 'Escribe el nombre comercial.' });
-    required(path.industry, { message: 'Elige el rubro.' });
+    required(path.businessType, { message: 'Elige el rubro.' });
+    maxLength(path.businessTypeOther, 60, { message: 'Máximo 60 caracteres.' });
+    validate(path.businessTypeOther, ({ value, valueOf }) =>
+      valueOf(path.businessType) === 'other' && value().trim().length < 3 ? { kind: 'other', message: 'Escribe a qué se dedica.' } : undefined,
+    );
     required(path.city, { message: 'Escribe la ciudad.' });
     required(path.legalName, { message: 'Escribe la razón social, como aparece en el RIF.' });
     required(path.taxId, { message: 'Escribe el RIF.' });
@@ -52,6 +58,11 @@ export class StepCompany {
     required(path.adminEmail, { message: 'Escribe su correo.' });
     email(path.adminEmail, { message: 'Ese correo no parece válido.' });
   });
+
+  protected setBusinessType(code: string): void {
+    this.companyForm.businessType().value.set(code);
+    this.companyForm.businessType().markAsTouched();
+  }
 
   protected setPlan(plan: TenantPlan): void {
     this.companyForm.plan().value.set(plan);

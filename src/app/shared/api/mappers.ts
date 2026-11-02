@@ -83,7 +83,8 @@ export function toConversation(tenantId: Id, row: ApiConversation): Conversation
     tenantId,
     channelAccountId: row.channelAccountId,
     contactId: row.contact.id,
-    assignedUserId: row.assignedUserId,
+    assigneeIds: row.assigneeIds,
+    handoffReason: row.handoffReason,
     status: row.status,
     lastMessageAt: row.lastMessage?.createdAt ?? row.lastActivityAt,
     lastMessagePreview: row.lastMessage ? previewOf(row.lastMessage.type, row.lastMessage.body) : '',
@@ -124,6 +125,7 @@ export function toMessage(tenantId: Id, conversationId: Id, row: ApiMessage): Me
     type: shown,
     body: shown === 'text' && row.type !== 'text' ? previewOf(row.type, row.body) : (row.body ?? ''),
     authorUserId: row.authorUserId,
+    automatic: row.author === 'bot',
     templateId: row.templateId,
     status: row.status,
     createdAt: row.createdAt,
@@ -161,6 +163,8 @@ export function toSettings(tenantId: Id, row: ApiSettings): TenantSettings {
     workMode: row.workMode,
     businessHours: row.businessHours,
     awayMessage: row.awayMessage,
+    defaultSaleUnit: row.defaultSaleUnit ?? 'unit',
+    defaultStockMode: row.defaultStockMode ?? 'units',
     // Not on the server yet (needs file storage).
     logoDataUrl: null,
   };
@@ -259,7 +263,8 @@ export function toTenant(row: ApiCompany): Tenant {
     timezone: row.timezone,
     currency: 'USD',
     // Not in /me (only the console needs them).
-    industry: '',
+    businessType: null,
+    businessTypeOther: '',
     city: '',
     legalName: '',
     taxId: '',
@@ -308,6 +313,7 @@ export function toContactStub(tenantId: Id, row: ApiConversation): Contact {
     purchasesTotalCents: 0,
     attributes: [],
     customValues: {},
+    // Not on the conversation: empty until the full row arrives (the panel then hides the date).
     createdAt: '',
   };
 }

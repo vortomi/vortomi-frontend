@@ -5,13 +5,14 @@ import { emptyNewPassword, newPasswordSchema } from '../../shared/security/new-p
 import { FieldError } from '../../shared/ui/field-error';
 import { Icon } from '../../shared/ui/icon';
 import { PasswordMeter } from '../../shared/ui/password-meter';
+import { PasswordField } from '../../shared/ui/password-field';
 
 /** Prototype: only this token is "valid"; the backend will check a hashed, single-use, 1 h token. */
 const DEMO_RESET_TOKEN = 'demo-reset';
 
 @Component({
   selector: 'app-reset-password-page',
-  imports: [FormField, RouterLink, FieldError, Icon, PasswordMeter],
+  imports: [PasswordField, FormField, RouterLink, FieldError, Icon, PasswordMeter],
   template: `
     <div class="auth-box">
       <h2>Crea una contraseña nueva</h2>
@@ -25,13 +26,13 @@ const DEMO_RESET_TOKEN = 'demo-reset';
         <form (submit)="onSubmit($event)" novalidate>
           <div class="field">
             <label for="password">Contraseña nueva</label>
-            <input id="password" class="input" type="password" autocomplete="new-password" [formField]="secret.password" />
+            <app-password-field><input id="password" class="input" type="password" autocomplete="new-password" [formField]="secret.password" /></app-password-field>
             <app-password-meter [password]="secret.password().value()" />
             <app-field-error [state]="secret.password()" />
           </div>
           <div class="field">
             <label for="confirm">Repítela</label>
-            <input id="confirm" class="input" type="password" autocomplete="new-password" [formField]="secret.confirm" />
+            <app-password-field><input id="confirm" class="input" type="password" autocomplete="new-password" [formField]="secret.confirm" /></app-password-field>
             <app-field-error [state]="secret.confirm()" />
           </div>
           <button type="submit" class="btn btn--primary btn--block">Guardar contraseña</button>

@@ -1,4 +1,4 @@
-import { Component, inject, input, model } from '@angular/core';
+import { Component, computed, inject, input, model } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Clock } from '../../../core/clock';
 import { Session } from '../../../core/session';
@@ -9,6 +9,7 @@ import { Avatar } from '../../../shared/ui/avatar';
 import { ChannelBadge } from '../../../shared/ui/channel-badge';
 import { Pill } from '../../../shared/ui/pill';
 import type { InboxFilters, InboxItem, InboxView, ViewCounts } from '../inbox.filters';
+import { HANDOFF_LABEL } from '../../agent/agent.models';
 
 @Component({
   selector: 'app-conversation-list',
@@ -26,11 +27,13 @@ export class ConversationList {
   readonly selectedId = input<Id>();
   readonly filters = model.required<InboxFilters>();
 
-  protected readonly views: { id: InboxView; label: string }[] = [
+  /** "Sin asignar" is the admins' tray: an agent only ever sees conversations assigned to them. */
+  protected readonly handoffLabel = HANDOFF_LABEL;
+  protected readonly views = computed<{ id: InboxView; label: string }[]>(() => [
     { id: 'mine', label: 'Mías' },
-    { id: 'unassigned', label: 'Sin asignar' },
+    ...(this.session.isTenantAdmin() ? [{ id: 'unassigned' as const, label: 'Sin asignar' }] : []),
     { id: 'all', label: 'Todas' },
-  ];
+  ]);
 
   protected stamp(iso: string): string {
     return formatListStamp(iso, this.clock.now(), this.session.timezone());

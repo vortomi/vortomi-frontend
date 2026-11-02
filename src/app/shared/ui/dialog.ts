@@ -27,7 +27,7 @@ import { Icon } from './icon';
     h2 { font-size: 17px; flex: 1; }
     .x { border: 0; background: none; cursor: pointer; color: var(--color-text-muted); --icon-size: 18px; display: inline-flex; }
     .body { padding: 14px 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: calc(100dvh - 190px); }
-    footer { display: flex; justify-content: flex-end; gap: 10px; padding: 0 20px 18px; }
+    footer { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 4px 20px 18px; }
     footer:empty { display: none; }
   `,
 })

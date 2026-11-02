@@ -10,8 +10,8 @@
   @if (session.isTenantAdmin()) {
     <button type="button" class="btn" (click)="importing.set(true)"><app-icon name="clip" />Importar</button>
     <button type="button" class="btn" (click)="exportCsv(false)"><app-icon name="down" />Exportar</button>
+    <a class="btn btn--primary" routerLink="/contacts/new"><app-icon name="plus" />Nuevo contacto</a>
   }
-  <a class="btn btn--primary" routerLink="/contacts/new"><app-icon name="plus" />Nuevo contacto</a>
 </header>
 
 <div class="filters">

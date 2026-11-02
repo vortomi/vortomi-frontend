@@ -4,6 +4,7 @@ import { FieldError } from '../../../shared/ui/field-error';
 import { Icon } from '../../../shared/ui/icon';
 import { Pill } from '../../../shared/ui/pill';
 import { Toaster } from '../../../shared/ui/toaster';
+import { PasswordField } from '../../../shared/ui/password-field';
 import type { DisplayNameStatus } from '../../../shared/api/models';
 import {
   DEMO_NEW_WABA_ID,
@@ -38,7 +39,7 @@ interface ConnectModel {
 /** Step 2 (mockup web-10). */
 @Component({
   selector: 'app-step-channel',
-  imports: [FormField, FieldError, Icon, Pill, WhatsAppProfileFields],
+  imports: [PasswordField, FormField, FieldError, Icon, Pill, WhatsAppProfileFields],
   templateUrl: './step-channel.html',
   styleUrl: './steps.scss',
   styles: `

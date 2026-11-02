@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, type OnInit, computed, inject, input, signal } from '@angular/core';
 import type { CustomField, CustomFieldEntity, CustomFieldKind, Id } from '../../shared/api/models';
 import { Confirm } from '../../shared/ui/confirm';
 import { Icon } from '../../shared/ui/icon';
@@ -35,7 +35,7 @@ const blank = (): Draft => ({ id: null, label: '', kind: 'text', required: false
   templateUrl: './custom-fields-settings.html',
   styleUrls: ['../../shared/ui/section.scss', './custom-fields-settings.scss'],
 })
-export class CustomFieldsSettings {
+export class CustomFieldsSettings implements OnInit {
   readonly entity = input.required<CustomFieldEntity>();
 
   private readonly data = inject(CustomFields);
@@ -67,6 +67,10 @@ export class CustomFieldsSettings {
 
   constructor() {
     inject(UnsavedChanges).track(computed(() => this.draft() !== null));
+  }
+
+  /** Not in the constructor: the required `entity` input is only set by now. */
+  ngOnInit(): void {
     void this.loadNotes();
   }
 

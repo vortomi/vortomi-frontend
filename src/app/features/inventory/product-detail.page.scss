@@ -65,15 +65,19 @@
   }
 }
 
+// Labels line up at the top; a hint under one field (Categoría) no longer pushes its neighbour down.
 .g2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px 14px;
-  align-items: end;
+  align-items: start;
 }
 
+// A checkbox beside a field: centred on that field's input, not on its label.
 .active {
-  padding-bottom: 10px;
+  align-self: end;
+  min-height: 40px;
+  align-items: center;
 }
 
 .variants {

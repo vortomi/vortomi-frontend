@@ -1,9 +1,10 @@
-import { Component, computed, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, computed, effect, inject, untracked } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Session } from '../core/session';
 import { Workspace } from '../core/workspace';
 import { InboxData } from '../features/inbox/inbox.data';
 import { InventoryData } from '../features/inventory/inventory.data';
+import { SetupData } from '../features/setup/setup.data';
 import { Icon } from '../shared/ui/icon';
 import { type NavBadge, type NavItem, TENANT_NAV } from './nav';
 import { ChannelBanner } from './channel-banner';
@@ -25,6 +26,15 @@ export class AppLayout {
   private readonly inbox = inject(InboxData);
   private readonly session = inject(Session);
   private readonly inventory = inject(InventoryData);
+  private readonly setup = inject(SetupData);
+  private readonly router = inject(Router);
+
+  constructor() {
+    // A company's admin who never did nor skipped the welcome gets it before the panel.
+    effect(() => {
+      if (this.setup.needsWelcome()) untracked(() => void this.router.navigateByUrl('/welcome'));
+    });
+  }
 
   /** Agents do not see admin-only entries, nor anyone sales entries in support-only mode (routes are guarded too). */
   private readonly visible = (item: NavItem) =>

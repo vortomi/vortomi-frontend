@@ -2,19 +2,20 @@ import { formatQuantity, minChoices, parseQuantity, perUnit, stepChoices, takesD
 import { addValue, combinations, dropValue } from './variant-combinations';
 
 describe('sale units', () => {
-  it('fractions only where the unit takes them, with up to 3 decimals', () => {
+  it('fractions only where the unit takes them, with up to 2 decimals', () => {
     expect(takesDecimals('kg')).toBe(true);
     expect(takesDecimals('box')).toBe(false);
     expect(parseQuantity('12,5', 'kg')).toBe(12.5);
     expect(parseQuantity('12,5', 'unit')).toBeNull();
-    expect(parseQuantity('0,1234', 'm')).toBeNull();
+    expect(parseQuantity('0,15', 'kg')).toBe(0.15);
+    expect(parseQuantity('0,125', 'm')).toBeNull();
     expect(parseQuantity('-1', 'kg')).toBeNull();
     expect(parseQuantity('3', 'box')).toBe(3);
   });
 
   it('offers the minimums and steps that fit', () => {
     expect(stepChoices('unit')).toEqual([1]);
-    expect(stepChoices('m')).toEqual([0.1, 0.25, 0.5, 1]);
+    expect(stepChoices('m')).toEqual([0.05, 0.1, 0.25, 0.5, 1]);
     expect(minChoices('m', 0.25)).toEqual([0.25, 0.5, 1, 2, 3, 5, 6, 10, 12]);
     expect(minChoices('unit', 1)).toEqual([1, 2, 3, 5, 6, 10, 12]);
   });

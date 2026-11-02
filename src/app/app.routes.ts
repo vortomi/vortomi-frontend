@@ -67,6 +67,13 @@ export const routes: Routes = [
     ],
   },
   {
+    // The welcome (block C): full screen, before the panel, for the company's admins.
+    path: 'welcome',
+    title: 'Bienvenida',
+    canActivate: [signedInGuard, tenantGuard, tenantAdminGuard],
+    loadComponent: () => import('./features/setup/welcome.page').then((m) => m.WelcomePage),
+  },
+  {
     path: '',
     component: AppLayout,
     canActivate: [signedInGuard, tenantGuard],
@@ -78,6 +85,39 @@ export const routes: Routes = [
         canActivate: [salesModeGuard],
         title: 'Pipeline',
         loadComponent: () => import('./features/pipeline/pipeline.page').then((m) => m.PipelinePage),
+      },
+      {
+        path: 'orders',
+        canActivate: [salesModeGuard],
+        title: 'Pedidos',
+        loadComponent: () => import('./features/orders/orders.page').then((m) => m.OrdersPage),
+      },
+      {
+        path: 'orders/:orderId',
+        canActivate: [salesModeGuard],
+        title: 'Pedido',
+        loadComponent: () => import('./features/orders/order-detail.page').then((m) => m.OrderDetailPage),
+      },
+      {
+        path: 'payment-methods',
+        canActivate: [tenantAdminGuard, salesModeGuard],
+        title: 'Métodos de pago',
+        loadComponent: () => import('./features/payment-methods/payment-methods.page').then((m) => m.PaymentMethodsPage),
+      },
+      {
+        // "new" before :methodId, which would otherwise take it as an id.
+        path: 'payment-methods/new',
+        canActivate: [tenantAdminGuard, salesModeGuard],
+        canDeactivate: [unsavedChangesGuard],
+        title: 'Nuevo método de pago',
+        loadComponent: () => import('./features/payment-methods/payment-method-form.page').then((m) => m.PaymentMethodFormPage),
+      },
+      {
+        path: 'payment-methods/:methodId',
+        canActivate: [tenantAdminGuard, salesModeGuard],
+        canDeactivate: [unsavedChangesGuard],
+        title: 'Método de pago',
+        loadComponent: () => import('./features/payment-methods/payment-method-form.page').then((m) => m.PaymentMethodFormPage),
       },
       {
         path: 'inventory',

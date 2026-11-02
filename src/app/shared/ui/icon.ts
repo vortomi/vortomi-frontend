@@ -30,6 +30,27 @@ const PATHS = {
   filter: '<path d="M4 5h16l-6 8v6l-4-2v-4z"/>',
   alert: '<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/>',
   eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  'eye-off':
+    '<path d="M3 3l18 18"/><path d="M10.6 5.1C11 5 11.5 5 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3 3.9M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.7 0 3.2-.5 4.4-1.2"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+  // Business types and the welcome's answers (block C).
+  car: '<path d="M5 15v-4l2-5h10l2 5v4"/><path d="M3 15h18v3H3z"/><path d="M5 11h14"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="16.5" cy="18" r="1.5"/>',
+  shirt: '<path d="M8 4L3 7l2 4 2-1v10h10V10l2 1 2-4-5-3c-.6 1.5-2.2 2.5-4 2.5S8.6 5.5 8 4z"/>',
+  bread: '<path d="M5 11a3 3 0 0 1 0-6h14a3 3 0 0 1 0 6v8H5z"/>',
+  pill: '<path d="M10.5 3.5a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7z"/><path d="M7 7l7 7"/>',
+  sofa: '<path d="M4 11V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3"/><path d="M2 13a2 2 0 0 1 4 0v2h12v-2a2 2 0 0 1 4 0v5H2z"/><path d="M5 18v2M19 18v2"/>',
+  laptop: '<rect x="4" y="5" width="16" height="11" rx="1"/><path d="M2 19h20"/>',
+  sparkles: '<path d="M11 3l1.8 5.2L18 10l-5.2 1.8L11 17l-1.8-5.2L4 10l5.2-1.8z"/><path d="M19 14l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
+  stethoscope: '<path d="M6 3v6a4 4 0 0 0 8 0V3"/><path d="M10 13v2a5 5 0 0 0 10 0v-2"/><circle cx="20" cy="11" r="2"/>',
+  wrench: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+  dots: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+  wand: '<path d="M4 20L16 8"/><path d="M15 3v3M21 9h-3M19.5 4.5l-2 2M9 3l.6 1.8L11.4 5.4 9.6 6 9 7.8 8.4 6 6.6 5.4l1.8-.6z"/>',
+  package: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
+  layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4z"/>',
+  box: '<rect x="4" y="7" width="16" height="13" rx="1"/><path d="M4 7l2-3h12l2 3M10 11h4"/>',
+  scale: '<path d="M12 4v16M7 20h10M5 8h14"/><path d="M5 8l-3 6a3 3 0 0 0 6 0zM19 8l-3 6a3 3 0 0 0 6 0z"/>',
+  ruler: '<path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>',
+  shuffle: '<path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4"/><path d="M19 5l2 2-2 2M19 15l2 2-2 2"/>',
   dollar:
     '<path d="M12 3v18M16 7c-1-1.3-2.4-2-4-2-2.2 0-4 1.3-4 3s1.8 2.7 4 3 4 1.3 4 3-1.8 3-4 3c-1.8 0-3.3-.8-4.2-2"/>',
   mail: '<path d="M3 6h18v12H3z"/><path d="M3 7l9 6 9-6"/>',
@@ -65,4 +86,9 @@ export class Icon {
       `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${this.stroke()}" stroke-linecap="round" stroke-linejoin="round">${PATHS[this.name()]}</svg>`,
     ),
   );
+}
+
+/** A name that comes as data (a business type's icon) as one of ours, or the fallback. */
+export function iconOr(name: string | null | undefined, fallback: IconName): IconName {
+  return name && name in PATHS ? (name as IconName) : fallback;
 }

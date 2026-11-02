@@ -41,6 +41,11 @@ export class ApiClient {
     return this.run(this.http.put<T>(this.url(path), body));
   }
 
+  /** A file the API serves (an image, a PDF), as bytes. */
+  blob(path: string): Promise<Blob> {
+    return this.run(this.http.get(this.url(path), { responseType: 'blob' }));
+  }
+
   delete<T = void>(path: string): Promise<T> {
     return this.run(this.http.delete<T>(this.url(path)));
   }

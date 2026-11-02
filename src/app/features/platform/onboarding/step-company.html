@@ -13,14 +13,14 @@
           <app-field-error [state]="companyForm.name()" />
         </div>
         <div class="field">
-          <label for="industry">Rubro</label>
-          <select id="industry" class="input" [formField]="companyForm.industry">
-            <option value="">Elige uno</option>
-            @for (industry of industries; track industry) {
-              <option [value]="industry">{{ industry }}</option>
-            }
-          </select>
-          <app-field-error [state]="companyForm.industry()" />
+          <span class="label">Rubro</span>
+          <app-select-menu label="Rubro" placeholder="Elige uno" [searchable]="true" [options]="businessTypes.options()"
+            [value]="companyForm.businessType().value() || null" (picked)="setBusinessType($event)" />
+          <app-field-error [state]="companyForm.businessType()" />
+          @if (companyForm.businessType().value() === 'other') {
+            <input class="input" aria-label="A qué se dedica" placeholder="¿A qué se dedica? Ej.: óptica" [formField]="companyForm.businessTypeOther" />
+            <app-field-error [state]="companyForm.businessTypeOther()" />
+          }
         </div>
         <div class="field">
           <label for="city">Ciudad</label>

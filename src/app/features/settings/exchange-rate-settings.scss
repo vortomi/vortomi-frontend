@@ -168,3 +168,50 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* «Usar la tasa de mi sistema»: only for a company with its own catalog system. */
+.own {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+
+  &.on {
+    border-color: var(--color-primary);
+    background: var(--color-primary-softer);
+  }
+
+  .badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface-muted);
+    color: var(--color-text-muted);
+    --icon-size: 20px;
+  }
+
+  &.on .badge {
+    background: var(--color-primary);
+    color: #fff;
+  }
+
+  .grow {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 13.5px;
+  }
+
+  small {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+  }
+}

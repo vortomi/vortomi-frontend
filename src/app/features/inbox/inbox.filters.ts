@@ -23,23 +23,19 @@ export const EMPTY_FILTERS: InboxFilters = { view: 'all', channelId: null, tagId
 const normalize = (text: string): string =>
   text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
 
-/** What a person may see: admins see everything; agents only their numbers, and others' chats only if allowed. */
+/** What a person may see: admins everything; agents only the conversations assigned to them. */
 export function visibleTo(items: InboxItem[], membership: Membership | null, userId: Id | null): InboxItem[] {
   if (!membership) return [];
   if (membership.role === 'admin') return items;
-  return items.filter(({ conversation }) => {
-    if (!membership.channelAccountIds.includes(conversation.channelAccountId)) return false;
-    if (membership.canSeeOthers) return true;
-    return conversation.assignedUserId === null || conversation.assignedUserId === userId;
-  });
+  return items.filter(({ conversation }) => userId !== null && conversation.assigneeIds.includes(userId));
 }
 
 function inView({ conversation }: InboxItem, view: InboxView, userId: Id | null): boolean {
   switch (view) {
     case 'mine':
-      return conversation.status === 'open' && conversation.assignedUserId === userId;
+      return conversation.status === 'open' && userId !== null && conversation.assigneeIds.includes(userId);
     case 'unassigned':
-      return conversation.status === 'open' && conversation.assignedUserId === null;
+      return conversation.status === 'open' && conversation.assigneeIds.length === 0;
     case 'all':
       return true;
   }

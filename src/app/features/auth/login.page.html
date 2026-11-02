@@ -20,8 +20,8 @@
         <label for="password">Contraseña</label>
         <a class="link" routerLink="/forgot-password">¿La olvidaste?</a>
       </div>
-      <input id="password" class="input" type="password" autocomplete="current-password" [formField]="credentials.password"
-        [attr.aria-invalid]="credentials.password().touched() && credentials.password().invalid()" />
+      <app-password-field><input id="password" class="input" type="password" autocomplete="current-password" [formField]="credentials.password"
+        [attr.aria-invalid]="credentials.password().touched() && credentials.password().invalid()" /></app-password-field>
       <app-field-error [state]="credentials.password()" />
     </div>
     <button type="submit" class="btn btn--primary btn--block" [disabled]="credentials().submitting()" [attr.aria-busy]="credentials().submitting()"

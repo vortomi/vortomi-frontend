@@ -5,13 +5,20 @@ import type { Id, TenantPlan } from '../../shared/api/models';
 
 export interface TenantFields {
   name: string;
-  industry: string;
+  businessType: string;
+  businessTypeOther: string;
   city: string;
   timezone: string;
   plan: TenantPlan;
   legalName: string;
   taxId: string;
   fiscalAddress: string;
+}
+
+/** Companies that wrote the same thing under «Otro». */
+export interface UnclassifiedType {
+  text: string;
+  tenants: { id: Id; name: string }[];
 }
 
 export interface ChannelConnection {
@@ -29,6 +36,20 @@ export interface ChannelConnection {
 @Injectable({ providedIn: 'root' })
 export class PlatformRemote {
   private readonly api = inject(ApiClient);
+
+  /** What companies wrote under «Otro», grouped, most companies first. */
+  async unclassified(): Promise<UnclassifiedType[]> {
+    return (await this.api.get<{ items: UnclassifiedType[] }>('platform/business-types/unclassified')).items;
+  }
+
+  /** A new type on the list, with the companies that asked for it. */
+  createBusinessType(label: string, tenantIds: Id[]): Promise<{ code: string; label: string }> {
+    return this.api.post('platform/business-types', { label, tenantIds });
+  }
+
+  reclassify(businessType: string, tenantIds: Id[]): Promise<{ moved: number }> {
+    return this.api.post('platform/business-types/reclassify', { businessType, tenantIds });
+  }
 
   async tenants(): Promise<ApiPlatformTenant[]> {
     return (await this.api.get<{ tenants: ApiPlatformTenant[] }>('platform/tenants')).tenants;

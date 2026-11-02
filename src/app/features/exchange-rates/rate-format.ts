@@ -1,6 +1,8 @@
 // How rates are typed and read in the panel. Values stay strings ("886.2271") until shown:
 // no floating point on the way to the server.
 
+import type { ExchangeRateBook } from '../../shared/api/models';
+
 const LOCALE = 'es-VE';
 const RATE_FORMAT = new Intl.NumberFormat(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 8 });
 const WEEKDAY_FORMAT = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', timeZone: 'UTC' });
@@ -28,4 +30,10 @@ export function formatIsoDay(value: string): string {
 /** "2026-10-27" → "martes". */
 export function weekdayOf(value: string): string {
   return WEEKDAY_FORMAT.format(new Date(`${value}T12:00:00Z`));
+}
+
+/** The rate a company's prices in bolívares use: its own system's when chosen, else its newest. */
+export function rateInUse(book: Pick<ExchangeRateBook, 'system' | 'exchangeRates'>): string | null {
+  if (book.system?.useSystemRate) return book.system.bsPerUsd;
+  return book.exchangeRates[0]?.bsPerUsd ?? null;
 }

@@ -8,7 +8,7 @@ function item(id: string, overrides: Partial<Conversation> = {}, contact: Partia
       tenantId: 'ten_a',
       channelAccountId: 'ch_sales',
       contactId: `con_${id}`,
-      assignedUserId: null,
+      assigneeIds: [],
       status: 'open',
       lastMessageAt: '2026-10-09T10:00:00-04:00',
       lastMessagePreview: 'Hola',
@@ -48,23 +48,21 @@ const membership = (overrides: Partial<Membership> = {}): Membership => ({
 
 describe('visibleTo', () => {
   const items = [
-    item('mine', { assignedUserId: 'usr_me' }),
+    item('mine', { assigneeIds: ['usr_me'] }),
     item('free'),
-    item('other', { assignedUserId: 'usr_other' }),
+    item('shared', { assigneeIds: ['usr_other', 'usr_me'] }),
+    item('other', { assigneeIds: ['usr_other'] }),
     item('workshop', { channelAccountId: 'ch_workshop' }),
   ];
   const ids = (list: InboxItem[]) => list.map((i) => i.conversation.id);
 
-  it('shows an agent only their numbers, and only own or unassigned chats', () => {
-    expect(ids(visibleTo(items, membership(), 'usr_me'))).toEqual(['mine', 'free']);
-  });
-
-  it('shows others chats when the agent is allowed to', () => {
-    expect(ids(visibleTo(items, membership({ canSeeOthers: true }), 'usr_me'))).toEqual(['mine', 'free', 'other']);
+  it('shows an agent only the chats assigned to them, alone or with others', () => {
+    expect(ids(visibleTo(items, membership(), 'usr_me'))).toEqual(['mine', 'shared']);
+    expect(ids(visibleTo(items, membership({ canSeeOthers: true }), 'usr_me'))).toEqual(['mine', 'shared']);
   });
 
   it('shows everything to an admin', () => {
-    expect(visibleTo(items, membership({ role: 'admin' }), 'usr_me')).toHaveLength(4);
+    expect(visibleTo(items, membership({ role: 'admin' }), 'usr_me')).toHaveLength(5);
   });
 
   it('shows nothing without a membership in the company', () => {
@@ -74,9 +72,9 @@ describe('visibleTo', () => {
 
 describe('applyFilters', () => {
   const items = [
-    item('old', { lastMessageAt: '2026-10-08T09:00:00-04:00', assignedUserId: 'usr_me' }),
+    item('old', { lastMessageAt: '2026-10-08T09:00:00-04:00', assigneeIds: ['usr_me'] }),
     item('new', { lastMessageAt: '2026-10-09T09:00:00-04:00' }, { name: 'José Gutiérrez', tagIds: ['tag_vip'] }),
-    item('done', { status: 'resolved', assignedUserId: 'usr_me' }),
+    item('done', { status: 'resolved', assigneeIds: ['usr_me'] }),
   ];
 
   it('sorts by latest activity', () => {

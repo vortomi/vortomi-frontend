@@ -3,7 +3,7 @@ import { API_CONFIG } from '../../../core/api/api-config';
 import { Clock } from '../../../core/clock';
 import { Directory } from '../../../core/directory';
 import { Session } from '../../../core/session';
-import { INDUSTRY_VERTICAL } from '../../../shared/api/labels';
+import { BUSINESS_VERTICAL } from '../../../shared/api/labels';
 import type { Id, TenantPlan, WhatsAppVertical } from '../../../shared/api/models';
 import { newId } from '../../../shared/api/mock-db';
 import type { IconName } from '../../../shared/ui/icon';
@@ -13,7 +13,10 @@ import { type WabaAccount, type WabaLookup, type WabaNumber, classifyWabaLookup,
 
 export interface CompanyDraft {
   name: string;
-  industry: string;
+  /** Code of the business type; '' while none is chosen. */
+  businessType: string;
+  /** Under «Otro»: what the company does, for our team to classify. */
+  businessTypeOther: string;
   city: string;
   timezone: string;
   plan: TenantPlan;
@@ -62,7 +65,8 @@ export interface TestEvent {
 
 export const emptyCompany = (): CompanyDraft => ({
   name: '',
-  industry: '',
+  businessType: '',
+  businessTypeOther: '',
   city: '',
   timezone: 'America/Caracas',
   plan: 'basic',
@@ -78,7 +82,7 @@ export const emptyCompany = (): CompanyDraft => ({
 /** Profile prefilled from step 1, so nobody types the same thing twice. */
 export const profileFrom = (company: CompanyDraft): WhatsAppProfile => ({
   about: '',
-  vertical: INDUSTRY_VERTICAL[company.industry] ?? '',
+  vertical: BUSINESS_VERTICAL[company.businessType] ?? '',
   email: company.adminEmail.trim(),
   website: company.website.trim(),
   address: company.fiscalAddress.trim(),
@@ -142,7 +146,8 @@ export class OnboardingState {
       this.drafts.get(tenantId) ?? {
         ...emptyCompany(),
         name: tenant.name,
-        industry: tenant.industry,
+        businessType: tenant.businessType ?? '',
+        businessTypeOther: tenant.businessTypeOther,
         city: tenant.city,
         timezone: tenant.timezone,
         plan: tenant.plan,
@@ -187,7 +192,8 @@ export class OnboardingState {
     const id = this.tenantId();
     const fields = {
       name: draft.name.trim(),
-      industry: draft.industry,
+      businessType: draft.businessType,
+      businessTypeOther: draft.businessType === 'other' ? draft.businessTypeOther.trim() : '',
       city: draft.city.trim(),
       timezone: draft.timezone,
       plan: draft.plan,
@@ -371,7 +377,8 @@ export class OnboardingState {
         ...emptyCompany(),
         ...admin,
         name: detail.name,
-        industry: detail.industry,
+        businessType: detail.businessType ?? '',
+        businessTypeOther: detail.businessTypeOther,
         city: detail.city,
         timezone: detail.timezone,
         plan: detail.plan,

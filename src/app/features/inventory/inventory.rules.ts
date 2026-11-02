@@ -43,7 +43,7 @@ export function productStatus(product: Product, variants: ProductVariant[]): Sto
 export function movementError(variant: ProductVariant, quantity: number, unit: SaleUnit): string | null {
   if (quantity === 0 || !Number.isFinite(quantity)) return 'Escribe una cantidad distinta de cero.';
   if (!takesDecimals(unit) && !Number.isInteger(quantity)) return 'Este producto se cuenta entero: escribe una cantidad sin decimales.';
-  if (Math.abs(quantity * 1000 - Math.round(quantity * 1000)) > 1e-6) return 'Usa hasta 3 decimales.';
+  if (Math.abs(quantity * 100 - Math.round(quantity * 100)) > 1e-6) return 'Usa hasta 2 decimales.';
   const next = roundQuantity(variant.onHand + quantity);
   if (next < 0) return `No hay tanto: quedan ${formatQuantity(variant.onHand, unit)}.`;
   if (next < variant.reserved) return `Quedaría menos de lo apartado (${formatQuantity(variant.reserved, unit)}).`;

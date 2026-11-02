@@ -1,4 +1,5 @@
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { BusinessTypes } from '../../core/business-types';
 import { RouterLink } from '@angular/router';
 import { Directory } from '../../core/directory';
 import { CHANNEL_STATUS, QUALITY, ROLE, TENANT_PLAN, TENANT_STATUS } from '../../shared/api/labels';
@@ -25,6 +26,7 @@ const TZ = 'America/Caracas';
 export class TenantDetailPage {
   protected readonly data = inject(PlatformData);
   private readonly directory = inject(Directory);
+  private readonly businessTypes = inject(BusinessTypes);
   private readonly confirm = inject(Confirm);
   private readonly toaster = inject(Toaster);
 
@@ -69,7 +71,7 @@ export class TenantDetailPage {
   }
 
   protected subtitle(tenant: Tenant): string {
-    return [tenant.industry, tenant.city].filter(Boolean).join(' · ');
+    return [this.businessTypes.labelOf(tenant.businessType, tenant.businessTypeOther), tenant.city].filter(Boolean).join(' · ');
   }
 
   protected date(iso: string | null): string {

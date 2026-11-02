@@ -8,6 +8,7 @@ import { type NewPassword, emptyNewPassword, newPasswordSchema } from '../../sha
 import { FieldError } from '../../shared/ui/field-error';
 import { Icon } from '../../shared/ui/icon';
 import { PasswordMeter } from '../../shared/ui/password-meter';
+import { PasswordField } from '../../shared/ui/password-field';
 import { Pill } from '../../shared/ui/pill';
 import { Toaster } from '../../shared/ui/toaster';
 
@@ -18,7 +19,7 @@ interface PasswordChange {
 
 @Component({
   selector: 'app-profile-page',
-  imports: [FormField, FieldError, Icon, PasswordMeter, Pill],
+  imports: [PasswordField, FormField, FieldError, Icon, PasswordMeter, Pill],
   templateUrl: './profile.page.html',
   styles: `
     :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }

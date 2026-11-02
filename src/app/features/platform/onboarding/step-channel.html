@@ -31,7 +31,7 @@
       @if (state.real) {
         <div class="field">
           <label for="token">Token de acceso a esa cuenta</label>
-          <input id="token" class="input mono" type="password" autocomplete="off" [formField]="connectForm.accessToken" />
+          <app-password-field><input id="token" class="input mono" type="password" autocomplete="off" [formField]="connectForm.accessToken" /></app-password-field>
           <p class="field-hint">El token del usuario del sistema de nuestro Meta Business con acceso a la cuenta del cliente. Se guarda cifrado y nunca se vuelve a mostrar.</p>
           <app-field-error [state]="connectForm.accessToken()" />
         </div>
@@ -77,8 +77,8 @@
             @if (!state.real) {
             <div class="field">
               <label for="pin">PIN de seguridad de 6 dígitos</label>
-              <input id="pin" class="input mono" type="password" inputmode="numeric" autocomplete="off"
-                [formField]="connectForm.pin" />
+              <app-password-field><input id="pin" class="input mono" type="password" inputmode="numeric" autocomplete="off"
+                [formField]="connectForm.pin" /></app-password-field>
               <p class="field-hint">Lo escribe el cliente. Si el número ya tenía verificación en dos pasos, es ese PIN; si no, elige uno nuevo y lo guarda. Protege el número si alguien intenta registrarlo en otro lado.</p>
               <app-field-error [state]="connectForm.pin()" />
             </div>

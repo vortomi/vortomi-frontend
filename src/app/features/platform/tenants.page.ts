@@ -1,4 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { UnclassifiedTypes } from './unclassified-types';
+import type { Tenant } from '../../shared/api/models';
+import { BusinessTypes } from '../../core/business-types';
 import { Router, RouterLink } from '@angular/router';
 import { CHANNEL_STATUS, QUALITY, TENANT_PLAN, TENANT_STATUS } from '../../shared/api/labels';
 import { formatCount } from '../../shared/format/money';
@@ -13,13 +16,14 @@ const normalize = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}
 /** Every company on the platform (mockup web-7). */
 @Component({
   selector: 'app-tenants-page',
-  imports: [RouterLink, Avatar, Icon, Pill, AlertList],
+  imports: [RouterLink, Avatar, Icon, Pill, AlertList, UnclassifiedTypes],
   templateUrl: './tenants.page.html',
   styleUrl: './platform-pages.scss',
 })
 export class TenantsPage {
   protected readonly data = inject(PlatformData);
   private readonly router = inject(Router);
+  private readonly businessTypes = inject(BusinessTypes);
 
   protected readonly search = signal('');
   protected readonly labels = { status: TENANT_STATUS, plan: TENANT_PLAN, channel: CHANNEL_STATUS, quality: QUALITY };
@@ -34,9 +38,14 @@ export class TenantsPage {
     const needle = normalize(this.search().trim());
     return this.data
       .rows()
-      .filter((r) => !needle || normalize(`${r.tenant.name} ${r.tenant.city} ${r.tenant.industry}`).includes(needle))
+      .filter((r) => !needle || normalize(`${r.tenant.name} ${r.tenant.city} ${this.typeOf(r.tenant)}`).includes(needle))
       .sort((a, b) => a.tenant.name.localeCompare(b.tenant.name, 'es'));
   });
+
+  /** "Repuestos y autopartes", or what it wrote under «Otro». */
+  protected typeOf(tenant: Tenant): string {
+    return this.businessTypes.labelOf(tenant.businessType, tenant.businessTypeOther);
+  }
 
   protected open(row: TenantRow): void {
     const unfinished = row.tenant.status === 'draft' || row.tenant.status === 'awaiting_channel';

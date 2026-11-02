@@ -64,11 +64,6 @@ export class Workspace {
   readonly stageById = computed(() => new Map(this.stages().map((s) => [s.id, s])));
   readonly userById = this.directory.userById;
 
-  /** Active people who attend a given number, for the assignment menu. */
-  attendantsOf(channelId: Id): TeamMember[] {
-    return this.activeTeam().filter((m) => m.membership.channelAccountIds.includes(channelId));
-  }
-
   private scoped<T extends { tenantId: Id }>(rows: () => T[]) {
     return computed(() => {
       const tenantId = this.session.tenant()?.id;
