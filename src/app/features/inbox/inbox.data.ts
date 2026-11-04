@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, untracked } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { API_CONFIG } from '../../core/api/api-config';
 import { toApiFailure } from '../../core/api/api-error';
 import { Clock } from '../../core/clock';
@@ -44,6 +44,8 @@ export class InboxData {
   private readonly realtime = inject(InboxRealtime);
   /** When the list was last read from the server ('api' mode). */
   private lastRefresh = 0;
+  /** When the inbox last read the server (ms): what follows the company's changes (the orders count) reads again then. */
+  readonly synced = signal(0);
 
   private readonly conversationTable = editableTable<Conversation>('conversations');
   private readonly messageTable = editableTable<Message>('messages');
@@ -285,6 +287,7 @@ export class InboxData {
       if (this.messageTable.status() !== 'local') this.messageTable.replaceAll([]);
       if (this.noteTable.status() !== 'local') this.noteTable.replaceAll([]);
       if (conversationId) await this.loadTimeline(tenantId, conversationId);
+      this.synced.set(Date.now());
     } catch (error) {
       this.toaster.show(toApiFailure(error).message, 'info');
     }

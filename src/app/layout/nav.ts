@@ -1,6 +1,8 @@
 import type { IconName } from '../shared/ui/icon';
 
-export type NavBadge = 'unread' | 'rejectedTemplates' | 'outOfStock';
+export type NavBadge = 'unread' | 'ordersToReview' | 'rejectedTemplates' | 'outOfStock';
+/** Counts of something wrong (amber); the rest are work waiting (blue). */
+export const WARNING_BADGES: readonly NavBadge[] = ['rejectedTemplates', 'outOfStock'];
 
 export interface NavItem {
   path: string;
@@ -31,7 +33,7 @@ export const TENANT_NAV: NavGroup[] = [
   {
     title: 'Ventas',
     items: [
-      { path: '/orders', icon: 'package', label: 'Pedidos', salesOnly: true },
+      { path: '/orders', icon: 'package', label: 'Pedidos', badge: 'ordersToReview', salesOnly: true },
       { path: '/payment-methods', icon: 'dollar', label: 'Métodos de pago', adminOnly: true, salesOnly: true },
       { path: '/pipeline', icon: 'kanban', label: 'Pipeline', mobile: true, salesOnly: true },
       { path: '/inventory', icon: 'tag', label: 'Inventario', badge: 'outOfStock', salesOnly: true },

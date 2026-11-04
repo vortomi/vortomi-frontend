@@ -16,7 +16,7 @@
         <a [routerLink]="item.path" routerLinkActive="on">
           <app-icon [name]="item.icon" />{{ item.label }}
           @if (badge(item.badge); as count) {
-            <span class="count" [class.warn]="item.badge !== 'unread'">{{ count }}</span>
+            <span class="count" [class.warn]="warns(item.badge)">{{ count }}</span>
           }
         </a>
       }

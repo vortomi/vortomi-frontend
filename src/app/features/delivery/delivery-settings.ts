@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { API_CONFIG } from '../../core/api/api-config';
 import { toApiFailure } from '../../core/api/api-error';
 import { Session } from '../../core/session';
-import type { DeliveryMode, DeliverySettings } from '../../shared/api/models';
+import type { DeliveryCharge, DeliveryMode, DeliverySettings } from '../../shared/api/models';
 import { parsePriceCents } from '../../shared/format/money';
 import { Icon } from '../../shared/ui/icon';
 import { type OptionCard, OptionCards } from '../../shared/ui/option-cards';
@@ -14,12 +14,17 @@ const MODES: (OptionCard & { value: DeliveryMode })[] = [
   { value: 'zones', label: 'Precio por zona', icon: 'tag', hint: 'Cada zona con su propio precio' },
   { value: 'flat', label: 'Precio fijo', icon: 'dollar', hint: 'El mismo precio a cualquier dirección' },
 ];
+const CHARGES: (OptionCard & { value: DeliveryCharge })[] = [
+  { value: 'per_order', label: 'Por pedido', icon: 'package', hint: 'Se cobra una vez, lleve lo que lleve' },
+  { value: 'per_piece', label: 'Por producto', icon: 'layers', hint: 'Se cobra por cada producto: 3 botellones, 3 veces' },
+];
 const MAX_ZONES = 100;
 
 /** What the form holds: prices as typed ("1,50"), turned into cents on save. */
 interface Draft {
   enabled: boolean;
   mode: DeliveryMode;
+  charge: DeliveryCharge;
   flatPrice: string;
   zones: { name: string; price: string }[];
 }
@@ -32,13 +37,14 @@ const toCents = (text: string): number | null => (/^\s*0+([.,]0*)?\s*$/.test(tex
 const toDraft = (s: DeliverySettings): Draft => ({
   enabled: s.enabled,
   mode: s.mode,
+  charge: s.charge,
   flatPrice: s.configured || s.flatPriceCents ? priceText(s.flatPriceCents) : '',
   zones: s.zones.map((z) => ({ name: z.name, price: priceText(z.priceCents) })),
 });
 
 /**
  * «Ajustes → Delivery»: whether the company delivers and what it costs, one price everywhere or a
- * price per zone. The sales agent tells customers exactly this. Admins only; server only.
+ * price per zone, charged once per order or per piece. The sales agent tells customers exactly this. Admins only; server only.
  */
 @Component({
   selector: 'app-delivery-settings',
@@ -64,18 +70,26 @@ const toDraft = (s: DeliverySettings): Draft => ({
             <app-option-cards label="Cómo cobras el delivery" [options]="modes" [value]="d.mode" (picked)="setMode($event)" />
           </div>
 
+          <div class="field">
+            <span class="label">Cómo se cuenta</span>
+            <app-option-cards label="Cómo se cuenta el delivery" [options]="charges" [value]="d.charge" (picked)="setCharge($event)" />
+            @if (d.charge === 'per_piece') {
+              <p class="field-hint">Ejemplo: si el delivery cuesta 0,60 y el cliente pide 3 botellones, paga 1,80 de delivery. Lo que se vende por peso o medida (kilos, litros…) se cobra una vez por producto.</p>
+            }
+          </div>
+
           @if (d.mode === 'flat') {
             <div class="field">
-              <label for="flat-price">Precio del delivery (USD)</label>
+              <label for="flat-price">{{ d.charge === 'per_piece' ? 'Precio del delivery por producto (USD)' : 'Precio del delivery (USD)' }}</label>
               <input id="flat-price" class="input price" inputmode="decimal" placeholder="0,00" [value]="d.flatPrice" (input)="patch({ flatPrice: value($event) })" />
-              <p class="field-hint">Se suma al pedido, a cualquier dirección. 0 si es gratis.</p>
+              <p class="field-hint">{{ d.charge === 'per_piece' ? 'Se suma por cada producto del pedido' : 'Se suma al pedido' }}, a cualquier dirección. 0 si es gratis.</p>
             </div>
           } @else {
             <div class="field">
               <span class="label">Zonas</span>
               @if (d.zones.length) {
                 <div class="zones">
-                  <div class="zone legend"><span>Zona</span><span>Precio (USD)</span><span></span></div>
+                  <div class="zone legend"><span>Zona</span><span>{{ d.charge === 'per_piece' ? 'Por producto (USD)' : 'Precio (USD)' }}</span><span></span></div>
                   @for (zone of d.zones; track $index; let i = $index) {
                     <div class="zone">
                       <input class="input" maxlength="40" placeholder="Centro" [attr.aria-label]="'Nombre de la zona ' + (i + 1)" [value]="zone.name" (input)="setZone(i, { name: value($event) })" />
@@ -139,6 +153,7 @@ export class DeliverySettingsPage {
   private readonly toaster = inject(Toaster);
 
   protected readonly modes = MODES;
+  protected readonly charges = CHARGES;
   protected readonly maxZones = MAX_ZONES;
   protected readonly saved = signal<DeliverySettings | null>(null);
   protected readonly draft = signal<Draft | null>(null);
@@ -166,6 +181,10 @@ export class DeliverySettingsPage {
 
   protected setMode(value: string): void {
     this.patch({ mode: value as DeliveryMode });
+  }
+
+  protected setCharge(value: string): void {
+    this.patch({ charge: value as DeliveryCharge });
   }
 
   protected setZone(index: number, change: Partial<Draft['zones'][number]>): void {
@@ -223,7 +242,7 @@ export class DeliverySettingsPage {
       if (priceCents === null) return `Escribe el precio de «${name}», por ejemplo 1,50 (0 si es gratis).`;
       zones.push({ name, priceCents });
     }
-    return { enabled: draft.enabled, mode: draft.mode, flatPriceCents: flatPriceCents ?? 0, zones };
+    return { enabled: draft.enabled, mode: draft.mode, charge: draft.charge, flatPriceCents: flatPriceCents ?? 0, zones };
   }
 
   private async load(): Promise<void> {

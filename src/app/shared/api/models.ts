@@ -485,6 +485,8 @@ export interface AgentSettings {
 }
 
 export type DeliveryMode = 'flat' | 'zones';
+/** What the price is for: the whole order (one trip), or each piece ordered (3 jugs pay it 3 times). */
+export type DeliveryCharge = 'per_order' | 'per_piece';
 
 /** «Ajustes → Delivery»: prices in US cents. */
 export interface DeliverySettings {
@@ -493,6 +495,7 @@ export interface DeliverySettings {
   enabled: boolean;
   mode: DeliveryMode;
   flatPriceCents: number;
+  charge: DeliveryCharge;
   zones: { name: string; priceCents: number }[];
 }
 

@@ -1,0 +1,50 @@
+# Railway (Railpack) serves the built panel with Caddy and reads this file instead of its default.
+# The server's routes go to vortomi-backend over Railway's private network, so the browser sees a
+# single origin (the panel calls /api on its own address) and the backend needs no public domain.
+# BACKEND_URL: the backend's private address, e.g. http://vortomi-backend.railway.internal:3100
+
+{
+	admin off
+	persist_config off
+	auto_https off
+	log {
+		format json
+	}
+	servers {
+		# Railway's edge proxy
+		trusted_proxies static private_ranges 100.0.0.0/8
+	}
+}
+
+:{$PORT:80} {
+	log {
+		format json
+	}
+
+	respond /health 200
+
+	header {
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+
+	# The API (with the inbox's live stream) and Meta's webhook belong to the backend.
+	@backend path /api/* /webhooks/*
+	handle @backend {
+		reverse_proxy {$BACKEND_URL} {
+			# Server-sent events: pass each one on at once instead of buffering.
+			flush_interval -1
+		}
+	}
+
+	# Everything else is the panel; unknown paths fall back to index.html (Angular's router).
+	handle {
+		root * {{.DIST_DIR}}
+		encode gzip zstd
+		try_files {path} {path}.html {path}/index.html /index.html
+		file_server {
+			hide .git
+			hide .env*
+		}
+	}
+}
