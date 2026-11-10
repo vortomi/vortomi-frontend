@@ -11,6 +11,7 @@ import { SelectMenu } from '../../../shared/ui/select-menu';
 import { Toaster } from '../../../shared/ui/toaster';
 import { PROFILE_ADDRESS_MAX, WEBSITE, normalizeTaxId } from './onboarding.rules';
 import { type CompanyDraft, OnboardingState } from './onboarding.state';
+import type { MenuOption } from '../../../shared/ui/select-menu';
 
 /** Step 1 (mockup web-9). */
 @Component({
@@ -20,11 +21,13 @@ import { type CompanyDraft, OnboardingState } from './onboarding.state';
   styleUrl: './steps.scss',
   styles: `
     .plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-    .plan { border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); padding: 10px 12px; text-align: left;
-      background: var(--color-surface); cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
-    .plan b { font-size: 13.5px; } .plan span { font-size: 12px; color: var(--color-text-muted); }
+    .plan { border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); padding: 12px 14px; text-align: left;
+      background: var(--color-surface); color: var(--color-text); cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+    .plan:hover { border-color: var(--color-text-faint); }
+    .plan b { font-size: 14px; } .plan span { font-size: 12.5px; color: var(--color-text-muted); }
     .plan.on { border-color: var(--color-primary); background: var(--color-primary-softer); box-shadow: 0 0 0 1px var(--color-primary); }
     .flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; --icon-size: 14px; color: var(--color-text-faint); }
+    .mt { margin-top: 14px; }
   `,
 })
 export class StepCompany {
@@ -33,7 +36,9 @@ export class StepCompany {
   private readonly toaster = inject(Toaster);
 
   protected readonly businessTypes = inject(BusinessTypes);
-  protected readonly timezones = TIMEZONES;
+  protected readonly timezoneOptions: MenuOption[] = TIMEZONES.map(([value, label]) => ({ value, label }));
+  /** Which footer button is waiting for the server. */
+  protected readonly pending = signal<'draft' | 'next' | null>(null);
   protected readonly plans = Object.entries(TENANT_PLAN) as [TenantPlan, (typeof TENANT_PLAN)[TenantPlan]][];
 
   private readonly model = signal<CompanyDraft>({ ...this.state.company() });
@@ -64,6 +69,10 @@ export class StepCompany {
     this.companyForm.businessType().markAsTouched();
   }
 
+  protected setTimezone(timezone: string): void {
+    this.companyForm.timezone().value.set(timezone);
+  }
+
   protected setPlan(plan: TenantPlan): void {
     this.companyForm.plan().value.set(plan);
   }
@@ -76,18 +85,30 @@ export class StepCompany {
 
   protected async next(event: Event): Promise<void> {
     event.preventDefault();
-    await submit(this.companyForm, async () => {
-      if (await this.state.saveCompany(this.draft())) this.state.goTo(1);
-      return undefined;
-    });
+    if (this.pending()) return;
+    this.pending.set('next');
+    try {
+      await submit(this.companyForm, async () => {
+        if (await this.state.saveCompany(this.draft())) this.state.goTo(1);
+        return undefined;
+      });
+    } finally {
+      this.pending.set(null);
+    }
   }
 
   protected async saveDraft(): Promise<void> {
-    await submit(this.companyForm, async () => {
-      if (!(await this.state.saveCompany(this.draft()))) return undefined;
-      this.toaster.show('Borrador guardado. Puedes seguir desde la lista de empresas.');
-      await this.router.navigateByUrl('/platform/tenants');
-      return undefined;
-    });
+    if (this.pending()) return;
+    this.pending.set('draft');
+    try {
+      await submit(this.companyForm, async () => {
+        if (!(await this.state.saveCompany(this.draft()))) return undefined;
+        this.toaster.show('Borrador guardado. Puedes seguir desde la lista de empresas.');
+        await this.router.navigateByUrl('/platform/tenants');
+        return undefined;
+      });
+    } finally {
+      this.pending.set(null);
+    }
   }
 }

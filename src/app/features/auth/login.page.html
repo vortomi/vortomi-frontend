@@ -26,11 +26,7 @@
     </div>
     <button type="submit" class="btn btn--primary btn--block" [disabled]="credentials().submitting()" [attr.aria-busy]="credentials().submitting()"
       [attr.aria-label]="credentials().submitting() ? 'Entrando' : null">
-      @if (credentials().submitting()) {
-        <span class="spinner" aria-hidden="true"></span>
-      } @else {
-        Entrar
-      }
+      <span>Entrar</span>
     </button>
   </form>
 

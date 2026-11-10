@@ -22,10 +22,10 @@ import { OnboardingState } from './onboarding.state';
             <div class="start">
               @if (state.real) {
                 <p>Pulsa el botón y después pide al cliente que escriba <b>«Hola, prueba de conexión»</b> al {{ number() }}. La consola espera hasta 5 minutos a que llegue.</p>
-                <button type="button" class="btn btn--primary" (click)="state.runTest()"><app-icon name="send" />Empezar a esperar el mensaje</button>
+                <button type="button" class="btn btn--primary" (click)="state.runTest()"><app-icon name="send" /><span>Empezar a esperar el mensaje</span></button>
               } @else {
                 <p>Pide al cliente que escriba <b>«Hola, prueba de conexión»</b> al {{ number() }} y pulsa el botón.</p>
-                <button type="button" class="btn btn--primary" (click)="state.runTest()"><app-icon name="send" />Iniciar prueba</button>
+                <button type="button" class="btn btn--primary" (click)="state.runTest()"><app-icon name="send" /><span>Iniciar prueba</span></button>
               }
             </div>
           } @else {
@@ -69,35 +69,35 @@ import { OnboardingState } from './onboarding.state';
     </div>
     <footer class="step-foot">
       <span class="count">Paso 3 de 4</span>
-      <button type="button" class="btn" (click)="state.goTo(1)" [disabled]="state.testStatus() === 'running'">Atrás</button>
+      <button type="button" class="btn" (click)="state.goTo(1)" [disabled]="state.testStatus() === 'running'"><span>Atrás</span></button>
       @if (state.testStatus() === 'passed') {
-        <button type="button" class="btn" (click)="state.runTest()">Repetir prueba</button>
+        <button type="button" class="btn" (click)="state.runTest()"><span>Repetir prueba</span></button>
       }
       <button type="button" class="btn btn--primary" [disabled]="state.testStatus() !== 'passed'" (click)="state.goTo(3)">
-        Siguiente: activar<app-icon name="arrow" />
+        <span>Siguiente: activar</span><app-icon name="arrow" />
       </button>
     </footer>
   `,
   styleUrl: './steps.scss',
   styles: `
-    .start { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; font-size: 13.5px; }
-    .trace-title { font-size: 11px; letter-spacing: .5px; text-transform: uppercase; color: var(--color-text-faint); margin-bottom: 10px; }
+    .start { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; font-size: 14px; color: var(--color-text-2); }
+    .trace-title { font-size: 12px; letter-spacing: .4px; text-transform: uppercase; color: var(--color-text-muted); font-weight: 600; margin-bottom: 12px; }
     .trace { list-style: none; display: flex; flex-direction: column; }
-    .trace li { display: flex; gap: 12px; position: relative; padding-bottom: 13px; }
-    .trace li::before { content: ''; position: absolute; left: 13px; top: 28px; bottom: 0; width: 2px; background: #d7efe4; }
+    .trace li { display: flex; gap: 12px; position: relative; padding-bottom: 14px; }
+    .trace li::before { content: ''; position: absolute; left: 14px; top: 30px; bottom: 0; width: 2px; background: var(--color-success-soft); }
     .trace li:last-child::before { display: none; }
-    .ic { width: 28px; height: 28px; border-radius: 50%; background: #e3f6ea; color: #166534; display: flex; align-items: center;
+    .ic { width: 30px; height: 30px; border-radius: 50%; background: var(--color-success-soft); color: var(--color-success-text); display: flex; align-items: center;
       justify-content: center; flex-shrink: 0; --icon-size: 15px; }
-    .key .ic { background: var(--color-primary); color: #fff; }
-    .key b { color: #26338f; }
-    .waiting .ic { background: #eef0f3; color: var(--color-text-faint); }
-    .trace b, .passed b { display: block; font-size: 13px; }
-    .trace small, .passed small { font-size: 12.3px; color: var(--color-text-muted); }
-    .passed { display: flex; align-items: center; gap: 12px; }
-    .big { width: 42px; height: 42px; border-radius: 50%; background: var(--color-success); color: #fff; display: flex;
-      align-items: center; justify-content: center; --icon-size: 22px; }
+    .key .ic { background: var(--color-primary); color: var(--color-on-primary); }
+    .key b { color: var(--color-primary-text); }
+    .waiting .ic { background: var(--color-surface-hover); color: var(--color-text-faint); }
+    .trace b, .passed b { display: block; font-size: 14px; font-weight: 600; }
+    .trace small, .passed small { font-size: 13px; color: var(--color-text-muted); }
+    .passed { display: flex; align-items: center; gap: 14px; }
+    .big { width: 44px; height: 44px; border-radius: 50%; background: var(--color-success); color: #fff; display: flex;
+      align-items: center; justify-content: center; --icon-size: 22px; flex: none; }
     .passed b { font-size: 16px; }
-    .checklist { padding-left: 18px; font-size: 13px; line-height: 1.8; }
+    .checklist { padding-left: 18px; font-size: 14px; line-height: 1.8; color: var(--color-text-2); }
   `,
 })
 export class StepTest {

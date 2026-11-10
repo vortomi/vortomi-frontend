@@ -3,6 +3,7 @@ import { FormField, email, form, maxLength, pattern, readonly, required, submit 
 import { FieldError } from '../../../shared/ui/field-error';
 import { Icon } from '../../../shared/ui/icon';
 import { Pill } from '../../../shared/ui/pill';
+import { Confirm } from '../../../shared/ui/confirm';
 import { Toaster } from '../../../shared/ui/toaster';
 import { PasswordField } from '../../../shared/ui/password-field';
 import type { DisplayNameStatus } from '../../../shared/api/models';
@@ -41,31 +42,34 @@ interface ConnectModel {
   selector: 'app-step-channel',
   imports: [PasswordField, FormField, FieldError, Icon, Pill, WhatsAppProfileFields],
   templateUrl: './step-channel.html',
-  styleUrl: './steps.scss',
+  styleUrls: ['./steps.scss', '../../auth/demo-box.scss'],
   styles: `
-    .idbox { display: inline-flex; align-items: center; gap: 10px; background: #f4f5f8; border: 1px solid #dde1e7;
+    .idbox { display: inline-flex; align-items: center; gap: 10px; background: var(--color-surface-muted); border: 1px solid var(--color-border);
       border-radius: var(--radius-sm); padding: 5px 6px 5px 12px; font-size: 14px; font-weight: 600; margin-top: 6px; }
-    .idbox .btn { height: 28px; padding: 0 10px; font-size: 12px; }
+    .mt { margin-top: 12px; }
+    .mt-sm { margin-top: 8px; }
+    .danger-card { border-color: color-mix(in srgb, var(--color-danger) 35%, transparent); }
     .search-row { display: flex; gap: 10px; align-items: flex-start; }
     .search-row .field { flex: 1; }
-    .search-row .btn { margin-top: 23px; height: 40px; }
+    .search-row .btn { margin-top: 26px; height: 42px; }
     .numbers { display: flex; flex-direction: column; gap: 8px; }
     .num { display: flex; align-items: center; gap: 12px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md);
-      padding: 10px 12px; text-align: left; background: var(--color-surface); cursor: pointer; }
+      padding: 12px 14px; text-align: left; background: var(--color-surface); color: var(--color-text); cursor: pointer; }
     .num.on { border-color: var(--color-primary); background: var(--color-primary-softer); box-shadow: 0 0 0 1px var(--color-primary); }
     .num:disabled { cursor: default; }
-    .num.taken { cursor: not-allowed; background: #fdf6f5; border-color: #f3b9b1; }
-    .num .rd { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #c3c9d4; flex-shrink: 0; }
-    .num.on .rd { border: 5px solid var(--color-primary); }
+    .num.taken { cursor: not-allowed; background: var(--color-danger-soft); border-color: color-mix(in srgb, var(--color-danger) 35%, transparent); }
+    .num .rd { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--color-border-strong); background: var(--color-input); flex-shrink: 0; }
+    .num.on .rd { border: 5px solid var(--color-primary); background: #fff; }
     .num b { display: block; font-size: 14px; } .num small { font-size: 12px; color: var(--color-text-muted); }
     .num app-pill { margin-left: auto; }
-    .found { font-size: 12.5px; color: #166534; font-weight: 600; }
-    .sub-title { font-size: 14px; margin: 18px 0 2px; }
+    .found { font-size: 13px; color: var(--color-success-text); font-weight: 600; }
+    .sub-title { font-size: 15px; font-weight: 600; margin: 20px 0 2px; }
   `,
 })
 export class StepChannel {
   protected readonly state = inject(OnboardingState);
   private readonly toaster = inject(Toaster);
+  private readonly confirm = inject(Confirm);
 
   protected readonly businessId = OUR_BUSINESS_ID;
   protected readonly demoWaba = DEMO_NEW_WABA_ID;
@@ -147,7 +151,13 @@ export class StepChannel {
     await submit(this.connectForm, async () => {
       const number = this.selected();
       const lookup = this.lookup();
-      if (!number || number.takenBy || lookup?.status !== 'found') return undefined;
+      if (!number || number.takenBy || lookup?.status !== 'found' || this.connecting()) return undefined;
+      const yes = await this.confirm.ask({
+        title: `¿Conectar el ${number.displayNumber}?`,
+        message: 'El número queda registrado en Meta para esta empresa y desde ese momento sus mensajes llegan a su bandeja. Un número solo puede estar en una empresa.',
+        confirmLabel: 'Conectar y verificar',
+      });
+      if (!yes) return undefined;
       this.connecting.set(true);
       const { wabaId, label, profile, accessToken } = this.model();
       await this.state.connect({ wabaId, number, account: lookup.account, label, profile }, accessToken);

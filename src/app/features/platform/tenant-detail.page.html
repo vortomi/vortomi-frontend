@@ -6,14 +6,14 @@
       <h1>{{ r.tenant.name }}</h1>
       <span class="sub">{{ subtitle(r.tenant) }}</span>
     </div>
-    <app-pill [tone]="labels.status[r.tenant.status].tone">{{ labels.status[r.tenant.status].text }}</app-pill>
+    <app-pill [tone]="labels.status[r.tenant.status].tone" [dot]="true">{{ labels.status[r.tenant.status].text }}</app-pill>
     <span class="spacer"></span>
     @if (r.tenant.status === 'active') {
-      <button type="button" class="btn" [disabled]="busy()" (click)="suspend()">Suspender</button>
+      <button type="button" class="btn" [disabled]="busy()" (click)="suspend()"><span>Suspender</span></button>
     } @else if (r.tenant.status === 'suspended') {
-      <button type="button" class="btn btn--success" [disabled]="busy()" (click)="reactivate()"><app-icon name="check" />Reactivar</button>
+      <button type="button" class="btn btn--success" [disabled]="busy()" (click)="reactivate()"><app-icon name="check" /><span>Reactivar</span></button>
     } @else if (r.tenant.status === 'draft' || r.tenant.status === 'awaiting_channel') {
-      <a class="btn btn--primary" routerLink="/platform/tenants/new" [queryParams]="{ resume: r.tenant.id }"><app-icon name="arrow" />Seguir el alta</a>
+      <a class="btn btn--primary" routerLink="/platform/tenants/new" [queryParams]="{ resume: r.tenant.id }"><app-icon name="arrow" /><span>Seguir el alta</span></a>
     }
   </header>
 
@@ -62,18 +62,18 @@
           @for (channel of r.channels; track channel.id) {
             <tr>
               <td><b>{{ channel.label }}</b><span class="muted number">{{ channel.displayNumber }}</span></td>
-              <td><app-pill [tone]="labels.channel[channel.status].tone">{{ labels.channel[channel.status].text }}</app-pill></td>
-              <td><app-pill [tone]="labels.quality[channel.qualityRating].tone">{{ labels.quality[channel.qualityRating].text }}</app-pill></td>
+              <td><app-pill [tone]="labels.channel[channel.status].tone" [dot]="true">{{ labels.channel[channel.status].text }}</app-pill></td>
+              <td><app-pill [tone]="labels.quality[channel.qualityRating].tone" [dot]="true">{{ labels.quality[channel.qualityRating].text }}</app-pill></td>
               <td>{{ channel.messagingTier }}</td>
               <td>{{ channel.accessExpiresAt ? date(channel.accessExpiresAt) : 'Sin acceso' }}</td>
               <td class="actions-cell">
                 @if (channel.status === 'disconnected') {
-                  <button type="button" class="btn" (click)="requestReconnect(channel)">Pedir reconexión</button>
+                  <button type="button" class="btn btn--sm" (click)="requestReconnect(channel)"><span>Pedir reconexión</span></button>
                 }
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="6" class="muted">Sin números conectados.</td></tr>
+            <tr><td colspan="6"><p class="empty-state">Sin números conectados.</p></td></tr>
           }
         </tbody>
       </table>
@@ -83,6 +83,9 @@
       <section>
         <h2 class="section-title">Equipo</h2>
         <div class="card list">
+          @if (!detailLoaded()) {
+            <app-skeleton class="pad" kind="list" [rows]="3" />
+          } @else {
           @for (member of members(); track member.user.id) {
             <div class="person">
               <app-avatar [name]="member.user.name" [seed]="member.user.id" />
@@ -91,9 +94,9 @@
                 <span>{{ member.user.email }} · {{ labels.role[member.membership.role] }}</span>
               </div>
               @if (member.membership.status === 'active') {
-                <app-pill tone="green">Activo</app-pill>
+                <app-pill tone="green" [dot]="true">Activo</app-pill>
               } @else {
-                <app-pill tone="neutral">Desactivado</app-pill>
+                <app-pill tone="neutral" [dot]="true">Desactivado</app-pill>
               }
             </div>
           }
@@ -104,11 +107,12 @@
                 <b>{{ invitation.name }}</b>
                 <span>{{ invitation.email }} · invitación pendiente, vence {{ date(invitation.expiresAt) }}</span>
               </div>
-              <button type="button" class="btn" (click)="renew(invitation)">Nuevo enlace</button>
+              <button type="button" class="btn btn--sm" (click)="renew(invitation)"><span>Nuevo enlace</span></button>
             </div>
           }
           @if (!members().length && !invitations().length) {
             <p class="muted pad">Todavía nadie. El administrador se invita en el último paso del alta.</p>
+          }
           }
           <p class="note"><app-icon name="lock" />Desde aquí se ve quién tiene acceso, no lo que escriben.</p>
         </div>
@@ -131,9 +135,12 @@
       }
     </div>
   </div>
+} @else if (!data.ready()) {
+  <header class="page-top"><span class="sk" style="width: 280px; height: 22px"></span></header>
+  <div class="page-body"><app-skeleton kind="detail" [rows]="6" /></div>
 } @else {
   <div class="page-body">
-    <p class="muted">Esa empresa no existe. <a class="link" routerLink="/platform/tenants">Volver a empresas</a></p>
+    <p class="empty-state"><app-icon name="building" />Esa empresa no existe. <a class="link" routerLink="/platform/tenants">Volver a empresas</a></p>
   </div>
 }
 

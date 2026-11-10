@@ -25,7 +25,7 @@ import { Icon } from '../../shared/ui/icon';
           <input id="code" class="input code" inputmode="numeric" autocomplete="one-time-code" [formField]="verification.code" />
           <app-field-error [state]="verification.code()" />
         </div>
-        <button type="submit" class="btn btn--primary btn--block">Verificar</button>
+        <button type="submit" class="btn btn--primary btn--block" [disabled]="verification().submitting()" [attr.aria-busy]="verification().submitting()"><span>Verificar</span></button>
       </form>
       <button type="button" class="link" (click)="cancel()">Usar otra cuenta</button>
       @if (demo) {
@@ -33,6 +33,7 @@ import { Icon } from '../../shared/ui/icon';
       }
     </div>
   `,
+  styleUrl: './demo-box.scss',
   styles: '.code { letter-spacing: 8px; font-size: 20px; text-align: center; font-family: var(--font-mono); }',
 })
 export class VerifyPage {

@@ -1,4 +1,6 @@
 import { Component, effect, inject, signal, untracked } from '@angular/core';
+import { Theme, type ThemeMode } from '../../core/theme';
+import type { IconName } from '../../shared/ui/icon';
 import { FormField, apply, form, required, submit } from '@angular/forms/signals';
 import { Router } from '@angular/router';
 import { Auth } from '../../core/auth';
@@ -24,9 +26,10 @@ interface PasswordChange {
   styles: `
     :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
-    .card { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
-    h2 { font-size: 15.5px; }
-    .muted-row { display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; }
+    .card { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; align-self: start; }
+    h2 { font-size: 16px; font-weight: 600; }
+    .muted-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px; color: var(--color-text-2); }
+    .segmented { align-self: flex-start; }
     form { display: flex; flex-direction: column; gap: 12px; }
     .actions { display: flex; justify-content: flex-end; }
   `,
@@ -37,6 +40,12 @@ export class ProfilePage {
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
   private readonly toaster = inject(Toaster);
+  protected readonly theme = inject(Theme);
+  protected readonly themeModes: { mode: ThemeMode; label: string; icon: IconName }[] = [
+    { mode: 'system', label: 'Sistema', icon: 'monitor' },
+    { mode: 'light', label: 'Claro', icon: 'sun' },
+    { mode: 'dark', label: 'Oscuro', icon: 'moon' },
+  ];
 
   private readonly nameModel = signal({ name: '' });
   protected readonly nameForm = form(this.nameModel, (path) => {

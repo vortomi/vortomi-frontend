@@ -18,10 +18,10 @@ const DEMO_RESET_TOKEN = 'demo-reset';
       <h2>Crea una contraseña nueva</h2>
       @if (!validToken()) {
         <div class="form-alert" role="alert"><app-icon name="alert" />Este enlace no es válido o ya venció. Pide uno nuevo.</div>
-        <a class="btn btn--primary btn--block" routerLink="/forgot-password">Pedir otro enlace</a>
+        <a class="btn btn--primary btn--block" routerLink="/forgot-password"><span>Pedir otro enlace</span></a>
       } @else if (done()) {
         <div class="form-alert ok" role="status"><app-icon name="check" />Listo. Cerramos las demás sesiones abiertas de tu cuenta por seguridad.</div>
-        <a class="btn btn--primary btn--block" routerLink="/login">Iniciar sesión</a>
+        <a class="btn btn--primary btn--block" routerLink="/login"><span>Iniciar sesión</span></a>
       } @else {
         <form (submit)="onSubmit($event)" novalidate>
           <div class="field">
@@ -35,7 +35,7 @@ const DEMO_RESET_TOKEN = 'demo-reset';
             <app-password-field><input id="confirm" class="input" type="password" autocomplete="new-password" [formField]="secret.confirm" /></app-password-field>
             <app-field-error [state]="secret.confirm()" />
           </div>
-          <button type="submit" class="btn btn--primary btn--block">Guardar contraseña</button>
+          <button type="submit" class="btn btn--primary btn--block" [disabled]="secret().submitting()" [attr.aria-busy]="secret().submitting()"><span>Guardar contraseña</span></button>
         </form>
       }
     </div>

@@ -40,17 +40,17 @@ import { Icon } from '../../shared/ui/icon';
   `,
   styles: `
     .options { display: flex; flex-direction: column; gap: 10px; }
-    .option { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg); background: var(--color-surface); text-align: left; cursor: pointer; }
+    .option { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg); background: var(--color-surface); color: var(--color-text); box-shadow: var(--shadow-sm); text-align: left; cursor: pointer; }
     .option:hover:not(:disabled) { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); }
     .option:disabled { opacity: 0.6; cursor: not-allowed; }
     .logo { border-radius: 10px; }
     .text { display: flex; flex-direction: column; gap: 2px; }
     .text b { font-size: 14.5px; }
     .text small { font-size: 12.5px; color: var(--color-text-muted); }
-    .console { background: #0c1222; border-color: #0c1222; color: #fff; }
-    .console small { color: #f6b48c; }
-    .ico { width: 38px; height: 38px; border-radius: 10px; background: #2a1a12; color: #f6b48c; display: flex;
+    .console { background: var(--color-console-badge-bg); border-color: var(--color-console-badge-border); }
+    .console small { color: var(--color-console-badge-text); }
+    .ico { width: 40px; height: 40px; border-radius: 10px; background: var(--color-warning-soft); color: var(--color-console-badge-text); display: flex;
       align-items: center; justify-content: center; --icon-size: 20px; }
   `,
 })

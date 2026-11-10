@@ -38,10 +38,9 @@ const NEW_ACCESS: MemberAccess = { role: 'agent', canSeeOthers: false, channelAc
         <p class="field-hint">Se crea un enlace de un solo uso que vence en 72 horas. Se lo envías, y con él la persona crea su contraseña.</p>
       </form>
       <div dialog-actions class="dialog-actions">
-        <button type="button" class="btn" (click)="close()">Cancelar</button>
+        <button type="button" class="btn" [disabled]="inviteForm().submitting()" (click)="close()"><span>Cancelar</span></button>
         <button type="submit" form="invite-form" class="btn btn--primary" [disabled]="inviteForm().submitting()" [attr.aria-busy]="inviteForm().submitting()">
-          @if (inviteForm().submitting()) { <span class="spinner" aria-hidden="true"></span> }
-          Crear invitación
+          <span>Crear invitación</span>
         </button>
       </div>
     </app-dialog>

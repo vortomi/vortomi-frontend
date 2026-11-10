@@ -12,7 +12,7 @@
             @if (!state.real) {
               :<br />
               <span class="idbox"><span class="mono">{{ businessId }}</span>
-                <button type="button" class="btn" (click)="copyBusinessId()"><app-icon name="copy" />Copiar</button></span>
+                <button type="button" class="btn btn--sm" (click)="copyBusinessId()"><app-icon name="copy" /><span>Copiar</span></button></span>
             } @else {
               .
             }
@@ -42,20 +42,20 @@
           <input id="waba" class="input mono" inputmode="numeric" [formField]="connectForm.wabaId" />
           <app-field-error [state]="connectForm.wabaId()" />
         </div>
-        <button type="button" class="btn" (click)="search()" [disabled]="searching() || state.connected()">
-          {{ searching() ? 'Buscando…' : 'Buscar cuenta' }}
+        <button type="button" class="btn" (click)="search()" [disabled]="searching() || state.connected()" [attr.aria-busy]="searching()">
+          <app-icon name="search" /><span>Buscar cuenta</span>
         </button>
       </div>
 
       @if (lookup()?.status === 'not_found') {
-        <div class="form-alert" role="alert" style="margin-top: 12px">
+        <div class="form-alert mt" role="alert">
           <app-icon name="alert" />No encontramos esa cuenta o todavía no nos dio acceso. Revisa el identificador con el cliente.
         </div>
       }
 
       @if (numbers().length) {
-        <p class="found" style="margin-top: 10px">Cuenta encontrada. Números disponibles en Meta:</p>
-        <div class="numbers" role="radiogroup" aria-label="Número que va a usar" style="margin-top: 8px">
+        <p class="found mt">Cuenta encontrada. Números disponibles en Meta:</p>
+        <div class="numbers mt-sm" role="radiogroup" aria-label="Número que va a usar">
           @for (number of numbers(); track number.phoneNumberId) {
             <button type="button" class="num" role="radio" [class.taken]="!!number.takenBy" [class.on]="selected()?.phoneNumberId === number.phoneNumberId"
               [attr.aria-checked]="selected()?.phoneNumberId === number.phoneNumberId" [disabled]="!!number.takenBy || state.connected()"
@@ -63,9 +63,9 @@
               <span class="rd"></span>
               <span><b>{{ number.displayNumber }}</b><small>Nombre visible: {{ number.verifiedName }} · {{ nameStatus[number.nameStatus] }}</small></span>
               @if (number.takenBy) {
-                <app-pill tone="red">Es de {{ number.takenBy }}</app-pill>
+                <app-pill tone="red" [dot]="true">Es de {{ number.takenBy }}</app-pill>
               } @else {
-                <app-pill tone="green">Disponible</app-pill>
+                <app-pill tone="green" [dot]="true">Disponible</app-pill>
               }
             </button>
           }
@@ -73,7 +73,7 @@
         <app-field-error [state]="connectForm.phoneNumberId()" />
 
         @if (!allTaken()) {
-          <div class="g2" style="margin-top: 12px">
+          <div class="g2 mt">
             @if (!state.real) {
             <div class="field">
               <label for="pin">PIN de seguridad de 6 dígitos</label>
@@ -92,7 +92,7 @@
           </div>
 
           @if (state.real) {
-            <p class="field-hint" style="margin-top: 10px">El perfil del número (foto, descripción, categoría) se edita por ahora en el WhatsApp Manager del cliente.</p>
+            <p class="field-hint mt">El perfil del número (foto, descripción, categoría) se edita por ahora en el WhatsApp Manager del cliente.</p>
           } @else {
             <h3 class="sub-title">Perfil de WhatsApp de este número</h3>
             <p class="d">Lo que ven sus clientes al abrir el chat. Se envía a Meta al conectar.</p>
@@ -102,7 +102,7 @@
       }
 
       @if (!state.real) {
-      <div class="demo-box" style="margin-top: 14px">
+      <div class="demo-box mt">
         <b>Prototipo · respuestas simuladas de Meta</b>
         <span class="mono">{{ demoWaba }}</span> cuenta nueva con un número libre ·
         <span class="mono">200000000000001</span> números que ya son de otra empresa · cualquier otro: no existe.
@@ -130,7 +130,7 @@
     </section>
 
     @if (allTaken()) {
-      <section class="card sec" style="border-color: #f3b9b1">
+      <section class="card sec danger-card">
         <div class="form-alert" role="alert">
           <app-icon name="x" />
           <span><b>No se puede conectar este número.</b> Ya pertenece a otra empresa de la plataforma y un número solo puede estar en una. Primero hay que darlo de baja allá.</span>
@@ -142,12 +142,12 @@
 
 <footer class="step-foot">
   <span class="count">Paso 2 de 4</span>
-  <button type="button" class="btn" (click)="state.goTo(0)" [disabled]="connecting()">Atrás</button>
+  <button type="button" class="btn" (click)="state.goTo(0)" [disabled]="connecting()"><span>Atrás</span></button>
   @if (state.connected()) {
-    <button type="button" class="btn btn--primary" (click)="state.goTo(2)">Siguiente: probar<app-icon name="arrow" /></button>
+    <button type="button" class="btn btn--primary" (click)="state.goTo(2)"><span>Siguiente: probar</span><app-icon name="arrow" /></button>
   } @else {
-    <button type="submit" form="channel-form" class="btn btn--primary" [disabled]="connecting() || !selected() || allTaken()">
-      {{ connecting() ? 'Verificando…' : 'Conectar y verificar' }}
+    <button type="submit" form="channel-form" class="btn btn--primary" [disabled]="connecting() || !selected() || allTaken()" [attr.aria-busy]="connecting()">
+      <span>Conectar y verificar</span>
     </button>
   }
 </footer>

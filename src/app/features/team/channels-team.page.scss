@@ -103,7 +103,7 @@ dd {
 }
 
 .add {
-  border: 2px dashed #c9d1fb;
+  border: 2px dashed var(--primary-200);
   background: var(--color-primary-softer);
   border-radius: var(--radius-lg);
   display: flex;
@@ -113,7 +113,7 @@ dd {
   gap: 6px;
   text-align: center;
   padding: 18px;
-  color: var(--color-primary-strong);
+  color: var(--color-primary-text);
   --icon-size: 26px;
 
   span {
@@ -169,20 +169,7 @@ dd {
   }
 }
 
-.danger {
-  color: #b42318;
-}
-
 .foot {
   margin-top: 10px;
 }
 
-.color {
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  padding: 2px;
-  background: var(--color-surface);
-  cursor: pointer;
-}

@@ -127,6 +127,8 @@ export class OnboardingState {
   readonly testEvents = signal<TestEvent[]>([]);
   readonly testStatus = signal<'idle' | 'running' | 'passed'>('idle');
   readonly invitationToken = signal<string | null>(null);
+  /** Reading a company left half way from the server: the steps wait instead of showing empty. */
+  readonly resuming = signal(false);
 
   readonly tenant = computed(() => this.directory.tenantById().get(this.tenantId() ?? '') ?? null);
 
@@ -370,6 +372,7 @@ export class OnboardingState {
   private async resumeRemote(remote: OnboardingRemote, tenantId: Id): Promise<void> {
     this.tenantId.set(tenantId);
     this.resetFrom(1);
+    this.resuming.set(true);
     try {
       const { detail, admin } = await remote.load(tenantId);
       if (detail.status !== 'draft' && detail.status !== 'awaiting_channel') return this.start();
@@ -401,6 +404,8 @@ export class OnboardingState {
     } catch {
       this.start();
       this.error.set('No se pudo abrir esa empresa. Vuelve a la lista e inténtalo de nuevo.');
+    } finally {
+      this.resuming.set(false);
     }
   }
 

@@ -9,6 +9,7 @@ import { BRAND } from '../../core/brand';
 @Component({
   selector: 'app-forgot-password-page',
   imports: [FormField, RouterLink, FieldError, Icon],
+  styleUrl: './demo-box.scss',
   template: `
     <div class="auth-box">
       <h2>Recupera tu contraseña</h2>
@@ -17,7 +18,7 @@ import { BRAND } from '../../core/brand';
           <app-icon name="mail" />
           <span>Si <b>{{ address }}</b> tiene una cuenta en {{ brand.name }}, te llegará un enlace para crear una contraseña nueva. Sirve una sola vez y vence en 1 hora.</span>
         </div>
-        <a class="btn btn--block" routerLink="/login">Volver a iniciar sesión</a>
+        <a class="btn btn--block" routerLink="/login"><span>Volver a iniciar sesión</span></a>
         <div class="demo-box">
           <b>Prototipo</b>No se envían correos. <a class="link" routerLink="/reset-password/demo-reset">Abrir el enlace del correo</a>
         </div>
@@ -29,7 +30,7 @@ import { BRAND } from '../../core/brand';
             <input id="email" class="input" type="email" autocomplete="username" [formField]="request.email" />
             <app-field-error [state]="request.email()" />
           </div>
-          <button type="submit" class="btn btn--primary btn--block">Enviar enlace</button>
+          <button type="submit" class="btn btn--primary btn--block" [disabled]="request().submitting()" [attr.aria-busy]="request().submitting()"><span>Enviar enlace</span></button>
         </form>
         <a class="link" routerLink="/login">Volver a iniciar sesión</a>
       }

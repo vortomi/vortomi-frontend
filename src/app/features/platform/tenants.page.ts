@@ -8,6 +8,7 @@ import { formatCount } from '../../shared/format/money';
 import { Avatar } from '../../shared/ui/avatar';
 import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { AlertList } from './alert-list';
 import { PlatformData, type TenantRow } from './platform.data';
 
@@ -16,7 +17,7 @@ const normalize = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}
 /** Every company on the platform (mockup web-7). */
 @Component({
   selector: 'app-tenants-page',
-  imports: [RouterLink, Avatar, Icon, Pill, AlertList, UnclassifiedTypes],
+  imports: [RouterLink, Avatar, Icon, Pill, Skeleton, AlertList, UnclassifiedTypes],
   templateUrl: './tenants.page.html',
   styleUrl: './platform-pages.scss',
 })

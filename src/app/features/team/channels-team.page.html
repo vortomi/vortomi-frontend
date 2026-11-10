@@ -11,10 +11,10 @@
         <div class="head">
           <span class="ic" [style.background]="channel.color + '1f'" [style.color]="channel.color"><app-icon name="phone" /></span>
           <div><b>{{ channel.label }}</b><span>{{ channel.displayNumber }}</span></div>
-          <app-pill [tone]="labels.channel[channel.status].tone">{{ labels.channel[channel.status].text }}</app-pill>
+          <app-pill [tone]="labels.channel[channel.status].tone" [dot]="true">{{ labels.channel[channel.status].text }}</app-pill>
         </div>
         <dl>
-          <dt>Calidad según Meta</dt><dd><app-pill [tone]="labels.quality[channel.qualityRating].tone">{{ labels.quality[channel.qualityRating].text }}</app-pill></dd>
+          <dt>Calidad según Meta</dt><dd><app-pill [tone]="labels.quality[channel.qualityRating].tone" [dot]="true">{{ labels.quality[channel.qualityRating].text }}</app-pill></dd>
           <dt>Clientes nuevos por día</dt><dd>{{ channel.messagingTier }}</dd>
           <dt>También en la app del teléfono</dt><dd>{{ channel.coexistence ? 'Sí (coexistencia)' : 'No' }}</dd>
           <dt>Plantillas aprobadas</dt><dd>{{ approvedTemplates() }}</dd>
@@ -40,11 +40,14 @@
     <span class="spacer"></span>
     @if (session.isTenantAdmin()) {
       <button type="button" class="btn btn--primary" [disabled]="seats().used >= seats().total" (click)="inviting.set(true)">
-        <app-icon name="plus" />Invitar persona
+        <app-icon name="plus" /><span>Invitar persona</span>
       </button>
     }
   </div>
   <div class="card table-card">
+    @if (!loaded()) {
+      <app-skeleton kind="table" [rows]="3" [cols]="3" />
+    } @else {
     <table class="data-table">
       <thead><tr><th>Persona</th><th>Rol</th><th></th></tr></thead>
       <tbody>
@@ -66,9 +69,12 @@
               }
             </td>
           </tr>
+        } @empty {
+          <tr><td colspan="3"><p class="empty-state">Todavía no hay nadie activo en el equipo.</p></td></tr>
         }
       </tbody>
     </table>
+    }
   </div>
   <p class="field-hint foot">Administración ve todas las conversaciones y las reparte desde la bandeja. Un agente solo ve y responde las que le asignan; una conversación puede tener varios agentes.</p>
 
@@ -120,19 +126,18 @@
   @if (channelForm(); as f) {
     <div class="field">
       <label for="ch-label">Nombre que ve el equipo</label>
-      <input id="ch-label" class="input" maxlength="40" [value]="f.label" (input)="setChannelField('label', $event)" />
+      <input id="ch-label" class="input" maxlength="40" [value]="f.label" (input)="setChannelLabel($event)" />
       <p class="field-hint">El número ({{ f.channel.displayNumber }}) no cambia: es el de WhatsApp.</p>
     </div>
     <div class="field">
-      <label for="ch-color">Color en el panel</label>
-      <input id="ch-color" type="color" class="color" [value]="f.color" (input)="setChannelField('color', $event)" />
+      <span class="label">Color en el panel</span>
+      <app-color-picker label="Color en el panel" [value]="f.color" (picked)="setChannelField('color', $event)" />
     </div>
   }
   <div dialog-actions>
-    <button type="button" class="btn" [disabled]="savingChannel()" (click)="channelForm.set(null)">Cancelar</button>
+    <button type="button" class="btn" [disabled]="savingChannel()" (click)="channelForm.set(null)"><span>Cancelar</span></button>
     <button type="button" class="btn btn--primary" [disabled]="savingChannel()" [attr.aria-busy]="savingChannel()" (click)="saveChannel()">
-      @if (savingChannel()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
-      Guardar
+      <app-icon name="check" /><span>Guardar</span>
     </button>
   </div>
 </app-dialog>

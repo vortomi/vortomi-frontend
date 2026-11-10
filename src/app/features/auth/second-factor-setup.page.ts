@@ -38,11 +38,11 @@ import { Icon } from '../../shared/ui/icon';
             <app-field-error [state]="verification.code()" />
           </div>
           <button type="submit" class="btn btn--primary btn--block" [disabled]="verification().submitting()" [attr.aria-busy]="verification().submitting()">
-            @if (verification().submitting()) { <span class="spinner" aria-hidden="true"></span> } @else { Activar y entrar }
+            <span>Activar y entrar</span>
           </button>
         </form>
       } @else if (!error()) {
-        <p class="lead center"><span class="spinner" aria-hidden="true"></span></p>
+        <span class="sk qr-wait" role="status" aria-label="Preparando el código"></span>
       }
     </div>
   `,
@@ -50,6 +50,7 @@ import { Icon } from '../../shared/ui/icon';
     .steps { margin-left: 18px; font-size: 14px; line-height: 1.6; }
     .qr { display: block; margin: 4px auto; border-radius: var(--radius-md); background: #fff; padding: 8px; }
     .center { text-align: center; }
+    .qr-wait { width: 216px; height: 216px; margin: 4px auto; border-radius: var(--radius-md); }
     .mono { font-family: var(--font-mono); word-break: break-all; }
     .code { letter-spacing: 8px; font-size: 20px; text-align: center; font-family: var(--font-mono); }
   `,

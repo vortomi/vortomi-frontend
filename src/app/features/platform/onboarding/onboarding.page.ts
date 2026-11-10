@@ -1,6 +1,7 @@
 import { Component, computed, inject, input, untracked, effect } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Icon } from '../../../shared/ui/icon';
+import { Skeleton } from '../../../shared/ui/skeleton';
 import { OnboardingState } from './onboarding.state';
 import { StepActivate } from './step-activate';
 import { StepChannel } from './step-channel';
@@ -17,13 +18,13 @@ const STEPS = [
 /** Manual sign-up of a company, phases 0 and 1 (mockups web-9 to web-12). */
 @Component({
   selector: 'app-onboarding-page',
-  imports: [RouterLink, Icon, StepCompany, StepChannel, StepTest, StepActivate],
+  imports: [RouterLink, Icon, Skeleton, StepCompany, StepChannel, StepTest, StepActivate],
   template: `
     <header class="page-top">
       <h1>Nueva empresa</h1>
       <span class="sub">{{ subtitle() }}</span>
       <span class="spacer"></span>
-      <a class="btn" routerLink="/platform/tenants"><app-icon name="x" />Salir</a>
+      <a class="btn" routerLink="/platform/tenants"><app-icon name="x" /><span>Salir</span></a>
     </header>
     <ol class="steps" aria-label="Pasos del alta">
       @for (step of steps; track $index) {
@@ -42,11 +43,15 @@ const STEPS = [
         </li>
       }
     </ol>
-    @switch (state.step()) {
-      @case (0) { <app-step-company /> }
-      @case (1) { <app-step-channel /> }
-      @case (2) { <app-step-test /> }
-      @default { <app-step-activate /> }
+    @if (state.resuming()) {
+      <div class="page-body"><div class="card resume"><app-skeleton kind="form" [rows]="5" /></div></div>
+    } @else {
+      @switch (state.step()) {
+        @case (0) { <app-step-company /> }
+        @case (1) { <app-step-channel /> }
+        @case (2) { <app-step-test /> }
+        @default { <app-step-activate /> }
+      }
     }
   `,
   styleUrl: './onboarding.page.scss',
