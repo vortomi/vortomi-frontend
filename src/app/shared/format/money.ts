@@ -44,3 +44,16 @@ export function parsePriceCents(text: string): number | null {
   const value = Number(clean);
   return Number.isFinite(value) && value > 0 ? Math.round(value * 100) : null;
 }
+
+/** An amount in a payment method's currency: "7.049,00 Bs", "12,50 $", "12,50 €". */
+export function formatAmount(amount: number, currency: 'VES' | 'USD' | 'EUR'): string {
+  if (currency === 'VES') return formatVes(amount);
+  const text = new Intl.NumberFormat(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+  return `${text} ${currency === 'USD' ? '$' : '€'}`;
+}
+
+/** An amount typed in any currency ("1.234,50 Bs", "20 $", "15€") as the server takes it: "1234.50". */
+export function parseAmount(text: string): string | null {
+  const cents = parsePriceCents(text.replace(/bs\.?|€/gi, ''));
+  return cents === null ? null : (cents / 100).toFixed(2);
+}

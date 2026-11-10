@@ -8,7 +8,7 @@ import { errorMessage } from './error-messages';
 const SERVER_CODES = [
   'missing_token', 'invalid_token', 'unauthorized', 'no_account', 'not_a_member', 'admin_required',
   'platform_admin_required', 'second_factor_required', 'conversation_not_found', 'contact_not_found',
-  'assignee_cannot_attend', 'order_not_found', 'mention_not_member', 'service_window_closed', 'send_in_progress',
+  'assignee_cannot_attend', 'order_not_found', 'payment_reference_required', 'payment_reference_used','mention_not_member', 'service_window_closed', 'send_in_progress',
   'template_not_usable', 'invalid_template', 'template_exists', 'tag_not_found', 'tag_name_taken',
   'unknown_tag', 'quick_reply_not_found', 'shortcut_taken', 'stage_not_found', 'stage_name_taken',
   'stage_in_use', 'inventory_item_not_found', 'sku_taken', 'insufficient_stock', 'invalid_movement',

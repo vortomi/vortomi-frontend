@@ -93,6 +93,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/orders/orders.page').then((m) => m.OrdersPage),
       },
       {
+        path: 'orders/close',
+        canActivate: [salesModeGuard],
+        title: 'Cierre del día',
+        loadComponent: () => import('./features/orders/daily-close.page').then((m) => m.DailyClosePage),
+      },
+      {
         path: 'orders/:orderId',
         canActivate: [salesModeGuard],
         title: 'Pedido',

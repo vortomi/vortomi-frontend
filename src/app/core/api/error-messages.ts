@@ -18,6 +18,8 @@ const MESSAGES: Record<string, string> = {
   contact_not_found: 'Este contacto ya no está disponible para ti.',
   assignee_cannot_attend: 'Esa persona ya no está activa en el equipo. Elige a otra.',
   order_not_found: 'Ese pedido ya no existe o no lo puedes ver.',
+  payment_reference_required: 'Escribe la referencia del pago antes de confirmar. Está en el detalle del pedido, junto al comprobante.',
+  payment_reference_used: 'Esa referencia ya pagó otro pedido con el mismo método de pago. Revisa el comprobante antes de confirmar.',
   payment_method_not_found: 'Ese método de pago ya no existe.',
   order_mismatch: 'La lista de métodos cambió mientras la ordenabas. Vuelve a intentarlo.',
   mention_not_member: 'Solo puedes mencionar a alguien de tu equipo.',

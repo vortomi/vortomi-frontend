@@ -567,6 +567,11 @@ export interface Order {
   notes: string;
   /** The bank reference of the payment, typed by whoever checked it (it goes on the receipt). */
   paymentReference: string | null;
+  /** What arrived, in the payment method's currency (dollars without a method): "1234.50". */
+  receivedAmount: string | null;
+  /** When and by whom the payment was confirmed; null while it is not sold. */
+  confirmedAt: IsoDate | null;
+  confirmedBy: string | null;
   /** Quantity in the product's sale unit (0.15 kg); the price is per one of it. */
   lines: OrderLine[];
   subtotalCents: number;
@@ -583,6 +588,61 @@ export interface OrderDetail extends Order {
   receipts: { mediaId: Id; mimeType: string; sizeBytes: number; createdAt: IsoDate }[];
   /** Null until completed (or when the company gives none). Code null: the team uploaded its own. */
   saleReceipt: { code: string | null; createdAt: IsoDate } | null;
+  /** What should arrive, in the payment method's currency; null when it cannot be known. */
+  expectedAmount: string | null;
+  alerts: PaymentAlerts;
+}
+
+/** What does not add up in an order's payment, only from what the company has stored. */
+export interface PaymentAlerts {
+  /** Other orders (not cancelled) of the same payment method with the same reference. */
+  referenceUsedIn: string[];
+  /** Other orders (not cancelled) that got the very same receipt file. */
+  receiptUsedIn: string[];
+  /** How much is missing, in the payment method's currency. */
+  shortBy: string | null;
+}
+
+/** A product the inventory did not have enough of when its order was sold. */
+export interface StockShortfall {
+  name: string;
+  missing: number;
+}
+
+/** «Cierre del día»: one sold order of the day. */
+export interface CloseOrder {
+  id: Id;
+  code: string;
+  customerName: string;
+  paymentMethod: Order['paymentMethod'];
+  currency: PaymentCurrency;
+  totalCents: number;
+  expectedAmount: string | null;
+  receivedAmount: string | null;
+  paymentReference: string | null;
+  confirmedAt: IsoDate | null;
+  confirmedBy: string | null;
+}
+
+/** The day's orders paid with one payment method (or without one), added up. */
+export interface CloseGroup {
+  paymentMethod: Order['paymentMethod'];
+  currency: PaymentCurrency;
+  count: number;
+  totalCents: number;
+  expectedAmount: string;
+  receivedAmount: string;
+  /** Orders whose arrived amount nobody wrote down. */
+  withoutReceived: number;
+}
+
+export interface DailyClose {
+  date: string;
+  timezone: string;
+  count: number;
+  totalCents: number;
+  byMethod: CloseGroup[];
+  orders: CloseOrder[];
 }
 
 /** Who makes an order's sale receipt: Vortomi, the team (its own picture), or nobody. */

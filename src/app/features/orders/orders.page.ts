@@ -36,6 +36,7 @@ const REFRESH_MS = 30_000;
     <header class="page-top">
       <h1>Pedidos</h1>
       <span class="sub">Los que arma el agente con tus clientes</span>
+      <a class="btn close-link" routerLink="/orders/close"><app-icon name="chart" />Cierre del día</a>
     </header>
     <nav class="tabs" role="tablist" aria-label="Pedidos por estado">
       @for (v of views; track v.id) {
@@ -66,6 +67,7 @@ const REFRESH_MS = 30_000;
   `,
   styles: `
     :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+    .close-link { margin-left: auto; --icon-size: 15px; }
     .tabs { display: flex; gap: 22px; padding: 0 26px; background: var(--color-surface); border-bottom: 1px solid var(--color-border); flex-shrink: 0; overflow-x: auto; }
     .tabs button { border: 0; background: none; padding: 12px 0; font-size: 13.5px; color: var(--color-text-muted); cursor: pointer; border-bottom: 2px solid transparent;
       white-space: nowrap; display: flex; align-items: center; gap: 6px; }

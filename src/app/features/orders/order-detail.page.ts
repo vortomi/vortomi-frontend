@@ -5,11 +5,12 @@ import { toApiFailure } from '../../core/api/api-error';
 import { Session } from '../../core/session';
 import type { Id, OrderDetail } from '../../shared/api/models';
 import { formatShortDate, formatTime } from '../../shared/format/date-time';
+import { formatAmount } from '../../shared/format/money';
 import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
 import { OrderSaleReceipt } from '../receipts/order-sale-receipt';
 import { OrderActions } from './order-actions';
-import { OrderPaymentReference } from './order-payment-reference';
+import { OrderPaymentCheck } from './order-payment-check';
 import { OrderSummary } from './order-summary';
 import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE, type OrderAction } from './orders.models';
 import { OrdersRemote } from './orders-remote';
@@ -23,6 +24,9 @@ interface ShownReceipt {
   createdAt: string;
 }
 
+/** "el pedido P-7K3F9Q" or "los pedidos P-1, P-2". */
+const orderList = (codes: string[]) => (codes.length === 1 ? `el pedido ${codes[0]}` : `los pedidos ${codes.join(', ')}`);
+
 /** A receipt sent while the page is open shows up without reloading it. */
 const REFRESH_MS = 30_000;
 
@@ -33,7 +37,7 @@ const REFRESH_MS = 30_000;
  */
 @Component({
   selector: 'app-order-detail-page',
-  imports: [Icon, OrderPaymentReference, OrderSaleReceipt, OrderSummary, Pill, RouterLink],
+  imports: [Icon, OrderPaymentCheck, OrderSaleReceipt, OrderSummary, Pill, RouterLink],
   template: `
     <header class="page-top">
       <nav class="crumbs"><a routerLink="/orders">Pedidos</a> / <span>{{ order()?.code ?? '…' }}</span></nav>
@@ -52,6 +56,7 @@ const REFRESH_MS = 30_000;
                 <dt>Pedido a nombre de</dt><dd>{{ o.customerName }}</dd>
                 @if (o.contactName && o.contactName !== o.customerName) { <dt>Contacto en WhatsApp</dt><dd>{{ o.contactName }}</dd> }
                 <dt>Recibido</dt><dd>{{ stamp(o.createdAt) }}</dd>
+                @if (o.confirmedAt) { <dt>Pago confirmado</dt><dd>{{ stamp(o.confirmedAt) }}{{ o.confirmedBy ? ' por ' + o.confirmedBy : '' }}</dd> }
               </dl>
               <a class="link chat" [routerLink]="['/inbox', o.conversationId]"><app-icon name="chat" />Ver conversación</a>
             </section>
@@ -59,6 +64,11 @@ const REFRESH_MS = 30_000;
           <div class="col">
             <section class="card box receipts">
               <h2>Comprobante de pago</h2>
+              @if (warnings().length) {
+                <ul class="alerts" role="alert">
+                  @for (w of warnings(); track w) { <li><app-icon name="alert" />{{ w }}</li> }
+                </ul>
+              }
               @if (receipts().length) {
                 @for (r of receipts(); track r.mediaId) {
                   <figure>
@@ -77,7 +87,7 @@ const REFRESH_MS = 30_000;
               } @else {
                 <p class="empty">{{ noReceiptText() }}</p>
               }
-              @if (o.status !== 'cancelled' && o.paymentMethod) { <app-order-payment-reference [order]="o" (saved)="load()" /> }
+              @if (o.status !== 'cancelled') { <app-order-payment-check [order]="o" (saved)="load()" /> }
             </section>
             <section class="card box"><app-order-sale-receipt [order]="o" (sent)="load()" /></section>
           </div>
@@ -102,6 +112,9 @@ const REFRESH_MS = 30_000;
     .placeholder { height: 160px; border-radius: 10px; background: var(--color-surface-muted); display: flex; align-items: center; justify-content: center;
       color: var(--color-text-muted); font-size: 13px; }
     .btn { align-self: flex-start; }
+    .alerts { list-style: none; margin: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--color-warning);
+      color: var(--color-warning); font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+    .alerts li { display: flex; gap: 8px; align-items: flex-start; --icon-size: 16px; }
   `,
 })
 export class OrderDetailPage {
@@ -125,6 +138,17 @@ export class OrderDetailPage {
       createdAt: r.createdAt,
     })),
   );
+  /** What does not add up in the payment, in plain words, before anyone confirms it. */
+  protected readonly warnings = computed(() => {
+    const o = this.order();
+    if (!o || o.status === 'cancelled') return [];
+    const { referenceUsedIn, receiptUsedIn, shortBy } = o.alerts;
+    const list: string[] = [];
+    if (referenceUsedIn.length) list.push(`Esta referencia ya está en ${orderList(referenceUsedIn)}. Puede ser un pago reutilizado.`);
+    if (receiptUsedIn.length) list.push(`Este mismo comprobante ya llegó para ${orderList(receiptUsedIn)}.`);
+    if (shortBy) list.push(`Llegó menos de lo que cuesta el pedido: faltan ${formatAmount(Number(shortBy), o.paymentMethod?.currency ?? 'USD')}.`);
+    return list;
+  });
   protected readonly noReceiptText = computed(() => {
     const o = this.order();
     if (!o?.paymentMethod) return 'Este pedido no tiene método de pago: acuerda el pago con el cliente por el chat.';

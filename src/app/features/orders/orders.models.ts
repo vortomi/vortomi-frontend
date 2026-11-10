@@ -60,3 +60,9 @@ export const orderTotalCents = (order: Order) => order.subtotalCents + (order.de
 
 /** Bolívares at the rate the order was priced with; null when it had none. */
 export const toBs = (cents: number, bsPerUsd: string | null) => (bsPerUsd ? (cents / 100) * Number(bsPerUsd) : null);
+
+/** "000 123 456" → "000123456": as the server keeps it (without spaces, in capitals). */
+export const normalizeReference = (text: string) => text.replace(/\s+/g, '').toUpperCase();
+
+/** At least 4 letters or digits (some banks only print the last ones), as the server asks. */
+export const validReference = (reference: string) => /^[A-Z0-9-]{4,40}$/.test(reference);

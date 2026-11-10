@@ -3,6 +3,7 @@ import { API_CONFIG } from '../../core/api/api-config';
 import { toApiFailure } from '../../core/api/api-error';
 import { Session } from '../../core/session';
 import type { Order } from '../../shared/api/models';
+import { formatNumber } from '../inventory/sale-units';
 import { Confirm } from '../../shared/ui/confirm';
 import { Toaster } from '../../shared/ui/toaster';
 import type { OrderAction } from './orders.models';
@@ -30,9 +31,13 @@ export class OrderActions {
     if (!this.remote || !tenantId) return false;
     if (!(await this.ask(order, action))) return false;
     try {
-      if (action === 'confirm') await this.remote.confirm(tenantId, order.id);
-      else await this.remote.setStatus(tenantId, order.id, action);
+      const outcome = action === 'confirm' ? await this.remote.confirm(tenantId, order.id) : await this.remote.setStatus(tenantId, order.id, action);
       this.toaster.show(`Pedido ${order.code} ${DONE_TOAST[action]}`);
+      const short = outcome?.stockShortfalls ?? [];
+      if (short.length) {
+        const list = short.map((s) => `${s.name} (faltaron ${formatNumber(s.missing)})`).join(', ');
+        this.toaster.show(`El inventario no alcanzaba: ${list}. Revísalo en Inventario.`, 'info');
+      }
       return true;
     } catch (error) {
       this.toaster.show(toApiFailure(error).message, 'info');
