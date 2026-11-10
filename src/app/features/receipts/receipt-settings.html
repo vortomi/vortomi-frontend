@@ -25,22 +25,19 @@
           <div class="field">
             <span class="label">Logo</span>
             <div class="logo-row">
-              <label class="btn" [class.disabled]="uploading()">
-                <app-icon name="image" />{{ s.hasLogo ? 'Cambiar logo' : 'Subir logo' }}
-                <input type="file" accept="image/png,image/jpeg" hidden [disabled]="uploading()" (change)="pickLogo($event)" />
-              </label>
-              @if (s.hasLogo) { <button type="button" class="btn" [disabled]="uploading()" (click)="removeLogo()">Quitar</button> }
+              <app-file-drop [compact]="true" accept="image/png,image/jpeg" [label]="s.hasLogo ? 'Cambiar logo' : 'Subir logo'" [busy]="uploading()" (picked)="pickLogo($event)" />
+              @if (s.hasLogo) { <button type="button" class="btn btn--ghost" [disabled]="uploading()" (click)="removeLogo()"><app-icon name="trash" /><span>Quitar</span></button> }
             </div>
             <p class="field-hint">PNG o JPG de hasta 1 MB. Se guarda en el momento.</p>
           </div>
         }
 
         <div class="field">
-          <label for="receipt-subtitle">Sucursal o subtítulo <span class="optional">(opcional)</span></label>
+          <label for="receipt-subtitle">Sucursal o subtítulo <span class="opt">(opcional)</span></label>
           <input id="receipt-subtitle" class="input" maxlength="60" placeholder="Sucursal Naguanagua" [value]="d.subtitle" (input)="patch({ subtitle: value($event) })" />
         </div>
         <div class="field">
-          <label for="receipt-phone">Teléfono <span class="optional">(opcional)</span></label>
+          <label for="receipt-phone">Teléfono <span class="opt">(opcional)</span></label>
           <input id="receipt-phone" class="input short" maxlength="30" inputmode="tel" placeholder="0412-1234567" [value]="d.phone" (input)="patch({ phone: value($event) })" />
         </div>
         <div class="field">
@@ -70,7 +67,7 @@
           <img [src]="url" alt="Vista previa del recibo, con una venta de ejemplo" />
           <p class="field-hint">Con una venta de ejemplo. @if (dirty()) { <b>Guarda para ver tus cambios.</b> }</p>
         } @else {
-          <div class="placeholder">Preparando la vista previa…</div>
+          <span class="sk preview-sk" aria-label="Preparando la vista previa"></span>
         }
       </section>
     </div>
@@ -83,10 +80,14 @@
   <div class="actions">
     @if (dirty()) { <button type="button" class="btn" [disabled]="saving()" (click)="reset()">Descartar</button> }
     <button type="button" class="btn btn--primary" [disabled]="saving() || !dirty()" [attr.aria-busy]="saving()" (click)="save()">
-      @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
-      Guardar
+      <app-icon name="check" /><span>Guardar</span>
     </button>
   </div>
+} @else if (loadError(); as error) {
+  <section class="card box">
+    <p class="form-alert" role="alert"><app-icon name="alert" />{{ error }}</p>
+    <button type="button" class="btn retry" (click)="retry()"><span>Reintentar</span></button>
+  </section>
 } @else {
-  <section class="card box"><p class="lead">Cargando…</p></section>
+  <section class="card box"><app-skeleton kind="form" [rows]="4" /></section>
 }

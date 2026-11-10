@@ -1,7 +1,5 @@
-.lead {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  margin-top: 2px;
+.grow-text {
+  flex: 1;
 }
 
 .sources {
@@ -33,7 +31,12 @@
   }
 
   &:disabled {
-    cursor: wait;
+    cursor: not-allowed;
+  }
+
+  &[aria-busy='true'] {
+    cursor: progress;
+    opacity: 0.7;
   }
 
   .radio {
@@ -100,10 +103,10 @@
   display: flex;
   gap: 12px;
   padding: 14px 16px;
-  border: 1px solid #a7e3c4;
+  border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
   border-radius: var(--radius-md);
-  background: #effaf4;
-  color: #145c36;
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
   --icon-size: 20px;
 
   .head {
@@ -125,13 +128,13 @@
 
   .origin {
     font-size: 13px;
-    color: var(--color-text-2, var(--color-text));
+    color: var(--color-text-2);
   }
 
   .next {
     margin-top: 10px;
     padding-top: 10px;
-    border-top: 1px solid #a7e3c4;
+    border-top: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
     font-size: 13px;
     color: var(--color-text);
   }
@@ -142,8 +145,9 @@
   padding-top: 14px;
 
   h3 {
-    font-size: 13.5px;
-    margin-bottom: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 10px;
   }
 
   .scroll {
@@ -191,14 +195,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-surface-muted);
+    background: var(--color-surface-hover);
     color: var(--color-text-muted);
     --icon-size: 20px;
   }
 
   &.on .badge {
     background: var(--color-primary);
-    color: #fff;
+    color: var(--color-on-primary);
   }
 
   .grow {

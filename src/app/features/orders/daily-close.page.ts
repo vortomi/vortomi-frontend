@@ -6,7 +6,9 @@ import { Session } from '../../core/session';
 import type { CloseGroup, DailyClose, PaymentCurrency } from '../../shared/api/models';
 import { formatTime } from '../../shared/format/date-time';
 import { formatAmount, formatUsdCents } from '../../shared/format/money';
-import { Toaster } from '../../shared/ui/toaster';
+import { DatePicker } from '../../shared/ui/date-picker';
+import { Icon } from '../../shared/ui/icon';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { OrdersRemote } from './orders-remote';
 
 /**
@@ -16,18 +18,21 @@ import { OrdersRemote } from './orders-remote';
  */
 @Component({
   selector: 'app-daily-close-page',
-  imports: [RouterLink],
+  imports: [DatePicker, Icon, RouterLink, Skeleton],
   template: `
     <header class="page-top">
-      <nav class="crumbs"><a routerLink="/orders">Pedidos</a> / <span>Cierre del día</span></nav>
-      <input class="input day" type="date" aria-label="Día del cierre" [max]="today()" [value]="day()" (change)="pick($event)" />
+      <div class="title">
+        <nav class="crumbs" aria-label="Ruta"><a routerLink="/orders">Pedidos</a><app-icon name="chev-right" /><span>Cierre del día</span></nav>
+        <h1>Cierre del día</h1>
+      </div>
+      <app-date-picker class="day" label="Día del cierre" [value]="day()" [max]="today()" [todayIso]="today()" (picked)="pick($event)" />
     </header>
     <div class="page-body">
       @if (!remote) {
-        <p class="empty">El cierre se ve con el servidor.</p>
+        <div class="card"><p class="empty-state"><app-icon name="calendar" />El cierre se ve con el servidor.</p></div>
       } @else if (close(); as c) {
         @if (!c.count) {
-          <p class="empty">Ningún pago confirmado este día.</p>
+          <div class="card"><p class="empty-state"><app-icon name="calendar" />Ningún pago confirmado este día.</p></div>
         } @else {
           <section class="totals">
             <div class="card stat"><span>Pedidos pagados</span><b>{{ c.count }}</b></div>
@@ -75,43 +80,54 @@ import { OrdersRemote } from './orders-remote';
             </table>
           </div>
         }
+      } @else if (loadError(); as error) {
+        <div class="form-alert" role="alert">
+          <app-icon name="alert" /><span class="grow">{{ error }}</span>
+          <button type="button" class="btn btn--sm" (click)="retry()"><span>Reintentar</span></button>
+        </div>
       } @else {
-        <p class="empty">Cargando…</p>
+        <div class="totals"><div class="card stat"><span class="sk" style="width: 50%"></span><span class="sk big"></span></div><div class="card stat"><span class="sk" style="width: 40%"></span><span class="sk big"></span></div></div>
+        <h2>Por método de pago</h2>
+        <div class="card table-card"><app-skeleton kind="table" [rows]="3" [cols]="5" /></div>
       }
     </div>
   `,
   styles: `
     :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-    .crumbs { font-size: 13.5px; color: var(--color-text-muted); }
+    .title { display: flex; flex-direction: column; gap: 4px; }
+    .crumbs { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--color-text-muted); --icon-size: 14px; }
+    .crumbs a:hover { color: var(--color-primary-text); }
     .crumbs span { color: var(--color-text); font-weight: 500; }
-    .day { margin-left: auto; width: auto; }
-    h2 { font-size: 15px; margin: 22px 0 10px; }
+    .day { margin-left: auto; width: 280px; }
+    h2 { font-size: 16px; font-weight: 600; margin: 24px 0 12px; }
     .totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
-    .stat { padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
-    .stat span { font-size: 12.5px; color: var(--color-text-muted); }
-    .stat b { font-size: 22px; }
+    .stat { padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+    .stat > span:not(.sk) { font-size: 13px; color: var(--color-text-muted); }
+    .stat b { font-size: 22px; font-weight: 700; }
+    .stat .big { height: 22px; width: 35%; }
     .table-card { overflow-x: auto; }
-    td small { display: block; font-size: 12px; color: var(--color-text-muted); }
-    td.warn { color: var(--color-warning); font-weight: 600; }
-    .empty { color: var(--color-text-muted); font-size: 14px; }
+    td small { display: block; font-size: 12.5px; color: var(--color-text-muted); }
+    td.warn { color: var(--color-danger); font-weight: 600; }
+    .form-alert { align-items: center; }
+    .grow { flex: 1; }
   `,
 })
 export class DailyClosePage {
   protected readonly remote = inject(API_CONFIG).mode === 'api' ? inject(OrdersRemote) : null;
   private readonly session = inject(Session);
-  private readonly toaster = inject(Toaster);
 
   /** Today on the company clock, "2026-11-10". */
   protected readonly today = computed(() => new Intl.DateTimeFormat('en-CA', { timeZone: this.session.timezone() }).format(new Date()));
   protected readonly day = signal(this.today());
   protected readonly close = signal<DailyClose | null>(null);
+  /** The day could not be read: said with a retry instead of loading forever. */
+  protected readonly loadError = signal<string | null>(null);
 
   constructor() {
     void this.load();
   }
 
-  protected pick(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
+  protected pick(value: string | null): void {
     if (!value || value === this.day()) return;
     this.day.set(value);
     void this.load();
@@ -135,14 +151,19 @@ export class DailyClosePage {
     return group.withoutReceived === 0 && expected > 0 && expected - Number(group.receivedAmount) > expected * 0.005;
   }
 
+  protected retry(): void {
+    void this.load();
+  }
+
   private async load(): Promise<void> {
     const tenantId = this.session.tenant()?.id;
     if (!this.remote || !tenantId) return;
     this.close.set(null);
+    this.loadError.set(null);
     try {
       this.close.set(await this.remote.dailyClose(tenantId, this.day()));
     } catch (error) {
-      this.toaster.show(toApiFailure(error).message, 'info');
+      this.loadError.set(toApiFailure(error).message);
     }
   }
 }

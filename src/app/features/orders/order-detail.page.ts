@@ -5,14 +5,14 @@ import { toApiFailure } from '../../core/api/api-error';
 import { Session } from '../../core/session';
 import type { Id, OrderDetail } from '../../shared/api/models';
 import { formatShortDate, formatTime } from '../../shared/format/date-time';
-import { formatAmount } from '../../shared/format/money';
+import { formatAmount, formatUsdCents, formatVes } from '../../shared/format/money';
 import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { OrderSaleReceipt } from '../receipts/order-sale-receipt';
 import { OrderActions } from './order-actions';
 import { OrderPaymentCheck } from './order-payment-check';
-import { OrderSummary } from './order-summary';
-import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE, type OrderAction } from './orders.models';
+import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE, type OrderAction, lineCents, lineText, orderActions, orderTotalCents, toBs } from './orders.models';
 import { OrdersRemote } from './orders-remote';
 
 /** A receipt the customer sent, ready to show: its file lives in this tab only (an object URL). */
@@ -31,39 +31,77 @@ const orderList = (codes: string[]) => (codes.length === 1 ? `el pedido ${codes[
 const REFRESH_MS = 30_000;
 
 /**
- * One order in full, for the person who reviews its payment: what was ordered, delivery, payment
- * method, the receipts the customer sent and the payment's reference, the buttons to confirm (the
- * customer is told), complete or cancel it, and the sale receipt it got.
+ * One order in full (mockup web-16), for the person who reviews its payment: what was ordered and
+ * for whom on the left; the payment review (alerts, the receipts the customer sent, reference and
+ * amount received) and the sale receipt on the right; confirm, complete or cancel on top.
  */
 @Component({
   selector: 'app-order-detail-page',
-  imports: [Icon, OrderPaymentCheck, OrderSaleReceipt, OrderSummary, Pill, RouterLink],
+  imports: [Icon, OrderPaymentCheck, OrderSaleReceipt, Pill, RouterLink, Skeleton],
   template: `
     <header class="page-top">
-      <nav class="crumbs"><a routerLink="/orders">Pedidos</a> / <span>{{ order()?.code ?? '…' }}</span></nav>
-      @if (order(); as o) { <app-pill [tone]="tone[o.status]">{{ statusLabel[o.status] }}</app-pill> }
+      <div class="title">
+        <nav class="crumbs" aria-label="Ruta"><a routerLink="/orders">Pedidos</a><app-icon name="chev-right" /><span>{{ order()?.code ?? '…' }}</span></nav>
+        <h1>
+          Pedido {{ order()?.code ?? '' }}
+          @if (order(); as o) { <app-pill [tone]="tone[o.status]" [dot]="true">{{ statusLabel[o.status] }}</app-pill> }
+        </h1>
+      </div>
+      @if (order(); as o) {
+        <div class="head-actions">
+          <a class="btn" [routerLink]="['/inbox', o.conversationId]"><app-icon name="chat" /><span>Ver conversación</span></a>
+          @for (b of buttons(); track b.action) {
+            <button type="button" class="btn" [class.btn--primary]="b.style === 'primary'" [class.btn--success]="b.style === 'success'"
+              [class.btn--ghost]="b.style === 'plain'" [disabled]="busy()" (click)="move(b.action)">
+              @if (b.action === 'confirm') { <app-icon name="check" /> }<span>{{ b.action === 'cancelled' ? 'Cancelar pedido' : b.label }}</span>
+            </button>
+          }
+        </div>
+      }
     </header>
     <div class="page-body">
       @if (missing()) {
-        <p class="empty">Ese pedido ya no existe o no lo puedes ver. <a routerLink="/orders">Volver a Pedidos</a></p>
+        <div class="card">
+          <p class="empty-state"><app-icon name="package" />Ese pedido ya no existe o no lo puedes ver.<a class="link" routerLink="/orders">Volver a Pedidos</a></p>
+        </div>
       } @else if (order(); as o) {
         <div class="layout">
           <div class="col">
-            <section class="card box"><app-order-summary [order]="o" [detailLink]="false" (moved)="move($event)" /></section>
-            <section class="card box">
+            <section class="card pane">
+              <h2>Lo que pidió</h2>
+              <ul class="lines">
+                @for (line of o.lines; track $index) {
+                  <li><span>{{ lineText(line) }}</span><span>{{ usd(lineCents(line)) }}</span></li>
+                }
+                <li class="muted">
+                  @if (o.fulfillment === 'pickup') {
+                    <span>Retira en la tienda</span><span>—</span>
+                  } @else {
+                    <span>Delivery{{ o.zone ? ' · ' + o.zone : '' }}</span><span>{{ o.deliveryCents === null ? 'Por confirmar' : usd(o.deliveryCents) }}</span>
+                  }
+                </li>
+                <li class="total"><span>Total</span><span>{{ usd(total()) }}@if (totalBs(); as bs) { <small>{{ bs }}</small> }</span></li>
+              </ul>
+              @if (o.fulfillment === 'delivery' && o.deliveryCents === null) {
+                <p class="form-alert warn"><app-icon name="alert" />El costo del delivery no está en el total: confírmalo con el cliente.</p>
+              }
+            </section>
+            <section class="card pane">
               <h2>Cliente</h2>
               <dl class="facts">
-                <dt>Pedido a nombre de</dt><dd>{{ o.customerName }}</dd>
-                @if (o.contactName && o.contactName !== o.customerName) { <dt>Contacto en WhatsApp</dt><dd>{{ o.contactName }}</dd> }
+                <dt>A nombre de</dt><dd>{{ o.customerName }}</dd>
+                @if (o.contactName && o.contactName !== o.customerName) { <dt>En WhatsApp</dt><dd>{{ o.contactName }}</dd> }
+                @if (o.address) { <dt>Dirección</dt><dd>{{ o.address }}</dd> }
+                <dt>Método de pago</dt><dd>{{ o.paymentMethod?.name ?? 'Sin método' }}</dd>
                 <dt>Recibido</dt><dd>{{ stamp(o.createdAt) }}</dd>
                 @if (o.confirmedAt) { <dt>Pago confirmado</dt><dd>{{ stamp(o.confirmedAt) }}{{ o.confirmedBy ? ' por ' + o.confirmedBy : '' }}</dd> }
+                @if (o.notes) { <dt>Notas</dt><dd>{{ o.notes }}</dd> }
               </dl>
-              <a class="link chat" [routerLink]="['/inbox', o.conversationId]"><app-icon name="chat" />Ver conversación</a>
             </section>
           </div>
           <div class="col">
-            <section class="card box receipts">
-              <h2>Comprobante de pago</h2>
+            <section class="card pane">
+              <h2>Revisión del pago</h2>
               @if (warnings().length) {
                 <ul class="alerts" role="alert">
                   @for (w of warnings(); track w) { <li><app-icon name="alert" />{{ w }}</li> }
@@ -73,48 +111,69 @@ const REFRESH_MS = 30_000;
                 @for (r of receipts(); track r.mediaId) {
                   <figure>
                     @if (!r.url) {
-                      <div class="placeholder">Cargando…</div>
+                      <span class="sk picture" aria-label="Cargando el comprobante"></span>
                     } @else if (r.isImage) {
-                      <a [href]="r.url" target="_blank" rel="noopener" title="Abrir en grande"><img [src]="r.url" alt="Comprobante de pago enviado por el cliente" /></a>
+                      <a [href]="r.url" target="_blank" rel="noopener" aria-label="Abrir el comprobante en grande"><img [src]="r.url" alt="Comprobante de pago enviado por el cliente" /></a>
                     } @else {
                       <a class="btn" [href]="r.url" target="_blank" rel="noopener" [attr.download]="r.isPdf ? null : 'comprobante'">
-                        <app-icon name="clip" />{{ r.isPdf ? 'Abrir el PDF' : 'Descargar el archivo' }}
+                        <app-icon name="clip" /><span>{{ r.isPdf ? 'Abrir el PDF' : 'Descargar el archivo' }}</span>
                       </a>
                     }
                     <figcaption>Enviado el {{ stamp(r.createdAt) }}</figcaption>
                   </figure>
                 }
               } @else {
-                <p class="empty">{{ noReceiptText() }}</p>
+                <p class="no-receipt"><app-icon name="clip" />{{ noReceiptText() }}</p>
               }
               @if (o.status !== 'cancelled') { <app-order-payment-check [order]="o" (saved)="load()" /> }
             </section>
-            <section class="card box"><app-order-sale-receipt [order]="o" (sent)="load()" /></section>
+            <section class="card pane"><app-order-sale-receipt [order]="o" (sent)="load()" /></section>
           </div>
         </div>
+      } @else if (loadError(); as error) {
+        <div class="form-alert" role="alert">
+          <app-icon name="alert" /><span class="grow">{{ error }}</span>
+          <button type="button" class="btn btn--sm" (click)="load()"><span>Reintentar</span></button>
+        </div>
       } @else {
-        <p class="empty">Cargando…</p>
+        <app-skeleton kind="detail" [rows]="5" />
       }
     </div>
   `,
   styleUrls: ['../../shared/ui/section.scss'],
   styles: `
     :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-    .crumbs { font-size: 13.5px; color: var(--color-text-muted); }
+    .title { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .crumbs { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--color-text-muted); --icon-size: 14px; }
+    .crumbs a:hover { color: var(--color-primary-text); }
     .crumbs span { color: var(--color-text); font-weight: 500; }
-    .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+    h1 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .head-actions { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
     @media (max-width: 1000px) { .layout { grid-template-columns: minmax(0, 1fr); } }
-    .col { display: flex; flex-direction: column; }
-    .chat { display: inline-flex; align-items: center; gap: 6px; --icon-size: 15px; font-size: 13px; align-self: flex-start; }
+    .col { display: flex; flex-direction: column; gap: 18px; }
+    .pane { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
+    .pane h2 { font-size: 16px; font-weight: 600; }
+    .lines { list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px; color: var(--color-text-2); }
+    .lines li { display: flex; justify-content: space-between; gap: 12px; }
+    .lines .muted { color: var(--color-text-muted); }
+    .lines .total { border-top: 1px solid var(--color-border); padding-top: 10px; font-weight: 700; font-size: 15px; color: var(--color-text); }
+    .total small { display: block; text-align: right; font-weight: 400; color: var(--color-text-muted); font-size: 12.5px; }
     figure { margin: 0; display: flex; flex-direction: column; gap: 6px; }
-    img { display: block; max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 10px; border: 1px solid var(--color-border); background: var(--color-surface-muted); }
+    img { display: block; max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 10px; border: 1px solid var(--color-border);
+      background: var(--color-surface-muted); }
     figcaption { font-size: 12.5px; color: var(--color-text-muted); }
-    .placeholder { height: 160px; border-radius: 10px; background: var(--color-surface-muted); display: flex; align-items: center; justify-content: center;
-      color: var(--color-text-muted); font-size: 13px; }
-    .btn { align-self: flex-start; }
-    .alerts { list-style: none; margin: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--color-warning);
-      color: var(--color-warning); font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+    .picture { height: 220px; border-radius: 10px; }
+    figure .btn { align-self: flex-start; }
+    .no-receipt { display: flex; gap: 10px; align-items: flex-start; padding: 14px; border-radius: 10px; border: 1px dashed var(--color-border-strong);
+      color: var(--color-text-muted); font-size: 13.5px; line-height: 1.45; --icon-size: 17px; }
+    .alerts { list-style: none; margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--color-warning-soft);
+      border: 1px solid color-mix(in srgb, var(--color-warning) 35%, transparent); color: var(--color-warning-text); font-size: 13.5px;
+      display: flex; flex-direction: column; gap: 6px; }
     .alerts li { display: flex; gap: 8px; align-items: flex-start; --icon-size: 16px; }
+    .empty-state .link { margin-top: 4px; }
+    .form-alert { align-items: center; }
+    .grow { flex: 1; }
   `,
 })
 export class OrderDetailPage {
@@ -125,8 +184,30 @@ export class OrderDetailPage {
 
   protected readonly statusLabel = ORDER_STATUS_LABEL;
   protected readonly tone = ORDER_STATUS_TONE;
+  protected readonly lineText = lineText;
+  protected readonly lineCents = lineCents;
   protected readonly order = signal<OrderDetail | null>(null);
   protected readonly missing = signal(false);
+  /** The first read failed (not a missing order): said with a retry instead of loading forever. */
+  protected readonly loadError = signal<string | null>(null);
+  protected readonly buttons = computed(() => {
+    const order = this.order();
+    // The main action last, at the edge (mockup web-16): «Cancelar pedido», then «Confirmar» or «Completado».
+    return order ? [...orderActions(order.status)].reverse() : [];
+  });
+  /** Its move is in progress: the buttons wait, so nothing is sent twice. */
+  protected readonly busy = computed(() => {
+    const order = this.order();
+    return !!order && this.actions.running().has(order.id);
+  });
+  protected readonly total = computed(() => {
+    const order = this.order();
+    return order ? orderTotalCents(order) : 0;
+  });
+  protected readonly totalBs = computed(() => {
+    const bs = toBs(this.total(), this.order()?.bsPerUsd ?? null);
+    return bs === null ? null : formatVes(bs);
+  });
   /** Files already fetched, by receipt: fetched once, released when the page closes. */
   private readonly files = signal<Record<Id, string>>({});
   protected readonly receipts = computed((): ShownReceipt[] =>
@@ -171,6 +252,10 @@ export class OrderDetailPage {
     return `${formatShortDate(iso, timezone)}, ${formatTime(iso, timezone)}`;
   }
 
+  protected usd(cents: number): string {
+    return formatUsdCents(cents);
+  }
+
   protected async move(action: OrderAction): Promise<void> {
     const order = this.order();
     if (order && (await this.actions.run(order, action))) await this.load();
@@ -182,9 +267,12 @@ export class OrderDetailPage {
     try {
       const order = await this.remote.detail(tenantId, this.orderId);
       this.order.set(order);
+      this.loadError.set(null);
       await Promise.all(order.receipts.filter((r) => !this.files()[r.mediaId]).map((r) => this.fetchFile(tenantId, r.mediaId)));
     } catch (error) {
-      if (toApiFailure(error).status === 404) this.missing.set(true);
+      const failure = toApiFailure(error);
+      if (failure.status === 404) this.missing.set(true);
+      else if (!this.order()) this.loadError.set(failure.message);
     }
   }
 
@@ -194,7 +282,7 @@ export class OrderDetailPage {
       const url = URL.createObjectURL(await this.remote.receipt(tenantId, this.orderId, mediaId));
       this.files.update((files) => ({ ...files, [mediaId]: url }));
     } catch {
-      // The receipt stays "Cargando…"; the next refresh tries again.
+      // The receipt keeps its placeholder; the next refresh tries again.
     }
   }
 }

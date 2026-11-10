@@ -1,13 +1,12 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { API_CONFIG } from '../../core/api/api-config';
-import { toApiFailure } from '../../core/api/api-error';
 import { Session } from '../../core/session';
-import type { Order } from '../../shared/api/models';
+import type { Id, Order } from '../../shared/api/models';
 import { formatNumber } from '../inventory/sale-units';
-import { Confirm } from '../../shared/ui/confirm';
+import { Confirm, type ConfirmRequest } from '../../shared/ui/confirm';
 import { Toaster } from '../../shared/ui/toaster';
 import type { OrderAction } from './orders.models';
-import { OrdersRemote } from './orders-remote';
+import { OrdersRemote, type SaleOutcome } from './orders-remote';
 
 const DONE_TOAST: Record<OrderAction, string> = {
   confirm: 'confirmado. Le avisamos al cliente por WhatsApp.',
@@ -16,8 +15,10 @@ const DONE_TOAST: Record<OrderAction, string> = {
 };
 
 /**
- * Moves an order along, the same from «Pedidos», the chat's card and the order's page. Confirming
- * writes to the customer, so it asks first. True when the order changed (the caller reloads it).
+ * Moves an order along, the same from «Pedidos», the chat's card and the order's page. Every move
+ * asks first (confirming and completing write to the customer, cancelling undoes the sale) and the
+ * dialog stays open with its loading circle until the server answers; an error shows inside it.
+ * True when the order changed (the caller reloads it).
  */
 @Injectable({ providedIn: 'root' })
 export class OrderActions {
@@ -26,36 +27,71 @@ export class OrderActions {
   private readonly confirm = inject(Confirm);
   private readonly toaster = inject(Toaster);
 
-  async run(order: Order, action: OrderAction): Promise<boolean> {
-    const tenantId = this.session.tenant()?.id;
-    if (!this.remote || !tenantId) return false;
-    if (!(await this.ask(order, action))) return false;
-    try {
-      const outcome = action === 'confirm' ? await this.remote.confirm(tenantId, order.id) : await this.remote.setStatus(tenantId, order.id, action);
-      this.toaster.show(`Pedido ${order.code} ${DONE_TOAST[action]}`);
-      const short = outcome?.stockShortfalls ?? [];
-      if (short.length) {
-        const list = short.map((s) => `${s.name} (faltaron ${formatNumber(s.missing)})`).join(', ');
-        this.toaster.show(`El inventario no alcanzaba: ${list}. Revísalo en Inventario.`, 'info');
-      }
-      return true;
-    } catch (error) {
-      this.toaster.show(toApiFailure(error).message, 'info');
-      return false;
-    }
+  /** Orders being moved right now: their buttons wait, so nothing is sent twice. */
+  readonly running = signal<ReadonlySet<Id>>(new Set());
+
+  isRunning(orderId: Id): boolean {
+    return this.running().has(orderId);
   }
 
-  private ask(order: Order, action: OrderAction): Promise<boolean> {
-    if (action === 'confirm') {
-      return this.confirm.ask({
-        title: `Confirmar el pedido ${order.code}`,
-        message: `Revisa el pago antes de confirmar. ${order.customerName} recibirá por WhatsApp que su pedido está confirmado y que el equipo lo contactará para la entrega.`,
-        confirmLabel: 'Confirmar pedido',
+  async run(order: Order, action: OrderAction): Promise<boolean> {
+    const tenantId = this.session.tenant()?.id;
+    const remote = this.remote;
+    if (!remote || !tenantId || this.isRunning(order.id)) return false;
+    let outcome: SaleOutcome | undefined;
+    this.mark(order.id, true);
+    try {
+      const done = await this.confirm.ask({
+        ...this.question(order, action),
+        action: async () => {
+          outcome = action === 'confirm' ? await remote.confirm(tenantId, order.id) : await remote.setStatus(tenantId, order.id, action);
+        },
       });
+      if (!done) return false;
+    } finally {
+      this.mark(order.id, false);
     }
-    if (action === 'cancelled') {
-      return this.confirm.ask({ title: `Cancelar el pedido ${order.code}`, message: 'El pedido queda cancelado. Al cliente no se le envía ningún mensaje.', confirmLabel: 'Cancelar pedido', danger: true });
+    this.toaster.show(`Pedido ${order.code} ${DONE_TOAST[action]}`);
+    const short = outcome?.stockShortfalls ?? [];
+    if (short.length) {
+      const list = short.map((s) => `${s.name} (faltaron ${formatNumber(s.missing)})`).join(', ');
+      this.toaster.show(`El inventario no alcanzaba: ${list}. Revísalo en Inventario.`, 'info');
     }
-    return Promise.resolve(true);
+    return true;
+  }
+
+  private mark(orderId: Id, on: boolean): void {
+    this.running.update((ids) => {
+      const next = new Set(ids);
+      if (on) next.add(orderId);
+      else next.delete(orderId);
+      return next;
+    });
+  }
+
+  private question(order: Order, action: OrderAction): Omit<ConfirmRequest, 'action'> {
+    const first = order.customerName.trim().split(/\s+/)[0];
+    switch (action) {
+      case 'confirm':
+        return {
+          title: `¿Confirmar el pedido ${order.code}?`,
+          message: `Revisa el pago antes de confirmar. ${first} recibirá por WhatsApp que su pedido está confirmado, y si vendes con el inventario de Vortomi, los productos se descuentan.`,
+          confirmLabel: 'Confirmar pedido',
+        };
+      case 'done':
+        return {
+          title: `¿Marcar el pedido ${order.code} como completado?`,
+          message: `Es para cuando ya se entregó o se retiró. Si tu empresa envía recibos, ${first} recibe el suyo por WhatsApp en este momento.`,
+          confirmLabel: 'Marcar completado',
+        };
+      case 'cancelled':
+        return {
+          title: `¿Cancelar el pedido ${order.code}?`,
+          message: 'El pedido queda cancelado y, si ya estaba pagado, los productos vuelven al inventario. Al cliente no se le envía ningún mensaje.',
+          confirmLabel: 'Sí, cancelar',
+          cancelLabel: 'No, volver',
+          danger: true,
+        };
+    }
   }
 }

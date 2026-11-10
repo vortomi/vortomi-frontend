@@ -3,8 +3,11 @@ import { API_CONFIG } from '../../core/api/api-config';
 import { toApiFailure } from '../../core/api/api-error';
 import { Session } from '../../core/session';
 import type { ReceiptMode, ReceiptSettings } from '../../shared/api/models';
+import { Confirm } from '../../shared/ui/confirm';
+import { FileDrop } from '../../shared/ui/file-drop';
 import { Icon } from '../../shared/ui/icon';
 import { type OptionCard, OptionCards } from '../../shared/ui/option-cards';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { Switch } from '../../shared/ui/switch';
 import { Toaster } from '../../shared/ui/toaster';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
@@ -35,7 +38,7 @@ const toDraft = (s: ReceiptSettings): ReceiptSettingsInput => ({
  */
 @Component({
   selector: 'app-receipt-settings',
-  imports: [Icon, OptionCards, Switch],
+  imports: [FileDrop, Icon, OptionCards, Skeleton, Switch],
   templateUrl: './receipt-settings.html',
   styleUrls: ['../../shared/ui/section.scss', './receipt-settings.scss'],
 })
@@ -43,6 +46,7 @@ export class ReceiptSettingsPage {
   protected readonly remote = inject(API_CONFIG).mode === 'api' ? inject(ReceiptRemote) : null;
   private readonly session = inject(Session);
   private readonly toaster = inject(Toaster);
+  private readonly confirm = inject(Confirm);
 
   protected readonly modes = MODES;
   protected readonly saved = signal<ReceiptSettings | null>(null);
@@ -50,6 +54,8 @@ export class ReceiptSettingsPage {
   protected readonly saving = signal(false);
   protected readonly uploading = signal(false);
   protected readonly preview = signal<string | null>(null);
+  /** The settings could not be read: said once, with a retry, instead of loading forever. */
+  protected readonly loadError = signal<string | null>(null);
   protected readonly dirty = computed(() => {
     const saved = this.saved();
     const draft = this.draft();
@@ -108,20 +114,37 @@ export class ReceiptSettingsPage {
     }
   }
 
-  protected async pickLogo(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = '';
+  protected async pickLogo(file: File): Promise<void> {
     const tenantId = this.session.tenant()?.id;
-    if (!file || !tenantId || !this.remote) return;
+    if (!tenantId || !this.remote || this.uploading()) return;
     const picture = await readPicture(file, MAX_LOGO_BYTES);
     if (!picture) return this.toaster.show('El logo debe ser una imagen PNG o JPG de hasta 1 MB.', 'info');
     await this.updateLogo(() => this.remote!.setLogo(tenantId, picture), 'Logo cargado');
   }
 
+  /** Saved at once, so it asks first; the dialog waits with its circle while the server answers. */
   protected async removeLogo(): Promise<void> {
     const tenantId = this.session.tenant()?.id;
-    if (tenantId && this.remote) await this.updateLogo(() => this.remote!.clearLogo(tenantId), 'Logo quitado');
+    const remote = this.remote;
+    if (!tenantId || !remote || this.uploading()) return;
+    const removed = await this.confirm.ask({
+      title: '¿Quitar el logo del recibo?',
+      message: 'Los próximos recibos saldrán sin logo. Puedes subir otro cuando quieras.',
+      confirmLabel: 'Quitar logo',
+      danger: true,
+      action: async () => {
+        const settings = await remote.clearLogo(tenantId);
+        this.saved.update((s) => (s ? { ...s, hasLogo: settings.hasLogo } : settings));
+      },
+    });
+    if (!removed) return;
+    void this.loadPreview();
+    this.toaster.show('Logo quitado');
+  }
+
+  protected retry(): void {
+    this.loadError.set(null);
+    void this.load();
   }
 
   /** The logo saves on its own; whatever else is being edited stays as it is. */
@@ -151,7 +174,7 @@ export class ReceiptSettingsPage {
     try {
       this.apply(await this.remote.get(tenantId));
     } catch (error) {
-      this.toaster.show(toApiFailure(error).message, 'info');
+      this.loadError.set(toApiFailure(error).message);
     }
   }
 

@@ -27,6 +27,10 @@ export class ExchangeRates {
   private readonly table = editableTable<ExchangeRateBook>('exchange-rates');
 
   readonly busy = signal(false);
+  /** The company's card arrived from the server (always true on the prototype's data). */
+  readonly loaded = signal(false);
+  /** The card could not be read: the screen says so, with a retry, instead of showing "no rate". */
+  readonly loadError = signal<string | null>(null);
   readonly book = computed<ExchangeRateBook | null>(() => {
     const tenantId = this.session.tenant()?.id;
     if (!tenantId) return null;
@@ -40,7 +44,10 @@ export class ExchangeRates {
   });
 
   constructor() {
-    if (!this.remote) return;
+    if (!this.remote) {
+      this.loaded.set(true);
+      return;
+    }
     effect(() => {
       const tenantId = this.session.tenant()?.id;
       if (tenantId) untracked(() => void this.load(tenantId));
@@ -81,12 +88,20 @@ export class ExchangeRates {
     );
   }
 
+  /** Reads the company's card again (after a failed first read). */
+  reload(): Promise<void> {
+    const tenantId = this.session.tenant()?.id;
+    return this.remote && tenantId ? this.load(tenantId) : Promise.resolve();
+  }
+
   private async load(tenantId: Id): Promise<void> {
+    this.loadError.set(null);
     try {
       const book = await this.remote!.get(tenantId);
       this.table.replaceAll([...this.table.rows().filter((b) => b.tenantId !== tenantId), book]);
+      this.loaded.set(true);
     } catch (error) {
-      this.toaster.show(toApiFailure(error).message, 'info');
+      this.loadError.set(toApiFailure(error).message);
     }
   }
 
