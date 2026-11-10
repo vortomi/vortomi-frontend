@@ -3,8 +3,11 @@ import { Clock } from '../../core/clock';
 import { Session } from '../../core/session';
 import type { RateSource } from '../../shared/api/models';
 import { calendarDay, formatShortDate, formatTime } from '../../shared/format/date-time';
+import { Confirm } from '../../shared/ui/confirm';
+import { DatePicker } from '../../shared/ui/date-picker';
 import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { Switch } from '../../shared/ui/switch';
 import { Toaster } from '../../shared/ui/toaster';
 import { ExchangeRates } from '../exchange-rates/exchange-rates.data';
@@ -23,7 +26,7 @@ const SOURCES: { value: RateSource; label: string; detail: string }[] = [
  */
 @Component({
   selector: 'app-exchange-rate-settings',
-  imports: [Icon, Pill, Switch],
+  imports: [DatePicker, Icon, Pill, Skeleton, Switch],
   templateUrl: './exchange-rate-settings.html',
   styleUrls: ['../../shared/ui/section.scss', './exchange-rate-settings.scss'],
 })
@@ -32,6 +35,7 @@ export class ExchangeRateSettings {
   private readonly session = inject(Session);
   private readonly clock = inject(Clock);
   private readonly toaster = inject(Toaster);
+  private readonly confirm = inject(Confirm);
 
   protected readonly sources = SOURCES;
   protected readonly formatRate = formatRate;
@@ -66,6 +70,9 @@ export class ExchangeRateSettings {
 
   protected readonly rateDraft = signal('');
   protected readonly rateDate = signal(this.today());
+  /** Which action is being saved, so only its button shows the loading circle. */
+  protected readonly working = signal<'source' | 'system' | 'bcv' | 'rate' | null>(null);
+  protected readonly todayIso = computed(() => this.today());
 
   /** "27 oct 2026, 09:17", on the company's clock. */
   protected stamp(iso: string): string {
@@ -77,8 +84,35 @@ export class ExchangeRateSettings {
     return (event.target as HTMLInputElement).value;
   }
 
+  /** Changes the prices every customer sees in bolívares: asked first. */
   protected async choose(source: RateSource): Promise<void> {
-    if (source !== this.source()) await this.rates.setSource(source);
+    if (source === this.source() || this.rates.busy()) return;
+    const yes = await this.confirm.ask(
+      source === 'bcv'
+        ? { title: '¿Usar la tasa del BCV?', message: 'Los precios en bolívares pasan a la tasa oficial del BCV y se actualizan solos cada día.', confirmLabel: 'Usar la tasa del BCV' }
+        : { title: '¿Usar una tasa personalizada?', message: 'Los precios en bolívares usarán la tasa que registres aquí, hasta que la cambies.', confirmLabel: 'Usar tasa personalizada' },
+    );
+    if (yes) await this.during('source', () => this.rates.setSource(source));
+  }
+
+  protected async setUseSystemRate(use: boolean): Promise<void> {
+    if (this.rates.busy()) return;
+    const yes = await this.confirm.ask(
+      use
+        ? { title: '¿Usar la tasa de tu sistema?', message: 'Los precios en bolívares saldrán de tu propio sistema, igual que en la caja de tu tienda.', confirmLabel: 'Usar la de mi sistema' }
+        : { title: '¿Dejar de usar la tasa de tu sistema?', message: 'Los precios en bolívares se calcularán con la tasa configurada aquí y pueden no coincidir con los de tu caja.', confirmLabel: 'Usar la de aquí' },
+    );
+    if (yes) await this.during('system', () => this.rates.setUseSystemRate(use));
+  }
+
+  protected async refreshBcv(): Promise<void> {
+    if (this.rates.busy()) return;
+    const yes = await this.confirm.ask({
+      title: '¿Consultar el BCV ahora?',
+      message: 'Si el BCV ya publicó una tasa nueva para hoy, tus precios en bolívares cambian en este momento.',
+      confirmLabel: 'Consultar ahora',
+    });
+    if (yes) await this.during('bcv', () => this.rates.refreshBcv());
   }
 
   protected async addRate(): Promise<void> {
@@ -87,6 +121,25 @@ export class ExchangeRateSettings {
       this.toaster.show('Escribe la tasa en bolívares por dólar, por ejemplo 36,52.', 'info');
       return;
     }
-    if (await this.rates.addRate(rate, this.rateDate())) this.rateDraft.set('');
+    if (this.rates.busy()) return;
+    const yes = await this.confirm.ask({
+      title: `¿Registrar ${formatRate(rate)} Bs por dólar?`,
+      message: `Vale desde el ${formatIsoDay(this.rateDate())}. Una tasa registrada no se edita ni se borra, y tus clientes ven los precios con ella.`,
+      confirmLabel: 'Registrar tasa',
+    });
+    if (yes && (await this.during('rate', () => this.rates.addRate(rate, this.rateDate())))) this.rateDraft.set('');
+  }
+
+  protected retry(): void {
+    void this.rates.reload();
+  }
+
+  private async during(action: 'source' | 'system' | 'bcv' | 'rate', work: () => Promise<boolean>): Promise<boolean> {
+    this.working.set(action);
+    try {
+      return await work();
+    } finally {
+      this.working.set(null);
+    }
   }
 }

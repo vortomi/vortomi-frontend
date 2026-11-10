@@ -54,7 +54,7 @@ import { PAYMENT_TYPES, TYPE_GROUPS, typeInfo } from './payment-methods.models';
     .option { display: flex; align-items: center; gap: 12px; width: 100%; padding: 7px 8px; border: 0; border-radius: 8px; background: none; text-align: left; font: inherit; cursor: pointer; }
     .option.active { background: var(--color-surface-muted); }
     .option.on b { color: var(--color-primary-strong); }
-    .new { font-size: 10.5px; font-weight: 600; color: #fff; background: var(--color-primary); border-radius: 999px; padding: 1px 7px; margin-left: 6px; vertical-align: 1px; }
+    .new { font-size: 10.5px; font-weight: 600; color: var(--color-on-primary); background: var(--color-primary); border-radius: 999px; padding: 1px 7px; margin-left: 6px; vertical-align: 1px; }
     .tick { --icon-size: 16px; color: var(--color-primary); }
   `,
 })

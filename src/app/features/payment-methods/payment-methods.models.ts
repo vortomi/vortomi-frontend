@@ -38,7 +38,7 @@ export const PAYMENT_TYPES: readonly MethodTypeInfo[] = [
     group: 'ves',
     paysIn: 'Paga en bolívares',
     icon: 'phone',
-    color: '#0f766e',
+    color: '#0694a2',
     fields: [
       { kind: 'bank', label: 'Banco' },
       { kind: 'phone', label: 'Teléfono' },
@@ -51,7 +51,7 @@ export const PAYMENT_TYPES: readonly MethodTypeInfo[] = [
     group: 'ves',
     paysIn: 'Paga en bolívares',
     icon: 'building',
-    color: '#1f3864',
+    color: '#5850ec',
     fields: [
       { kind: 'bank', label: 'Banco' },
       holder('Ej.: Inversiones La Campiña, C.A.'),
@@ -59,14 +59,14 @@ export const PAYMENT_TYPES: readonly MethodTypeInfo[] = [
       { kind: 'document', label: 'DNI' },
     ],
   },
-  { type: 'cash_ves', label: 'Efectivo en bolívares', group: 'ves', paysIn: 'Paga en bolívares', icon: 'dollar', color: '#b45309', fields: [] },
+  { type: 'cash_ves', label: 'Efectivo en bolívares', group: 'ves', paysIn: 'Paga en bolívares', icon: 'dollar', color: '#d03801', fields: [] },
   {
     type: 'zelle',
     label: 'Zelle',
     group: 'usd',
     paysIn: 'Paga en dólares',
     icon: 'dollar',
-    color: '#6d28d9',
+    color: '#7e3af2',
     fields: [{ kind: 'text', label: 'Correo o teléfono Zelle', placeholder: 'Ej.: pagos@tuempresa.com' }, holder('Nombre del titular')],
   },
   {
@@ -75,7 +75,7 @@ export const PAYMENT_TYPES: readonly MethodTypeInfo[] = [
     group: 'usd',
     paysIn: 'Paga en dólares',
     icon: 'dollar',
-    color: '#003087',
+    color: '#1a56db',
     isNew: true,
     fields: [{ kind: 'text', label: 'Correo PayPal', placeholder: 'Ej.: pagos@tuempresa.com' }, holder('Nombre del titular')],
   },
@@ -85,7 +85,7 @@ export const PAYMENT_TYPES: readonly MethodTypeInfo[] = [
     group: 'usd',
     paysIn: 'Paga en USDT (1 USDT = 1 USD)',
     icon: 'dollar',
-    color: '#b7791f',
+    color: '#c27803',
     isNew: true,
     fields: [
       { kind: 'text', label: 'Pay ID', placeholder: 'Ej.: 123456789' },
@@ -98,7 +98,7 @@ export const PAYMENT_TYPES: readonly MethodTypeInfo[] = [
     group: 'usd',
     paysIn: 'Paga en dólares',
     icon: 'building',
-    color: '#0e7490',
+    color: '#0e7c86',
     fields: [
       { kind: 'text', label: 'Banco', placeholder: 'Ej.: Bank of America' },
       { kind: 'text', label: 'Dirección del banco' },
@@ -110,9 +110,9 @@ export const PAYMENT_TYPES: readonly MethodTypeInfo[] = [
       { kind: 'text', label: 'Banco intermediario', placeholder: 'Si tu banco lo pide' },
     ],
   },
-  { type: 'cash_usd', label: 'Efectivo en dólares', group: 'usd', paysIn: 'Paga en dólares', icon: 'dollar', color: '#15803d', fields: [] },
-  { type: 'cash_eur', label: 'Efectivo en euros', group: 'other', paysIn: 'Paga en euros', icon: 'dollar', color: '#1d4ed8', fields: [] },
-  { type: 'arrange', label: 'Acordar con el vendedor', group: 'other', paysIn: 'Monto en dólares', icon: 'chat', color: '#4b5565', fields: [] },
+  { type: 'cash_usd', label: 'Efectivo en dólares', group: 'usd', paysIn: 'Paga en dólares', icon: 'dollar', color: '#057a55', fields: [] },
+  { type: 'cash_eur', label: 'Efectivo en euros', group: 'other', paysIn: 'Paga en euros', icon: 'dollar', color: '#1c64f2', fields: [] },
+  { type: 'arrange', label: 'Acordar con el vendedor', group: 'other', paysIn: 'Monto en dólares', icon: 'chat', color: '#6b7280', fields: [] },
 ];
 
 export const typeInfo = (type: PaymentMethodType): MethodTypeInfo => PAYMENT_TYPES.find((t) => t.type === type)!;

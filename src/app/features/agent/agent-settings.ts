@@ -3,8 +3,11 @@ import { API_CONFIG } from '../../core/api/api-config';
 import { toApiFailure } from '../../core/api/api-error';
 import { Session } from '../../core/session';
 import type { AgentSchedule, AgentSettings, AgentTone } from '../../shared/api/models';
+import { Confirm } from '../../shared/ui/confirm';
 import { Icon } from '../../shared/ui/icon';
 import { OptionCards } from '../../shared/ui/option-cards';
+import { Skeleton } from '../../shared/ui/skeleton';
+import { Switch } from '../../shared/ui/switch';
 import { Toaster } from '../../shared/ui/toaster';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
 import { type AgentSettingsInput, AgentRemote } from './agent-remote';
@@ -19,10 +22,10 @@ const MAX_INFO = 4000;
  */
 @Component({
   selector: 'app-agent-settings',
-  imports: [Icon, OptionCards],
+  imports: [Icon, OptionCards, Skeleton, Switch],
   template: `
     @if (!remote) {
-      <section class="card box"><p class="lead">El agente necesita el servidor: en el prototipo no hay un modelo que responda.</p></section>
+      <section class="card box"><p class="empty-state"><app-icon name="sparkles" />El agente necesita el servidor: en el prototipo no hay un modelo que responda.</p></section>
     } @else if (draft(); as d) {
       <section class="card box head">
         <span class="badge" [class.on]="d.enabled"><app-icon name="sparkles" /></span>
@@ -30,18 +33,17 @@ const MAX_INFO = 4000;
           <h2>{{ d.enabled ? 'Agente encendido' : 'Agente apagado' }}</h2>
           <p class="lead">{{ d.enabled ? 'Responde solo a tus clientes, sin que intervenga nadie del equipo.' : 'Nadie responde automáticamente: tu equipo atiende todo.' }}</p>
         </div>
-        <button type="button" role="switch" class="switch" [class.on]="d.enabled" [attr.aria-checked]="d.enabled" aria-label="Encender el agente"
-          (click)="patch({ enabled: !d.enabled })"><span class="knob"></span></button>
+        <app-switch label="Encender el agente" [checked]="d.enabled" [disabled]="saving()" (toggled)="patch({ enabled: $event })" />
       </section>
 
       <div class="stats">
-        <div class="stat"><span>Respuestas este mes</span><b>{{ saved()!.usage.replies }} <small>de {{ saved()!.usage.cap }}</small></b></div>
-        <div class="stat"><span>Modelo</span>
+        <div class="card stat"><span>Respuestas este mes</span><b>{{ saved()!.usage.replies }} <small>de {{ saved()!.usage.cap }}</small></b></div>
+        <div class="card stat"><span>Modelo</span>
           @if (saved()!.modelReady) { <b class="ok">Conectado</b> } @else { <b class="warn">Sin configurar</b> }
         </div>
       </div>
       @if (!saved()!.modelReady) {
-        <p class="note warn">La plataforma todavía no tiene un modelo configurado: aunque lo enciendas, el agente no responderá.</p>
+        <p class="form-alert warn model-warn"><app-icon name="alert" />La plataforma todavía no tiene un modelo configurado: aunque lo enciendas, el agente no responderá.</p>
       }
 
       <section class="card box">
@@ -66,43 +68,42 @@ const MAX_INFO = 4000;
         </div>
         <p class="note"><app-icon name="shield" />Cuando el cliente quiere comprar, arma el pedido completo (productos, delivery o retiro, dirección, nombre y forma de pago), se lo confirma con el cliente y lo pasa a tu equipo en «Pedidos». Nunca da descuentos ni confirma pagos. Si el cliente pide una persona o el agente no sabe la respuesta, también pasa la conversación a tu equipo.</p>
         <div class="actions">
-          @if (dirty()) { <button type="button" class="btn" [disabled]="saving()" (click)="reset()">Descartar</button> }
+          @if (dirty()) { <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="reset()"><span>Descartar</span></button> }
           <button type="button" class="btn btn--primary" [disabled]="saving() || !dirty()" [attr.aria-busy]="saving()" (click)="save()">
-            @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
-            Guardar
+            <app-icon name="check" /><span>Guardar</span>
           </button>
         </div>
       </section>
+    } @else if (loadError(); as error) {
+      <section class="card box">
+        <p class="form-alert" role="alert"><app-icon name="alert" />{{ error }}</p>
+        <button type="button" class="btn retry" (click)="retry()"><span>Reintentar</span></button>
+      </section>
     } @else {
-      <section class="card box"><p class="lead">Cargando…</p></section>
+      <section class="card box"><app-skeleton kind="form" [rows]="4" /></section>
     }
   `,
   styleUrls: ['../../shared/ui/section.scss'],
   styles: `
     .head { flex-direction: row; align-items: center; gap: 14px; }
     .grow { flex: 1; min-width: 0; }
-    .lead { color: var(--color-text-muted); font-size: 13px; margin-top: 2px; }
-    .badge { width: 42px; height: 42px; border-radius: 11px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-      background: var(--color-surface-muted); color: var(--color-text-muted); --icon-size: 22px; }
-    .badge.on { background: var(--color-primary); color: #fff; }
-    .switch { width: 44px; height: 24px; flex-shrink: 0; border: 0; border-radius: 999px; background: var(--color-border-strong); position: relative; cursor: pointer;
-      transition: background 0.15s; }
-    .switch.on { background: var(--color-primary); }
-    .switch:focus-visible { outline: 0; box-shadow: 0 0 0 3px var(--color-primary-soft); }
-    .knob { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform 0.15s; }
-    .switch.on .knob { transform: translateX(20px); }
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
-    .stat { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
-    .stat span { font-size: 12.5px; color: var(--color-text-muted); }
-    .stat b { font-size: 18px; font-weight: 600; }
+    .head h2 { font-size: 16px; font-weight: 600; }
+    .badge { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      background: var(--color-surface-hover); color: var(--color-text-muted); --icon-size: 22px; }
+    .badge.on { background: var(--color-primary); color: var(--color-on-primary); }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 16px; }
+    .stat { padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
+    .stat span { font-size: 13px; color: var(--color-text-muted); }
+    .stat b { font-size: 20px; font-weight: 700; }
     .stat small { font-size: 12.5px; font-weight: 400; color: var(--color-text-muted); }
-    .ok { color: var(--color-success); }
-    .warn { color: var(--color-warning); }
+    .stat .ok { color: var(--color-success); }
+    .stat .warn { color: var(--color-warning); }
+    .model-warn { margin: -4px 0 16px; }
+    .retry { align-self: flex-start; }
     .name { max-width: 280px; }
-    .label { font-size: 13px; font-weight: 600; color: var(--color-text-2); }
-    .note { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; padding: 10px 12px; border-radius: 10px; background: var(--color-surface-muted);
-      color: var(--color-text-2); --icon-size: 16px; }
-    .note.warn { margin: -4px 0 16px; }
+    .note { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.5; padding: 12px 14px; border-radius: var(--radius-md);
+      background: var(--color-surface-muted); border: 1px solid var(--color-border); color: var(--color-text-2); --icon-size: 17px; }
+    .note app-icon { color: var(--color-primary-text); }
     .actions { display: flex; justify-content: flex-end; gap: 10px; }
   `,
 })
@@ -110,6 +111,7 @@ export class AgentSettingsPage {
   protected readonly remote = inject(API_CONFIG).mode === 'api' ? inject(AgentRemote) : null;
   private readonly session = inject(Session);
   private readonly toaster = inject(Toaster);
+  private readonly confirm = inject(Confirm);
 
   protected readonly tones = TONE_OPTIONS;
   protected readonly schedules = SCHEDULE_OPTIONS;
@@ -118,6 +120,8 @@ export class AgentSettingsPage {
   protected readonly saved = signal<AgentSettings | null>(null);
   protected readonly draft = signal<AgentSettingsInput | null>(null);
   protected readonly saving = signal(false);
+  /** The settings could not be read: said with a retry instead of loading forever. */
+  protected readonly loadError = signal<string | null>(null);
   protected readonly companyName = computed(() => this.session.tenant()?.name ?? 'tu empresa');
   protected readonly dirty = computed(() => {
     const saved = this.saved();
@@ -156,17 +160,36 @@ export class AgentSettingsPage {
     const tenantId = this.session.tenant()?.id;
     if (!draft || !tenantId || !this.remote || this.saving()) return;
     if (!draft.assistantName.trim()) return this.toaster.show('Escribe el nombre con el que se presenta.', 'info');
-    this.saving.set(true);
-    try {
-      const saved = await this.remote.save(tenantId, { ...draft, assistantName: draft.assistantName.trim(), businessInfo: draft.businessInfo.trim() });
+    const remote = this.remote;
+    const write = async () => {
+      const saved = await remote.save(tenantId, { ...draft, assistantName: draft.assistantName.trim(), businessInfo: draft.businessInfo.trim() });
       this.saved.set(saved);
       this.draft.set(pick(saved));
-      this.toaster.show(saved.enabled ? 'Agente guardado: ya responde a tus clientes' : 'Agente guardado: está apagado');
+    };
+    this.saving.set(true);
+    try {
+      // Turning it on or off changes who answers the customers: asked first, and saved inside the dialog.
+      if (draft.enabled !== this.saved()?.enabled) {
+        const done = await this.confirm.ask(
+          draft.enabled
+            ? { title: '¿Encender el agente?', message: 'Desde que guardes, responde solo a tus clientes con lo que configuraste aquí, sin que intervenga nadie del equipo.', confirmLabel: 'Encender y guardar', action: write }
+            : { title: '¿Apagar el agente?', message: 'Nadie responderá automáticamente: tu equipo atenderá todas las conversaciones.', confirmLabel: 'Apagar y guardar', danger: true, action: write },
+        );
+        if (!done) return;
+      } else {
+        await write();
+      }
+      this.toaster.show(draft.enabled ? 'Agente guardado: ya responde a tus clientes' : 'Agente guardado: está apagado');
     } catch (error) {
       this.toaster.show(toApiFailure(error).message, 'info');
     } finally {
       this.saving.set(false);
     }
+  }
+
+  protected retry(): void {
+    this.loadError.set(null);
+    void this.load();
   }
 
   private async load(): Promise<void> {
@@ -177,7 +200,7 @@ export class AgentSettingsPage {
       this.saved.set(saved);
       this.draft.set(pick(saved));
     } catch (error) {
-      this.toaster.show(toApiFailure(error).message, 'info');
+      this.loadError.set(toApiFailure(error).message);
     }
   }
 }

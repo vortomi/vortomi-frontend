@@ -6,6 +6,7 @@ import { Session } from '../../core/session';
 import type { PaymentField, PaymentFieldKind, PaymentMethodType, PaymentProofRule } from '../../shared/api/models';
 import { Icon } from '../../shared/ui/icon';
 import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { Switch } from '../../shared/ui/switch';
 import { Toaster } from '../../shared/ui/toaster';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
@@ -53,16 +54,21 @@ const toMenu = (options: { value: string; label: string }[]): MenuOption[] => op
  */
 @Component({
   selector: 'app-payment-method-form-page',
-  imports: [FieldValueInput, Icon, MethodPreview, MethodTypeSelect, RouterLink, SelectMenu, Switch],
+  imports: [FieldValueInput, Icon, MethodPreview, MethodTypeSelect, RouterLink, SelectMenu, Skeleton, Switch],
   template: `
     <header class="page-top">
-      <nav class="crumbs"><a routerLink="/payment-methods">Métodos de pago</a> / <span>{{ isNew() ? 'Nuevo' : original()?.name ?? '…' }}</span></nav>
+      <nav class="crumbs" aria-label="Ruta"><a routerLink="/payment-methods">Métodos de pago</a><app-icon name="chev-right" /><span>{{ isNew() ? 'Nuevo' : original()?.name ?? '…' }}</span></nav>
     </header>
     <div class="page-body">
       @if (missing()) {
-        <p class="empty">Ese método ya no existe. <a routerLink="/payment-methods">Volver a la lista</a></p>
+        <div class="card"><p class="empty-state"><app-icon name="dollar" />Ese método ya no existe.<a class="link" routerLink="/payment-methods">Volver a la lista</a></p></div>
+      } @else if (loadError(); as error) {
+        <div class="form-alert" role="alert">
+          <app-icon name="alert" /><span class="grow">{{ error }}</span>
+          <button type="button" class="btn btn--sm" (click)="retry()"><span>Reintentar</span></button>
+        </div>
       } @else if (!ready()) {
-        <p class="empty">Cargando…</p>
+        <div class="layout"><section class="card box"><app-skeleton kind="form" [rows]="4" /></section></div>
       } @else {
         @let d = draft();
         <h1>{{ isNew() ? 'Nuevo método de pago' : 'Editar método · ' + original()?.name }}</h1>
@@ -96,12 +102,12 @@ const toMenu = (options: { value: string; label: string }[]): MenuOption[] => op
                     @for (field of d.fields; track $index; let i = $index) {
                       <div class="row" [class.dragging]="dragging() === i" draggable="true" (dragstart)="dragStart(i, $event)" (dragover)="dragOver(i, $event)"
                         (drop)="dragEnd($event)" (dragend)="dragEnd()">
-                        <span class="handle" title="Arrastra para ordenar" aria-hidden="true">⋮⋮</span>
+                        <span class="handle" aria-hidden="true">⋮⋮</span>
                         <input class="input" maxlength="40" placeholder="Etiqueta" [attr.aria-label]="'Etiqueta del dato ' + (i + 1)" [value]="field.label"
                           (input)="setField(i, { label: text($event) })" />
                         <app-field-value-input [kind]="field.kind" [value]="field.value" [label]="field.label || 'Dato ' + (i + 1)" [placeholder]="field.placeholder"
                           (changed)="setField(i, { value: $event })" />
-                        <button type="button" class="icon-btn" [attr.aria-label]="'Quitar ' + (field.label || 'el dato ' + (i + 1))" (click)="removeField(i)"><app-icon name="x" /></button>
+                        <button type="button" class="icon-btn danger" [attr.aria-label]="'Quitar ' + (field.label || 'el dato ' + (i + 1))" (click)="removeField(i)"><app-icon name="x" /></button>
                       </div>
                     }
                   </div>
@@ -110,13 +116,13 @@ const toMenu = (options: { value: string; label: string }[]): MenuOption[] => op
                   <div class="adds">
                     @if (paysInBolivares()) {
                       @for (k of vesKinds; track k.kind) {
-                        <button type="button" class="btn" (click)="addField(k.kind, k.label)"><app-icon name="plus" />{{ k.button }}</button>
+                        <button type="button" class="btn btn--sm" (click)="addField(k.kind, k.label)"><app-icon name="plus" /><span>{{ k.button }}</span></button>
                       }
                     }
-                    <button type="button" class="btn" (click)="addField('text', '')"><app-icon name="plus" />{{ paysInBolivares() ? 'Otro dato' : 'Agregar dato' }}</button>
+                    <button type="button" class="btn btn--sm" (click)="addField('text', '')"><app-icon name="plus" /><span>{{ paysInBolivares() ? 'Otro dato' : 'Agregar dato' }}</span></button>
                   </div>
                 }
-                <p class="ok">El <b>monto a pagar</b> se agrega solo al final, en la moneda del método. No hace falta escribirlo.</p>
+                <p class="form-alert ok"><app-icon name="info" /><span>El <b>monto a pagar</b> se agrega solo al final, en la moneda del método. No hace falta escribirlo.</span></p>
 
                 <div class="field">
                   <label for="method-instructions">Instrucciones · {{ noProof() ? 'obligatorias' : 'opcional' }}</label>
@@ -146,17 +152,16 @@ const toMenu = (options: { value: string; label: string }[]): MenuOption[] => op
               </section>
             }
 
-            @if (error(); as message) { <p class="field-error" role="alert">{{ message }}</p> }
+            @if (error(); as message) { <p class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</p> }
             <footer class="card box bar">
               <label class="visible">
                 <app-switch [checked]="d.isActive" label="Visible para los clientes" (toggled)="patch({ isActive: $event })" />
                 {{ d.isActive ? 'Visible para los clientes' : 'Oculto' }}
               </label>
               <span class="spacer"></span>
-              <a class="btn" routerLink="/payment-methods">Cancelar</a>
+              <a class="btn btn--ghost" routerLink="/payment-methods"><span>Cancelar</span></a>
               <button type="button" class="btn btn--primary" [disabled]="saving() || !d.type" [attr.aria-busy]="saving()" (click)="save()">
-                @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
-                {{ isNew() ? 'Crear método' : 'Guardar cambios' }}
+                <app-icon name="check" /><span>{{ isNew() ? 'Crear método' : 'Guardar cambios' }}</span>
               </button>
             </footer>
           </div>
@@ -171,28 +176,28 @@ const toMenu = (options: { value: string; label: string }[]): MenuOption[] => op
   styleUrls: ['../../shared/ui/section.scss'],
   styles: `
     :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-    .crumbs { font-size: 13.5px; color: var(--color-text-muted); }
+    .crumbs { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--color-text-muted); --icon-size: 14px; }
+    .crumbs a:hover { color: var(--color-primary-text); }
     .crumbs span { color: var(--color-text); font-weight: 500; }
-    h1 { font-size: 20px; font-weight: 600; }
-    .intro { color: var(--color-text-muted); font-size: 13.5px; margin: 4px 0 16px; }
+    h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+    .intro { color: var(--color-text-muted); font-size: 14px; margin: 4px 0 18px; }
     .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
     @media (max-width: 1000px) { .layout { grid-template-columns: minmax(0, 1fr); } }
     .preview { position: sticky; top: 0; }
-    .lead { color: var(--color-text-muted); font-size: 13px; margin: 0; }
-    .label { font-size: 13px; font-weight: 600; color: var(--color-text-2); }
     .rows { gap: 8px; }
     .row { display: grid; grid-template-columns: 18px 170px minmax(0, 1fr) 32px; gap: 8px; align-items: center; padding: 0; border: 0; flex-wrap: nowrap; }
     .row.dragging { opacity: 0.4; }
     .legend span { font-size: 12px; color: var(--color-text-muted); }
     .handle { color: var(--color-text-faint); letter-spacing: -2px; cursor: grab; }
-    .icon-btn:hover { color: var(--color-danger); border-color: currentColor; }
     .adds { display: flex; gap: 8px; flex-wrap: wrap; }
-    .ok { font-size: 12.5px; color: #166534; background: #e3f6ea; border-radius: 8px; padding: 8px 12px; margin: 0; }
+
     .rules { display: grid; grid-template-columns: repeat(2, minmax(0, 220px)); gap: 14px; }
     .bar { flex-direction: row; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .visible { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-text-2); }
+    .visible { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: var(--color-text-2); }
     .spacer { flex: 1; }
-    .empty { color: var(--color-text-muted); font-size: 14px; }
+    .empty-state .link { margin-top: 4px; }
+    .form-alert { align-items: center; }
+    .grow { flex: 1; }
   `,
 })
 export class PaymentMethodFormPage {
@@ -212,6 +217,8 @@ export class PaymentMethodFormPage {
   protected readonly draft = signal<Draft>(EMPTY);
   protected readonly ready = signal(false);
   protected readonly missing = signal(false);
+  /** The method could not be read: said with a retry instead of an empty form. */
+  protected readonly loadError = signal<string | null>(null);
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly bsPerUsd = signal<string | null>(null);
@@ -366,9 +373,16 @@ export class PaymentMethodFormPage {
         this.baseline.set(JSON.stringify(draft));
       }
     } catch (error) {
-      this.toaster.show(toApiFailure(error).message, 'info');
+      if (this.methodId) this.loadError.set(toApiFailure(error).message);
+      else this.toaster.show(toApiFailure(error).message, 'info');
     } finally {
       this.ready.set(true);
     }
+  }
+
+  protected retry(): void {
+    this.loadError.set(null);
+    this.ready.set(false);
+    void this.load();
   }
 }

@@ -36,12 +36,12 @@ import { OrdersRemote } from './orders-remote';
         </p>
       </div>
     </div>
-    <button type="button" class="btn" [disabled]="saving() || !changed() || referenceBad() || amountBad()" (click)="save()"><app-icon name="check" />Guardar</button>
+    <button type="button" class="btn" [disabled]="saving() || !changed() || referenceBad() || amountBad()" [attr.aria-busy]="saving()" (click)="save()"><app-icon name="check" /><span>Guardar</span></button>
   `,
   styles: `
     :host { display: flex; flex-direction: column; gap: 10px; }
     .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-    .field-hint.bad { color: var(--color-warning); }
+    .field-hint.bad { color: var(--color-warning-text); }
     .btn { align-self: flex-start; }
   `,
 })

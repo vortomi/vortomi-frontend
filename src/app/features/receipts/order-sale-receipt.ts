@@ -1,9 +1,9 @@
 import { Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
-import { toApiFailure } from '../../core/api/api-error';
 import { Session } from '../../core/session';
 import type { Id, OrderDetail, ReceiptMode } from '../../shared/api/models';
 import { formatShortDate, formatTime } from '../../shared/format/date-time';
-import { Icon } from '../../shared/ui/icon';
+import { Confirm } from '../../shared/ui/confirm';
+import { FileDrop } from '../../shared/ui/file-drop';
 import { Toaster } from '../../shared/ui/toaster';
 import { ReceiptRemote, readPicture } from './receipt-remote';
 
@@ -17,15 +17,15 @@ const MAX_OWN_RECEIPT_BYTES = 5 * 1024 * 1024;
  */
 @Component({
   selector: 'app-order-sale-receipt',
-  imports: [Icon],
+  imports: [FileDrop],
   template: `
     <h2>Recibo de compra</h2>
     @let o = order();
     @if (o.saleReceipt; as r) {
       @if (url(); as src) {
-        <a [href]="src" target="_blank" rel="noopener" title="Abrir en grande"><img [src]="src" alt="Recibo de compra enviado al cliente" /></a>
+        <a [href]="src" target="_blank" rel="noopener" aria-label="Abrir el recibo en grande"><img [src]="src" alt="Recibo de compra enviado al cliente" /></a>
       } @else {
-        <div class="placeholder">Cargando…</div>
+        <span class="sk picture" aria-label="Cargando el recibo"></span>
       }
       <p class="hint">{{ r.code ? 'Recibo ' + r.code : 'Recibo subido por tu equipo' }} · enviado al cliente el {{ stamp(r.createdAt) }}</p>
     } @else if (mode() === 'off') {
@@ -35,29 +35,23 @@ const MAX_OWN_RECEIPT_BYTES = 5 * 1024 * 1024;
     } @else if (o.status !== 'done') {
       <p class="hint">{{ mode() === 'own' ? 'Cuando completes el pedido, aquí subes la imagen del recibo y se la enviamos al cliente.' : 'Cuando completes el pedido, tu cliente recibe su recibo por WhatsApp.' }}</p>
     } @else if (mode() === 'own') {
-      <label class="btn btn--primary upload" [class.disabled]="uploading()">
-        @if (uploading()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="image" /> }
-        Subir recibo
-        <input type="file" accept="image/png,image/jpeg" hidden [disabled]="uploading()" (change)="upload($event)" />
-      </label>
-      <p class="hint">Imagen PNG o JPG de hasta 5 MB. Se la enviamos al cliente por WhatsApp.</p>
+      <app-file-drop accept="image/png,image/jpeg" label="Subir el recibo" hint="Imagen PNG o JPG de hasta 5 MB. Se la enviamos al cliente por WhatsApp."
+        [busy]="uploading()" (picked)="upload($event)" />
     }
   `,
   styles: `
     :host { display: flex; flex-direction: column; gap: 10px; }
-    h2 { margin: 0; }
+    h2 { margin: 0; font-size: 16px; font-weight: 600; }
     img { display: block; max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 10px; border: 1px solid var(--color-border); }
-    .placeholder { height: 160px; border-radius: 10px; background: var(--color-surface-muted); display: flex; align-items: center; justify-content: center;
-      color: var(--color-text-muted); font-size: 13px; }
-    .hint { font-size: 12.5px; color: var(--color-text-muted); margin: 0; }
-    .upload { align-self: flex-start; cursor: pointer; }
-    .disabled { opacity: 0.6; pointer-events: none; }
+    .picture { height: 220px; border-radius: 10px; }
+    .hint { font-size: 13px; color: var(--color-text-muted); margin: 0; }
   `,
 })
 export class OrderSaleReceipt {
   private readonly remote = inject(ReceiptRemote);
   private readonly session = inject(Session);
   private readonly toaster = inject(Toaster);
+  private readonly confirm = inject(Confirm);
 
   readonly order = input.required<OrderDetail>();
   /** The receipt went out: the page reloads the order. */
@@ -86,21 +80,24 @@ export class OrderSaleReceipt {
     return `${formatShortDate(iso, timezone)}, ${formatTime(iso, timezone)}`;
   }
 
-  protected async upload(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = '';
+  /** It goes straight to the customer by WhatsApp, so it asks first; the dialog waits while it uploads. */
+  protected async upload(file: File): Promise<void> {
     const tenantId = this.session.tenant()?.id;
-    if (!file || !tenantId) return;
+    if (!tenantId || this.uploading()) return;
     const picture = await readPicture(file, MAX_OWN_RECEIPT_BYTES);
     if (!picture) return this.toaster.show('El recibo debe ser una imagen PNG o JPG de hasta 5 MB.', 'info');
+    const order = this.order();
     this.uploading.set(true);
     try {
-      await this.remote.uploadOwn(tenantId, this.order().id, picture);
+      const sent = await this.confirm.ask({
+        title: `¿Enviar el recibo a ${order.customerName}?`,
+        message: `Le enviamos «${file.name}» por WhatsApp como recibo del pedido ${order.code}. Un pedido lleva un solo recibo.`,
+        confirmLabel: 'Enviar recibo',
+        action: () => this.remote.uploadOwn(tenantId, order.id, picture),
+      });
+      if (!sent) return;
       this.toaster.show('Recibo enviado al cliente');
       this.sent.emit();
-    } catch (error) {
-      this.toaster.show(toApiFailure(error).message, 'info');
     } finally {
       this.uploading.set(false);
     }

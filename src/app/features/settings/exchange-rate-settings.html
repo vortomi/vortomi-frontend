@@ -4,6 +4,13 @@
     <p class="lead">Convierte los precios en USD a bolívares. Los pedidos guardarán la tasa del día en que se hicieron.</p>
   </div>
 
+  @if (rates.loadError(); as error) {
+    <p class="form-alert" role="alert"><app-icon name="alert" /><span class="grow-text">{{ error }}</span></p>
+    <div><button type="button" class="btn" (click)="retry()"><span>Reintentar</span></button></div>
+  } @else if (!rates.loaded()) {
+    <app-skeleton kind="form" [rows]="3" />
+  } @else {
+
   <!-- Only for a company with its own system: its rate, or the one configured here. -->
   @if (system(); as own) {
     <div class="own" [class.on]="own.useSystemRate">
@@ -18,7 +25,7 @@
           }
         </small>
       </div>
-      <app-switch label="Usar la tasa de mi sistema" [checked]="own.useSystemRate" [disabled]="rates.busy()" (toggled)="rates.setUseSystemRate($event)" />
+      <app-switch label="Usar la tasa de mi sistema" [checked]="own.useSystemRate" [busy]="working() === 'system'" [disabled]="rates.busy()" (toggled)="setUseSystemRate($event)" />
     </div>
   }
 
@@ -43,10 +50,11 @@
     <div class="sources" role="radiogroup" aria-label="Origen de la tasa">
       @for (option of sources; track option.value) {
         @let chosen = source() === option.value;
-        <button type="button" role="radio" class="source" [class.on]="chosen" [attr.aria-checked]="chosen" [disabled]="rates.busy()" (click)="choose(option.value)">
+        <button type="button" role="radio" class="source" [class.on]="chosen" [attr.aria-checked]="chosen" [disabled]="rates.busy()"
+          [attr.aria-busy]="working() === 'source' && !chosen" (click)="choose(option.value)">
           <span class="radio" aria-hidden="true">@if (chosen) { <span></span> }</span>
           <span class="text">
-            <span class="title"><b>{{ option.label }}</b> @if (chosen) { <app-pill tone="blue">En uso</app-pill> }</span>
+            <span class="title"><b>{{ option.label }}</b> @if (chosen) { <app-pill tone="blue" [dot]="true">En uso</app-pill> }</span>
             <small>{{ option.detail }}</small>
           </span>
         </button>
@@ -71,7 +79,7 @@
               <span>No pudimos consultar el BCV: {{ status.error }} La empresa sigue con la última tasa.</span>
             </p>
           }
-          <div><button type="button" class="btn" [disabled]="rates.busy()" (click)="rates.refreshBcv()">Actualizar ahora</button></div>
+          <div><button type="button" class="btn" [disabled]="rates.busy()" [attr.aria-busy]="working() === 'bcv'" (click)="refreshBcv()"><span>Actualizar ahora</span></button></div>
         </div>
       }
     } @else {
@@ -81,11 +89,11 @@
           <input id="rate" class="input" inputmode="decimal" placeholder="0,00" [value]="rateDraft()" (input)="rateDraft.set(value($event))" />
         </div>
         <div class="field">
-          <label for="rate-date">Vigente desde</label>
-          <input id="rate-date" type="date" class="input" [value]="rateDate()" (change)="rateDate.set(value($event))" />
+          <span class="label">Vigente desde</span>
+          <app-date-picker label="Vigente desde" [value]="rateDate()" [todayIso]="todayIso()" (picked)="rateDate.set($event ?? todayIso())" />
         </div>
-        <button type="button" class="btn btn--primary" [disabled]="rates.busy() || !rateDraft() || !rateDate()" (click)="addRate()">
-          Registrar tasa
+        <button type="button" class="btn btn--primary" [disabled]="rates.busy() || !rateDraft() || !rateDate()" [attr.aria-busy]="working() === 'rate'" (click)="addRate()">
+          <span>Registrar tasa</span>
         </button>
       </div>
       <p class="field-hint">Cada tasa queda en el historial: no se edita ni se borra.</p>
@@ -115,7 +123,7 @@
         </div>
       </div>
     } @else {
-      <p class="form-alert warn">Aún no hay tasa: tus clientes ven solo precios en USD.</p>
+      <p class="form-alert warn"><app-icon name="alert" />Aún no hay tasa: tus clientes ven solo precios en USD.</p>
     }
 
     <div class="history">
@@ -131,7 +139,7 @@
                 <td>{{ formatIsoDay(rate.effectiveDate) }}</td>
                 <td class="num"><b>{{ formatRate(rate.bsPerUsd) }}</b></td>
                 <td>
-                  @if (rate.source === 'bcv') { <app-pill tone="blue">BCV</app-pill> } @else { {{ rate.changedBy ?? 'Sistema' }} }
+                  @if (rate.source === 'bcv') { <app-pill tone="blue" [dot]="true">BCV</app-pill> } @else { {{ rate.changedBy ?? 'Sistema' }} }
                 </td>
                 <td>{{ stamp(rate.createdAt) }}</td>
               </tr>
@@ -142,5 +150,6 @@
         </table>
       </div>
     </div>
+  }
   }
 </section>
