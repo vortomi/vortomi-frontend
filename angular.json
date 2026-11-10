@@ -30,6 +30,7 @@
               }
             ],
             "styles": [
+              "node_modules/@fontsource-variable/inter/index.css",
               "src/styles/styles.scss"
             ],
             "stylePreprocessorOptions": {
@@ -58,6 +59,17 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "preview": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/app/core/api/runtime-config.ts",
+                  "with": "src/app/core/api/runtime-config.preview.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -70,6 +82,9 @@
             },
             "development": {
               "buildTarget": "vortomi-frontend:build:development"
+            },
+            "preview": {
+              "buildTarget": "vortomi-frontend:build:preview"
             }
           },
           "defaultConfiguration": "development",

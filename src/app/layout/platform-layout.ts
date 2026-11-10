@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Icon } from '../shared/ui/icon';
 import { PLATFORM_NAV } from './nav';
 import { UserMenu } from './user-menu';
+import { ThemeToggle } from '../shared/ui/theme-toggle';
 import { BRAND } from '../core/brand';
 
 /**
@@ -11,15 +12,16 @@ import { BRAND } from '../core/brand';
  */
 @Component({
   selector: 'app-platform-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, UserMenu],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, UserMenu, ThemeToggle],
   template: `
     <aside class="side">
       <div class="brand">
         <div class="logo">{{ brand.initial }}</div>
-        <div>
+        <div class="brand-text">
           <p>{{ brand.name }}</p>
           <span>Consola de la plataforma</span>
         </div>
+        <app-theme-toggle align="right" />
       </div>
       <div class="badge"><app-icon name="shield" />Solo nuestro equipo. Desde aquí no se pueden leer conversaciones.</div>
       <nav class="nav" aria-label="Menú de la plataforma">
@@ -37,7 +39,7 @@ import { BRAND } from '../core/brand';
     @use 'sidebar';
     :host { display: flex; height: 100dvh; overflow: hidden; }
     .side { @include sidebar.panel(var(--color-console-side)); }
-    .brand { @include sidebar.brand; }
+    .brand { @include sidebar.brand; .brand-text { flex: 1; min-width: 0; } }
     .nav { @include sidebar.nav; }
     .user { margin-top: auto; }
     .badge { margin: 0 2px 14px; background: var(--color-console-badge-bg); border: 1px solid var(--color-console-badge-border);

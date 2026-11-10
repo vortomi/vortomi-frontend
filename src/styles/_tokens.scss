@@ -1,51 +1,94 @@
-// Design tokens taken from the approved mockups (project-0/graphics-fuentes/base.css).
-// Components read them as CSS custom properties so a future theme only touches this file.
+// Design tokens of the v2 look (mockups graphics/web-14 to web-17): Flowbite Pro's language (Inter,
+// gray scale, 8px radius, 4px focus ring, gray-800/900 dark surfaces) with Vortomi's indigo as the
+// brand scale. Components read only these custom properties: light and dark live here and nowhere
+// else. Dark mode is the `dark` class on <html> (core/theme.ts sets it, following the system by default).
 :root {
+  color-scheme: light;
+
   // Typography
-  --font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --font-family: 'Inter Variable', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
   --font-mono: Consolas, 'Cascadia Mono', monospace;
 
-  // Brand
-  --color-primary: #3b4fd8;
-  --color-primary-strong: #2b3fc4;
-  --color-primary-soft: #e6eafd;
+  // Brand scale (indigo). 600 is the brand colour, 700 the buttons.
+  --primary-50: #eef0fe;
+  --primary-100: #e0e4fd;
+  --primary-200: #c6cdfb;
+  --primary-300: #a2acf7;
+  --primary-400: #7b86f1;
+  --primary-500: #5a64e8;
+  --primary-600: #3b4fd8;
+  --primary-700: #2f3fbd;
+  --primary-800: #293699;
+  --primary-900: #252f78;
+
+  --color-primary: var(--primary-700);
+  --color-primary-strong: var(--primary-800);
+  --color-primary-soft: var(--primary-50);
   --color-primary-softer: #f6f7ff;
-  --color-success: #10a37f;
-  --color-warning: #e8743b;
-  --color-danger: #a8231a;
+  --color-primary-text: var(--primary-700);
+  --color-on-primary: #ffffff;
+
+  // Tones: strong colour, soft background, text on the soft background.
+  --color-success: #057a55;
+  --color-success-soft: #def7ec;
+  --color-success-text: #03543f;
+  --color-warning: #c27803;
+  --color-warning-soft: #fdf6b2;
+  --color-warning-text: #723b13;
+  --color-danger: #c81e1e;
+  --color-danger-soft: #fde8e8;
+  --color-danger-text: #9b1c1c;
+  --color-info: #1c64f2;
+  --color-info-soft: #e1effe;
+  --color-info-text: #1e429f;
+  --color-violet-soft: #edebfe;
+  --color-violet-text: #5521b5;
+  --color-pink-soft: #fce8f3;
+  --color-pink-text: #99154b;
+  --color-teal-soft: #d5f5f6;
+  --color-teal-text: #014451;
 
   // Surfaces and text
-  --color-page: #e7e9ee;
-  --color-canvas: #f7f8fb;
+  --color-page: #f3f4f6;
+  --color-canvas: #f9fafb;
   --color-surface: #ffffff;
-  --color-surface-muted: #fafbfc;
-  --color-border: #e3e6ec;
-  --color-border-soft: #f1f2f5;
-  --color-border-strong: #d3d8e0;
-  --color-text: #17202e;
-  --color-text-2: #283142;
-  --color-text-muted: #6b7585;
-  --color-text-faint: #8a93a3;
+  --color-surface-muted: #f9fafb;
+  --color-surface-hover: #f3f4f6;
+  --color-input: #f9fafb;
+  --color-border: #e5e7eb;
+  --color-border-soft: #f3f4f6;
+  --color-border-strong: #d1d5db;
+  --color-text: #111827;
+  --color-text-2: #374151;
+  --color-text-muted: #6b7280;
+  --color-text-faint: #9ca3af;
+  --color-skeleton: #e5e7eb;
+  --color-backdrop: rgba(17, 24, 39, 0.5);
+  --color-ring: rgba(59, 79, 216, 0.25);
 
-  // Tenant panel sidebar
-  --color-side: #161b2e;
-  --color-side-2: #222941;
-  --color-side-3: #1d2338;
-  --color-side-border: #2e3653;
-  --color-side-text: #c9cee0;
-  --color-side-muted: #8b93ad;
-  --color-side-heading: #6c7493;
-  --color-side-active: #2b3352;
-  --color-side-icon: #9aa2bd;
+  // Sidebar (company panel and platform console share it)
+  --color-side: #ffffff;
+  --color-side-2: #f9fafb;
+  --color-side-3: #f9fafb;
+  --color-side-border: #e5e7eb;
+  --color-side-text: #374151;
+  --color-side-strong: #111827;
+  --color-side-muted: #6b7280;
+  --color-side-heading: #9ca3af;
+  --color-side-active: var(--primary-50);
+  --color-side-active-text: var(--primary-700);
+  --color-side-hover: #f3f4f6;
+  --color-side-icon: #6b7280;
 
-  // Platform console sidebar
-  --color-console-side: #0c1222;
-  --color-console-badge-bg: #2a1a12;
-  --color-console-badge-border: #5a3420;
-  --color-console-badge-text: #f6b48c;
+  // Platform console
+  --color-console-side: var(--color-side);
+  --color-console-badge-bg: #fff8f1;
+  --color-console-badge-border: #fcd9bd;
+  --color-console-badge-text: #8a2c0d;
 
   // Chat
   --color-chat-bg: #efeae2;
+  --color-bubble-in: #ffffff;
   --color-bubble-out: #d9fdd3;
   --color-bubble-meta: #667781;
   --color-note-bg: #fff7e0;
@@ -54,10 +97,89 @@
   --color-window-bg: #dff5f1;
   --color-window-text: #0f6e5c;
 
-  // Shape
+  // Shape and depth
   --radius-sm: 8px;
   --radius-md: 10px;
   --radius-lg: 12px;
   --radius-pill: 99px;
-  --shadow-pop: 0 6px 18px rgba(20, 30, 50, 0.14);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-pop: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  --color-primary: var(--primary-600);
+  --color-primary-strong: var(--primary-500);
+  --color-primary-soft: rgba(90, 100, 232, 0.18);
+  --color-primary-softer: rgba(90, 100, 232, 0.1);
+  --color-primary-text: var(--primary-300);
+
+  --color-success: #0e9f6e;
+  --color-success-soft: #014737;
+  --color-success-text: #84e1bc;
+  --color-warning: #e3a008;
+  --color-warning-soft: #633112;
+  --color-warning-text: #faca15;
+  --color-danger: #e02424;
+  --color-danger-soft: #771d1d;
+  --color-danger-text: #f8b4b4;
+  --color-info: #3f83f8;
+  --color-info-soft: #233876;
+  --color-info-text: #a4cafe;
+  --color-violet-soft: #4a1d96;
+  --color-violet-text: #cabffd;
+  --color-pink-soft: #751a3d;
+  --color-pink-text: #f8b4d9;
+  --color-teal-soft: #014451;
+  --color-teal-text: #7edce2;
+
+  --color-page: #111827;
+  --color-canvas: #111827;
+  --color-surface: #1f2937;
+  --color-surface-muted: #263243;
+  --color-surface-hover: #374151;
+  --color-input: #374151;
+  --color-border: #374151;
+  --color-border-soft: #2b3646;
+  --color-border-strong: #4b5563;
+  --color-text: #ffffff;
+  --color-text-2: #e5e7eb;
+  --color-text-muted: #9ca3af;
+  --color-text-faint: #6b7280;
+  --color-skeleton: #374151;
+  --color-backdrop: rgba(17, 24, 39, 0.8);
+  --color-ring: rgba(123, 134, 241, 0.35);
+
+  --color-side: #1f2937;
+  --color-side-2: #374151;
+  --color-side-3: #374151;
+  --color-side-border: #374151;
+  --color-side-text: #e5e7eb;
+  --color-side-strong: #ffffff;
+  --color-side-muted: #9ca3af;
+  --color-side-heading: #6b7280;
+  --color-side-active: #374151;
+  --color-side-active-text: #ffffff;
+  --color-side-hover: #2b3646;
+  --color-side-icon: #9ca3af;
+
+  --color-console-badge-bg: #3a1d0e;
+  --color-console-badge-border: #8a2c0d;
+  --color-console-badge-text: #fdba8c;
+
+  --color-chat-bg: #0b141a;
+  --color-bubble-in: #202c33;
+  --color-bubble-out: #005c4b;
+  --color-bubble-meta: #8696a0;
+  --color-note-bg: #3b2f12;
+  --color-note-border: #8a6d1f;
+  --color-note-text: #f5d98b;
+  --color-window-bg: #0f3d36;
+  --color-window-text: #7ee0cc;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 10px 25px rgba(0, 0, 0, 0.45);
 }

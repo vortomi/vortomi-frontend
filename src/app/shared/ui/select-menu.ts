@@ -10,26 +10,27 @@ export interface MenuOption {
 /** Shared with MultiSelectMenu, so both menus look the same. */
 export const MENU_STYLES = `
     :host { position: relative; display: block; }
-    .trigger { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 6px 12px; text-align: left; font: inherit; font-size: 14px;
-      color: var(--color-text); background: var(--color-surface); border: 1px solid var(--color-border-strong); border-radius: 10px; cursor: pointer; }
+    .trigger { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 6px 12px; text-align: left; font: inherit; font-size: 14px;
+      color: var(--color-text); background: var(--color-input); border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); cursor: pointer; }
     .trigger:hover { border-color: var(--color-text-faint); }
-    .trigger.open, .trigger:focus-visible { outline: 0; border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-soft); }
+    .trigger.open, .trigger:focus-visible { outline: 0; border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); }
+    .trigger:disabled { opacity: 0.6; cursor: not-allowed; }
     .value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .placeholder { color: var(--color-text-faint); }
     .chev { --icon-size: 16px; color: var(--color-text-muted); }
-    .ic { width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px; background: var(--color-surface-muted); color: var(--color-text-muted);
+    .ic { width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px; background: var(--color-surface-hover); color: var(--color-text-muted);
       display: flex; align-items: center; justify-content: center; --icon-size: 16px; }
-    .panel { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; right: 0; background: var(--color-surface);
-      border: 1px solid var(--color-border-strong); border-radius: 12px; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14); padding: 6px; }
-    .search { display: flex; align-items: center; gap: 8px; padding: 2px 8px 8px; border-bottom: 1px solid var(--color-border-soft); margin-bottom: 4px;
-      color: var(--color-text-faint); --icon-size: 15px; }
-    .search input { flex: 1; border: 0; outline: 0; background: none; font: inherit; font-size: 13.5px; padding: 6px 0; color: var(--color-text); }
+    .panel { position: absolute; z-index: 40; top: calc(100% + 6px); left: 0; right: 0; min-width: 200px; background: var(--color-surface);
+      border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-pop); padding: 6px; }
+    .search { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 10px; margin: 2px 2px 6px; border: 1px solid var(--color-border-strong);
+      border-radius: var(--radius-sm); background: var(--color-input); color: var(--color-text-faint); --icon-size: 15px; }
+    .search input { flex: 1; border: 0; outline: 0; background: none; font: inherit; font-size: 14px; padding: 6px 0; color: var(--color-text); }
     ul { list-style: none; margin: 0; padding: 0; max-height: 280px; overflow-y: auto; outline: 0; }
-    li { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 8px; font-size: 13.5px; cursor: pointer; }
-    li.active { background: var(--color-surface-muted); }
-    li.on { color: var(--color-primary-strong); font-weight: 600; }
-    li.on .ic { background: var(--color-primary); color: #fff; }
-    .tick { --icon-size: 15px; color: var(--color-primary); }
+    li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; font-size: 14px; color: var(--color-text-2); cursor: pointer; }
+    li.active { background: var(--color-surface-hover); }
+    li.on { color: var(--color-primary-text); font-weight: 600; }
+    li.on .ic { background: var(--color-primary); color: var(--color-on-primary); }
+    .tick { --icon-size: 15px; color: var(--color-primary-text); margin-left: auto; }
     .none { color: var(--color-text-muted); cursor: default; }
   `;
 
@@ -44,7 +45,7 @@ export const normalize = (text: string) => text.normalize('NFD').replace(/\p{Dia
   selector: 'app-select-menu',
   imports: [Icon],
   template: `
-    <button type="button" class="trigger" [class.open]="open()" [attr.aria-label]="label()" aria-haspopup="listbox" [attr.aria-expanded]="open()" (click)="toggle()">
+    <button type="button" class="trigger" [class.open]="open()" [disabled]="disabled()" [attr.aria-label]="label()" aria-haspopup="listbox" [attr.aria-expanded]="open()" (click)="toggle()">
       @if (selected(); as s) {
         @if (s.icon) { <span class="ic"><app-icon [name]="s.icon" /></span> }
         <span class="value">{{ s.label }}</span>
@@ -86,6 +87,7 @@ export class SelectMenu {
   readonly label = input('Elegir');
   readonly placeholder = input('Elige…');
   readonly searchable = input(false);
+  readonly disabled = input(false);
   readonly picked = output<string>();
 
   protected readonly open = signal(false);

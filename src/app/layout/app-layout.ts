@@ -12,12 +12,13 @@ import { ChannelBanner } from './channel-banner';
 import { TenantSwitcher } from './tenant-switcher';
 import { UsageMeter } from './usage-meter';
 import { UserMenu } from './user-menu';
+import { ThemeToggle } from '../shared/ui/theme-toggle';
 import { BRAND } from '../core/brand';
 
 /** Frame of the company panel (app.<domain>): sidebar on desktop, bottom bar on phones. */
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, ChannelBanner, TenantSwitcher, UsageMeter, UserMenu],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, ChannelBanner, TenantSwitcher, UsageMeter, UserMenu, ThemeToggle],
   templateUrl: './app-layout.html',
   styleUrl: './app-layout.scss',
 })

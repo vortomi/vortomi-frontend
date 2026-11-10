@@ -5,7 +5,17 @@
   <title>Vortomi</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <script>
+    // Light or dark before anything is painted (core/theme.ts keeps it in sync afterwards).
+    try {
+      var saved = localStorage.getItem('vortomi-theme');
+      if (saved === 'dark' || (saved !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    } catch (e) {}
+  </script>
 </head>
 <body>
   <app-root></app-root>

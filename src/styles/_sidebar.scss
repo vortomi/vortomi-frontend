@@ -1,8 +1,10 @@
 // Sidebar pieces shared by the company panel and the platform console, so both stay identical.
+// Light in light mode, gray-800 in dark mode (tokens), as in mockup web-15.
 
 @mixin panel($background) {
-  width: 236px;
+  width: 256px;
   background: $background;
+  border-right: 1px solid var(--color-side-border);
   color: var(--color-side-text);
   display: flex;
   flex-direction: column;
@@ -15,25 +17,26 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 8px 16px;
+  padding: 2px 4px 18px 8px;
 
   .logo {
     width: 34px;
     height: 34px;
     border-radius: 9px;
-    background: linear-gradient(135deg, #4f63f0, #2b3fc4);
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
     font-size: 16px;
+    flex: none;
   }
 
   p {
-    font-weight: 600;
-    font-size: 14px;
-    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--color-side-strong);
   }
 
   span {
@@ -55,11 +58,12 @@
   a {
     display: flex;
     align-items: center;
-    gap: 11px;
-    padding: 9px 10px;
+    gap: 12px;
+    padding: 8px 10px;
     border-radius: var(--radius-sm);
     color: var(--color-side-text);
     font-size: 14px;
+    font-weight: 500;
     margin-bottom: 2px;
     --icon-size: 18px;
 
@@ -68,33 +72,32 @@
     }
 
     &:hover {
-      background: rgba(255, 255, 255, 0.04);
+      background: var(--color-side-hover);
     }
 
     &.on {
       background: var(--color-side-active);
-      color: #fff;
+      color: var(--color-side-active-text);
       font-weight: 600;
 
       app-icon {
-        color: #fff;
+        color: var(--color-side-active-text);
       }
     }
   }
 
   .count {
     margin-left: auto;
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 600;
-    background: #4f63f0;
-    color: #fff;
+    background: var(--color-primary);
+    color: var(--color-on-primary);
     border-radius: var(--radius-pill);
     padding: 1px 8px;
 
     &.warn {
       background: var(--color-warning);
+      color: #fff;
     }
   }
 }
-
-

@@ -18,9 +18,9 @@ import { MIN_PASSWORD_LENGTH, passwordStrength } from '../security/password-poli
   `,
   styles: `
     .bars { display: flex; gap: 5px; margin-top: 7px; }
-    i { flex: 1; height: 5px; border-radius: 99px; background: #dfe3e9; }
-    [data-score='1'] i.on { background: #e05d4f; }
-    [data-score='2'] i.on { background: #e8a33b; }
+    i { flex: 1; height: 5px; border-radius: 99px; background: var(--color-border); }
+    [data-score='1'] i.on { background: var(--color-danger); }
+    [data-score='2'] i.on { background: var(--color-warning); }
     [data-score='3'] i.on, [data-score='4'] i.on { background: var(--color-success); }
   `,
 })

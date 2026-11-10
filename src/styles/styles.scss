@@ -1,6 +1,7 @@
 @use 'tokens';
 @use 'forms';
 @use 'auth';
+@use 'components';
 
 *,
 *::before,
@@ -36,49 +37,143 @@ a {
   text-decoration: none;
 }
 
+:focus-visible {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+}
+
 // Buttons are native elements, so their look lives here instead of in a component.
+// Kinds: default (secondary, white), --primary, --success, --danger, --ghost; sizes: --sm, --lg, --icon.
 .btn {
-  height: 36px;
-  padding: 0 14px;
+  position: relative;
+  height: 40px;
+  padding: 0 16px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   background: var(--color-surface);
-  font-size: 13px;
+  box-shadow: var(--shadow-sm);
+  font-size: 14px;
   font-weight: 500;
   color: var(--color-text-2);
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
+  gap: 8px;
   white-space: nowrap;
   cursor: pointer;
+  --icon-size: 16px;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+
+  &:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+    color: var(--color-primary-text);
+  }
+
+  &:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 4px var(--color-ring);
+  }
 
   &:disabled {
-    opacity: 0.55;
+    opacity: 0.5;
     cursor: not-allowed;
   }
 
   &--primary {
     background: var(--color-primary);
     border-color: var(--color-primary);
-    color: #fff;
+    color: var(--color-on-primary);
+
+    &:hover:not(:disabled) {
+      background: var(--color-primary-strong);
+      border-color: var(--color-primary-strong);
+      color: var(--color-on-primary);
+    }
   }
 
   &--success {
     background: var(--color-success);
     border-color: var(--color-success);
     color: #fff;
+
+    &:hover:not(:disabled) {
+      background: var(--color-success);
+      color: #fff;
+      filter: brightness(0.92);
+    }
   }
 
   &--danger {
-    background: #b42318;
-    border-color: #b42318;
+    background: var(--color-danger);
+    border-color: var(--color-danger);
     color: #fff;
+
+    &:hover:not(:disabled) {
+      background: var(--color-danger);
+      color: #fff;
+      filter: brightness(0.92);
+    }
   }
 
-  // Working on it: full colour (not the faded disabled look) and a busy cursor.
+  &--ghost {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  &--sm {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  &--lg {
+    height: 46px;
+    padding: 0 20px;
+    font-size: 15px;
+  }
+
+  &--icon {
+    width: 40px;
+    padding: 0;
+
+    &.btn--sm {
+      width: 34px;
+    }
+  }
+
+  // Working on it (BusyButton directive, or [aria-busy] set by hand): the label goes away but
+  // keeps its width, a circle turns in the middle, and the button takes no more clicks.
   &[aria-busy='true'] {
     opacity: 1;
     cursor: progress;
+    pointer-events: none;
+    color: transparent !important;
+
+    > * {
+      visibility: hidden;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2.5px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #fff;
+      animation: spin 0.7s linear infinite;
+    }
+
+    &:not(.btn--primary, .btn--success, .btn--danger)::after {
+      border-color: var(--color-border-strong);
+      border-top-color: var(--color-primary);
+    }
   }
 }
 
@@ -101,20 +196,34 @@ a {
 
 // It still shows that something is happening, only slower.
 @media (prefers-reduced-motion: reduce) {
-  .spinner {
+  .spinner,
+  .btn[aria-busy='true']::after {
     animation-duration: 2s;
   }
 }
 
-// Native select styled like the mockup dropdowns.
-.select {
-  height: 36px;
+// Native select (being replaced by app-select-menu): at least it looks like our fields.
+.select,
+select.input {
+  height: 40px;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  padding: 0 10px;
-  font-size: 13px;
+  background-color: var(--color-input);
+  color: var(--color-text);
+  padding: 0 34px 0 12px;
+  font-size: 14px;
   cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+
+  &:focus {
+    outline: 0;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
 }
 
 .muted {
@@ -128,4 +237,10 @@ a {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+// Thin scrollbars that follow the theme.
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
 }

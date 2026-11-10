@@ -1,0 +1,168 @@
+// Small shared patterns of the v2 look that are plain markup (no Angular component needed).
+// Screens use these classes instead of defining their own copies.
+
+// Skeleton block: <span class="sk" style="width: 60%"></span>. Shapes live in app-skeleton.
+.sk {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--color-skeleton);
+  animation: sk-pulse 1.6s ease-in-out infinite;
+
+  &.round {
+    border-radius: 50%;
+  }
+}
+
+@keyframes sk-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk {
+    animation: none;
+  }
+}
+
+// Underlined tabs: <nav class="tabs-line"><button class="on">…</button></nav>
+.tabs-line {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+
+  > button,
+  > a {
+    border: 0;
+    background: none;
+    padding: 12px 14px;
+    margin-bottom: -1px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--color-text);
+    }
+
+    &.on {
+      color: var(--color-primary-text);
+      border-bottom-color: var(--color-primary-text);
+    }
+  }
+
+  .count {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 7px;
+  }
+}
+
+// Segmented control: <div class="segmented" role="radiogroup"><button class="on">…</button></div>
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-hover);
+
+  > button {
+    border: 0;
+    background: none;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    --icon-size: 15px;
+
+    &:hover {
+      color: var(--color-text);
+    }
+
+    &.on {
+      background: var(--color-surface);
+      color: var(--color-text);
+      box-shadow: var(--shadow-sm);
+    }
+  }
+}
+
+:root.dark .segmented > button.on {
+  background: var(--color-border-strong);
+}
+
+// Square icon-only button without a border (row actions: remove, edit…).
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: none;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  --icon-size: 16px;
+
+  &:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+  }
+
+  &.danger:hover:not(:disabled) {
+    color: var(--color-danger);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+// Nothing to show yet: centred text (and an optional icon and action) inside a list or card.
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 36px 20px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  --icon-size: 28px;
+
+  app-icon {
+    color: var(--color-text-faint);
+  }
+
+  b {
+    color: var(--color-text);
+    font-size: 15px;
+  }
+}
+
+// Intro sentence under a section title.
+.lead {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}

@@ -36,20 +36,20 @@ import { Icon } from '../shared/ui/icon';
   `,
   styles: `
     @use 'mixins';
-    :host { display: block; position: relative; margin-top: 12px; border-top: 1px solid #2a3149; padding-top: 10px; }
+    :host { display: block; position: relative; margin-top: 12px; border-top: 1px solid var(--color-side-border); padding-top: 10px; }
     .who { width: 100%; display: flex; align-items: center; gap: 10px; padding: 6px 8px; border: 0; background: none;
       border-radius: var(--radius-sm); cursor: pointer; text-align: left; color: var(--color-side-muted); --icon-size: 15px; }
-    .who:hover { background: rgba(255, 255, 255, 0.05); }
+    .who:hover { background: var(--color-side-hover); }
     .text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-    b { font-size: 13px; color: #fff; font-weight: 500; @include mixins.ellipsis; }
+    b { font-size: 13px; color: var(--color-side-strong); font-weight: 600; @include mixins.ellipsis; }
     small { font-size: 12px; }
     .chev { transform: rotate(180deg); }
     .menu { position: absolute; bottom: calc(100% + 6px); left: 0; right: 0; list-style: none; background: var(--color-surface);
-      border-radius: var(--radius-md); box-shadow: var(--shadow-pop); padding: 6px; z-index: 30; }
+      border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-pop); padding: 6px; z-index: 30; }
     .menu a, .menu button { width: 100%; display: flex; align-items: center; gap: 9px; padding: 9px 10px; border: 0;
       background: none; border-radius: var(--radius-sm); font-size: 13.5px; color: var(--color-text); cursor: pointer;
       --icon-size: 16px; }
-    .menu a:hover, .menu button:hover { background: var(--color-primary-soft); }
+    .menu a:hover, .menu button:hover { background: var(--color-surface-hover); }
   `,
 })
 export class UserMenu {
