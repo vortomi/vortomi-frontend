@@ -7,16 +7,8 @@
 
 @if (workspace.sells()) {
 <section>
-  <h4>Etapa</h4>
-  <div class="stage" [style.--stage-color]="stage()?.color ?? '#c9ced6'">
-    <i class="dot"></i>
-    <select class="select" aria-label="Etapa" (change)="onStage($event)">
-      <option value="" [selected]="!contact().stageId">Sin etapa</option>
-      @for (s of workspace.stages(); track s.id) {
-        <option [value]="s.id" [selected]="contact().stageId === s.id">{{ s.name }}</option>
-      }
-    </select>
-  </div>
+  <h4>Etapa @if (stage(); as s) { <i class="dot" [style.background]="s.color"></i> }</h4>
+  <app-select-menu label="Etapa" [options]="stageOptions()" [value]="contact().stageId ?? ''" [disabled]="saving()" (picked)="onStage($event)" />
 </section>
 }
 
@@ -26,20 +18,16 @@
     @for (tag of tags(); track tag.id) {
       <app-pill [tone]="tag.tone">
         {{ tag.name }}
-        <button type="button" class="remove" (click)="removeTag(tag)" [attr.aria-label]="'Quitar ' + tag.name">
+        <button type="button" class="remove" [disabled]="saving()" (click)="removeTag(tag)" [attr.aria-label]="'Quitar ' + tag.name">
           <app-icon name="x" [stroke]="2.4" />
         </button>
       </app-pill>
     }
-    @if (availableTags().length) {
-      <select class="add" aria-label="Añadir etiqueta" (change)="onAddTag($event)">
-        <option value="">+ Añadir</option>
-        @for (tag of availableTags(); track tag.id) {
-          <option [value]="tag.id">{{ tag.name }}</option>
-        }
-      </select>
-    }
   </div>
+  @if (availableTags().length) {
+    <app-select-menu class="add" label="Añadir etiqueta" placeholder="+ Añadir etiqueta" [options]="tagOptions()" [value]="null"
+      [searchable]="tagOptions().length > 7" [disabled]="saving()" (picked)="onAddTag($event)" />
+  }
 </section>
 
 <section>

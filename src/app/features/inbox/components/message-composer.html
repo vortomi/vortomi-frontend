@@ -10,7 +10,7 @@
   </div>
 }
 
-<div class="tabs" role="tablist">
+<div class="tabs-line" role="tablist">
   <button type="button" role="tab" [class.on]="mode() === 'reply'" (click)="mode.set('reply')">Responder</button>
   <button type="button" role="tab" [class.on]="mode() === 'note'" (click)="mode.set('note')">Nota interna</button>
   <button type="button" role="tab" [class.on]="mode() === 'template'" (click)="mode.set('template')">Plantilla</button>
@@ -30,10 +30,10 @@
         <div class="tpl">
           <div class="tpl-text">
             <b class="plain">{{ option.title }}</b>
-            <app-pill [tone]="option.tone">{{ option.statusText }}</app-pill>
+            <app-pill [tone]="option.tone" [dot]="true">{{ option.statusText }}</app-pill>
             <p>{{ option.detail }} · <strong>{{ option.price }}</strong></p>
           </div>
-          <button type="button" class="btn btn--primary" [disabled]="!windowOpen() || !option.sendable" (click)="sendProduct(option)">Enviar</button>
+          <button type="button" class="btn btn--primary" [disabled]="!windowOpen() || !option.sendable" (click)="sendProduct(option)"><span>Enviar</span></button>
         </div>
       } @empty {
         <p class="hint">Ningún producto coincide.</p>
@@ -49,7 +49,7 @@
             <app-pill tone="blue">{{ categoryLabel[tpl.category] }}</app-pill>
             <p>{{ tpl.body }}</p>
           </div>
-          <button type="button" class="btn btn--primary" (click)="sendTemplate(tpl)">Enviar</button>
+          <button type="button" class="btn btn--primary" (click)="sendTemplate(tpl)"><span>Enviar</span></button>
         </div>
       } @empty {
         <p class="hint">Esta empresa no tiene plantillas aprobadas por Meta.</p>
@@ -62,7 +62,7 @@
       <div class="closed">
         <app-icon name="clock" />
         <span>La ventana de 24 h está cerrada. Para escribirle hay que usar una plantilla aprobada.</span>
-        <button type="button" class="btn" (click)="mode.set('template')">Elegir plantilla</button>
+        <button type="button" class="btn btn--sm" (click)="mode.set('template')"><span>Elegir plantilla</span></button>
       </div>
     } @else {
       <div class="box" [class.note]="mode() === 'note'">

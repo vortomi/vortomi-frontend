@@ -3,12 +3,18 @@
   @if (contact(); as c) {
     <app-avatar size="md" [name]="c.name" [seed]="c.id" />
     <div><h1>{{ c.name }}</h1><span class="sub">{{ c.phone }}</span></div>
+  } @else if (isNew()) {
+    <h1>Nuevo contacto</h1>
+  } @else if (loading()) {
+    <span class="sk" style="width: 220px; height: 22px"></span>
   } @else {
-    <h1>{{ isNew() ? 'Nuevo contacto' : 'Contacto no encontrado' }}</h1>
+    <h1>Contacto no encontrado</h1>
   }
   <span class="spacer"></span>
   @if (isNew() || contact()) {
-    <button type="submit" form="contact-form" class="btn btn--primary"><app-icon name="check" />Guardar</button>
+    <button type="submit" form="contact-form" class="btn btn--primary" [disabled]="contactForm().submitting()" [attr.aria-busy]="contactForm().submitting()">
+      <app-icon name="check" /><span>Guardar</span>
+    </button>
   }
 </header>
 
@@ -36,33 +42,21 @@
           </div>
           <div class="field">
             <label for="channel">Número de la empresa</label>
-            <select id="channel" class="input" [formField]="contactForm.channelAccountId">
-              @for (channel of workspace.channels(); track channel.id) {
-                <option [value]="channel.id">{{ channel.label }} · {{ channel.displayNumber }}</option>
-              }
-            </select>
+            <app-select-menu id="channel" label="Número de la empresa" [options]="channelOptions()" [value]="contactForm.channelAccountId().value()"
+              [disabled]="contactForm.channelAccountId().readonly()" (picked)="contactForm.channelAccountId().value.set($event)" />
             @if (!isNew()) {
               <p class="field-hint">El teléfono y el número no se cambian: identifican la conversación en WhatsApp.</p>
             }
           </div>
           <div class="field">
             <label for="owner">Responsable</label>
-            <select id="owner" class="input" [formField]="contactForm.ownerUserId">
-              <option value="">Sin responsable</option>
-              @for (member of workspace.activeTeam(); track member.user.id) {
-                <option [value]="member.user.id">{{ member.user.name }}</option>
-              }
-            </select>
+            <app-select-menu id="owner" label="Responsable" [options]="ownerOptions()" [value]="contactForm.ownerUserId().value()"
+              [searchable]="ownerOptions().length > 8" [disabled]="contactForm.ownerUserId().readonly()" (picked)="contactForm.ownerUserId().value.set($event)" />
           </div>
           @if (workspace.sells()) {
           <div class="field">
             <label for="stage">Etapa</label>
-            <select id="stage" class="input" [formField]="contactForm.stageId">
-              <option value="">Sin etapa</option>
-              @for (stage of workspace.stages(); track stage.id) {
-                <option [value]="stage.id">{{ stage.name }}</option>
-              }
-            </select>
+            <app-select-menu id="stage" label="Etapa" [options]="stageOptions()" [value]="contactForm.stageId().value()" (picked)="contactForm.stageId().value.set($event)" />
           </div>
           <div class="field">
             <label for="quote">Monto de la oportunidad (USD)</label>
@@ -116,7 +110,7 @@
             @if (conversation(); as conv) {
               <p class="preview">{{ conv.lastMessagePreview }}</p>
               <p class="field-hint">Último mensaje {{ stamp(conv.lastMessageAt) }} · {{ conv.status === 'open' ? 'abierta' : 'resuelta' }}</p>
-              <a class="btn" [routerLink]="['/inbox', conv.id]"><app-icon name="inbox" />Abrir en la bandeja</a>
+              <a class="btn" [routerLink]="['/inbox', conv.id]"><app-icon name="inbox" /><span>Abrir en la bandeja</span></a>
             } @else {
               <p class="muted">Sin conversación visible para ti.</p>
             }
@@ -132,6 +126,8 @@
       }
     </div>
   </div>
+} @else if (loading()) {
+  <div class="page-body"><app-skeleton kind="detail" [rows]="5" /></div>
 } @else {
-  <div class="page-body"><p class="muted">Ese contacto no existe o no tienes permiso para verlo. <a class="link" routerLink="/contacts">Volver</a></p></div>
+  <div class="page-body"><p class="empty-state">Ese contacto no existe o no tienes permiso para verlo. <a class="link" routerLink="/contacts">Volver</a></p></div>
 }

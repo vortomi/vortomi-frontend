@@ -12,6 +12,8 @@ import { Avatar } from '../../shared/ui/avatar';
 import { FieldError } from '../../shared/ui/field-error';
 import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
+import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
 import { cleanValues, missingRequired } from '../custom-fields/custom-field-rules';
 import { CustomFields } from '../custom-fields/custom-fields.data';
@@ -32,7 +34,7 @@ interface ContactModel {
 /** Create (/contacts/new) or edit (/contacts/:contactId) one contact. */
 @Component({
   selector: 'app-contact-detail-page',
-  imports: [FormField, RouterLink, Avatar, FieldError, Icon, Pill, CustomValuesForm],
+  imports: [FormField, RouterLink, Avatar, FieldError, Icon, Pill, SelectMenu, Skeleton, CustomValuesForm],
   templateUrl: './contact-detail.page.html',
   styleUrl: './contact-detail.page.scss',
 })
@@ -50,6 +52,19 @@ export class ContactDetailPage {
 
   protected readonly contact = computed(() => this.contacts.byId().get(this.contactId() ?? '') ?? null);
   protected readonly isNew = computed(() => !this.contactId());
+  /** The contacts are still being read: a skeleton, not "no existe". */
+  protected readonly loading = computed(() => !this.contacts.ready() || this.contacts.loading());
+  protected readonly channelOptions = computed<MenuOption[]>(() =>
+    this.workspace.channels().map((c) => ({ value: c.id, label: c.label + ' · ' + c.displayNumber })),
+  );
+  protected readonly ownerOptions = computed<MenuOption[]>(() => [
+    { value: '', label: 'Sin responsable' },
+    ...this.workspace.activeTeam().map((m) => ({ value: m.user.id, label: m.user.name })),
+  ]);
+  protected readonly stageOptions = computed<MenuOption[]>(() => [
+    { value: '', label: 'Sin etapa' },
+    ...this.workspace.stages().map((s) => ({ value: s.id, label: s.name })),
+  ]);
   protected readonly duplicate = signal<Contact | null>(null);
   protected readonly tagIds = signal<Id[]>([]);
   /** Notes typed before the company had fields: shown, removable, organized from Ajustes. */

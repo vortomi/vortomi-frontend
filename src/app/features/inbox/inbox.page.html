@@ -27,5 +27,9 @@
     }
   </div>
 } @else {
-  <p class="loading">Cargando la bandeja…</p>
+  <div class="columns loading">
+    <div class="list"><app-skeleton kind="list" [rows]="8" /></div>
+    <div class="chat"><app-skeleton kind="chat" [rows]="5" /></div>
+    <div class="contact"><app-skeleton kind="form" [rows]="3" /></div>
+  </div>
 }

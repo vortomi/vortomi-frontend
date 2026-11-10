@@ -1,6 +1,7 @@
 import { Component, computed, effect, inject, input, untracked } from '@angular/core';
 import { Session } from '../../core/session';
 import { Icon } from '../../shared/ui/icon';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { ChatPanel } from './components/chat-panel';
 import { ContactPanel } from './components/contact-panel';
 import { ConversationList } from './components/conversation-list';
@@ -11,7 +12,7 @@ import { InboxViewState } from './inbox.state';
 /** Shared inbox (mockup web-1): list, conversation and customer card. */
 @Component({
   selector: 'app-inbox-page',
-  imports: [Icon, ConversationList, ChatPanel, ContactPanel],
+  imports: [Icon, Skeleton, ConversationList, ChatPanel, ContactPanel],
   templateUrl: './inbox.page.html',
   styleUrl: './inbox.page.scss',
   host: { '[class.has-selection]': '!!selected()' },

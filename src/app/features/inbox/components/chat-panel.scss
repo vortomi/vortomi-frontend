@@ -45,7 +45,14 @@
   gap: 10px;
 
   .assign {
-    width: 200px;
+    width: 170px;
+    transition: opacity 0.15s;
+
+    // Saving who attends it: dimmed and not clickable until the server answers.
+    &.saving {
+      opacity: 0.6;
+      pointer-events: none;
+    }
   }
 
   .assigned {
@@ -80,12 +87,12 @@
   border-radius: var(--radius-sm);
   padding: 5px 11px;
   margin-bottom: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-sm);
   --icon-size: 15px;
 
   &.closed {
-    background: #fdf0d8;
-    color: #92500a;
+    background: var(--color-warning-soft);
+    color: var(--color-warning-text);
   }
 }
 
@@ -99,7 +106,7 @@
     padding: 3px 10px;
     font-size: 12px;
     color: var(--color-text-muted);
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-sm);
   }
 }
 
@@ -145,6 +152,13 @@
     width: 100%;
 
     .assign {
+    transition: opacity 0.15s;
+
+    &.saving {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
       flex: 1;
     }
   }

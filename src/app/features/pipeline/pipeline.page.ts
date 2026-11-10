@@ -8,6 +8,8 @@ import { formatUsdCents } from '../../shared/format/money';
 import { Avatar } from '../../shared/ui/avatar';
 import { ChannelBadge } from '../../shared/ui/channel-badge';
 import { Icon } from '../../shared/ui/icon';
+import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
 import { ContactsData } from '../contacts/contacts.data';
 import { InboxData } from '../inbox/inbox.data';
@@ -18,7 +20,7 @@ const normalize = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}
 /** Sales board by stage (mockup web-2). One opportunity per contact in v1. */
 @Component({
   selector: 'app-pipeline-page',
-  imports: [RouterLink, Avatar, ChannelBadge, Icon],
+  imports: [RouterLink, Avatar, ChannelBadge, Icon, SelectMenu, Skeleton],
   templateUrl: './pipeline.page.html',
   styleUrl: './pipeline.page.scss',
 })
@@ -36,6 +38,20 @@ export class PipelinePage {
   protected readonly ownerId = signal('');
   protected readonly dragging = signal<Id | null>(null);
   protected readonly dropTarget = signal<Id | null>(null);
+  /** Cards whose move is on its way to the server: dimmed until it is saved. */
+  protected readonly moving = signal<ReadonlySet<Id>>(new Set());
+  /** First read of the contacts: skeleton columns, not empty ones. */
+  protected readonly loading = computed(() => !this.contacts.ready() || (this.contacts.loading() && !this.contacts.all().length));
+  // '' is "any".
+  protected readonly channelOptions = computed<MenuOption[]>(() => [
+    { value: '', label: 'Todos los números' },
+    ...this.workspace.channels().map((c) => ({ value: c.id, label: c.label })),
+  ]);
+  protected readonly ownerOptions = computed<MenuOption[]>(() => [
+    { value: '', label: 'Cualquier responsable' },
+    ...this.workspace.activeTeam().map((m) => ({ value: m.user.id, label: m.user.name })),
+  ]);
+  protected readonly stageOptions = computed<MenuOption[]>(() => this.workspace.stages().map((s) => ({ value: s.id, label: s.name })));
 
   private readonly cards = computed(() => {
     const needle = normalize(this.search());
@@ -96,20 +112,27 @@ export class PipelinePage {
     const id = this.dragging() ?? event.dataTransfer?.getData('text/plain');
     this.dragging.set(null);
     this.dropTarget.set(null);
-    if (id) this.move(id, stage.id);
+    if (id) void this.move(id, stage.id);
   }
 
   /** Keyboard and touch alternative to dragging. */
-  protected moveFromMenu(contact: Contact, event: Event): void {
-    event.stopPropagation();
-    this.move(contact.id, this.value(event));
+  protected moveFromMenu(contact: Contact, stageId: string): void {
+    void this.move(contact.id, stageId);
   }
 
-  private move(contactId: Id, stageId: Id): void {
+  private async move(contactId: Id, stageId: Id): Promise<void> {
     const contact = this.contacts.byId().get(contactId);
     const stage = this.workspace.stageById().get(stageId);
-    if (!contact || !stage || contact.stageId === stageId) return;
-    this.contacts.setStage(contactId, stageId);
-    this.toaster.show(`${contact.name} pasó a «${stage.name}»`);
+    if (!contact || !stage || contact.stageId === stageId || this.moving().has(contactId)) return;
+    this.moving.update((set) => new Set(set).add(contactId));
+    try {
+      if (await this.contacts.setStage(contactId, stageId)) this.toaster.show(`${contact.name} pasó a «${stage.name}»`);
+    } finally {
+      this.moving.update((set) => {
+        const next = new Set(set);
+        next.delete(contactId);
+        return next;
+      });
+    }
   }
 }

@@ -1,19 +1,15 @@
 <app-dialog title="Importar contactos" [open]="open()" (closed)="close()">
   <div class="field">
     <label for="import-channel">Número al que pertenecen</label>
-    <select id="import-channel" class="input" (change)="setChannel($event)">
-      @for (channel of workspace.channels(); track channel.id) {
-        <option [value]="channel.id" [selected]="channel.id === targetChannel()">{{ channel.label }} · {{ channel.displayNumber }}</option>
-      }
-    </select>
+    <app-select-menu id="import-channel" label="Número al que pertenecen" [options]="channelOptions()" [value]="targetChannel()" (picked)="channelId.set($event)" />
     <p class="field-hint">Un mismo teléfono en dos números de la empresa son dos contactos distintos.</p>
   </div>
 
-  <div class="drop">
-    <b>Archivo CSV</b>
-    <input type="file" accept=".csv,text/csv" (change)="onFile($event)" aria-label="Archivo CSV" />
-    <span class="field-hint">Columnas: nombre, teléfono y, si quieres, etiquetas separadas por coma. Hasta 2.000 filas.
-      <button type="button" class="link" (click)="downloadTemplate()">Descargar plantilla</button></span>
+  <div class="field">
+    <span class="label">Archivo CSV</span>
+    <app-file-drop accept=".csv,text/csv" [label]="fileName() ?? 'Arrastra el archivo CSV aquí o haz clic para elegirlo'"
+      hint="Columnas: nombre, teléfono y, si quieres, etiquetas separadas por coma. Hasta 2.000 filas." (picked)="onFile($event)" />
+    <button type="button" class="link template" (click)="downloadTemplate()">Descargar plantilla</button>
   </div>
 
   @if (fileError(); as message) {
@@ -27,11 +23,7 @@
         @for (title of header(); track $index) {
           <label class="field">
             <span class="field-hint">«{{ title }}»</span>
-            <select class="input" (change)="setMapping($index, $event)">
-              @for (field of fields; track field) {
-                <option [value]="field" [selected]="mapping()[$index] === field">{{ fieldLabels[field] }}</option>
-              }
-            </select>
+            <app-select-menu [label]="'Columna ' + title" [options]="fieldOptions" [value]="mapping()[$index] ?? null" (picked)="setMapping($index, $event)" />
           </label>
         }
       </div>
@@ -64,9 +56,10 @@
   }
 
   <div dialog-actions class="dialog-actions">
-    <button type="button" class="btn" (click)="close()">Cancelar</button>
-    <button type="button" class="btn btn--primary" [disabled]="missingColumns() || !(counts().new + counts().update)" (click)="confirm()">
-      Importar {{ counts().new + counts().update }}
+    <button type="button" class="btn" [disabled]="importing()" (click)="close()"><span>Cancelar</span></button>
+    <button type="button" class="btn btn--primary" [disabled]="importing() || missingColumns() || !(counts().new + counts().update)"
+      [attr.aria-busy]="importing()" (click)="importRows()">
+      <span>Importar {{ counts().new + counts().update }}</span>
     </button>
   </div>
 </app-dialog>
