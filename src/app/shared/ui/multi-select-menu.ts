@@ -12,7 +12,7 @@ import { MENU_STYLES, type MenuOption, normalize } from './select-menu';
   selector: 'app-multi-select-menu',
   imports: [Icon],
   template: `
-    <button type="button" class="trigger" [class.open]="open()" [attr.aria-label]="label()" aria-haspopup="listbox" [attr.aria-expanded]="open()" (click)="toggle()">
+    <button type="button" class="trigger" [class.open]="open()" [disabled]="disabled() || busy()" [attr.aria-busy]="busy()" [attr.aria-label]="label()" aria-haspopup="listbox" [attr.aria-expanded]="open()" (click)="toggle()">
       <span class="value" [class.placeholder]="!summary()">{{ summary() || placeholder() }}</span>
       <app-icon name="down" class="chev" />
     </button>
@@ -52,7 +52,7 @@ import { MENU_STYLES, type MenuOption, normalize } from './select-menu';
     .none-row { border-bottom: 1px solid var(--color-border-soft); border-radius: 8px 8px 0 0; margin-bottom: 4px; }
     `,
   ],
-  host: { '(document:click)': 'onOutside($event)' },
+  host: { '(document:click)': 'onOutside($event)', '[class.compact]': "size() === 'sm'" },
 })
 export class MultiSelectMenu {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -62,6 +62,12 @@ export class MultiSelectMenu {
   readonly label = input('Elegir');
   readonly placeholder = input('Elige…');
   readonly searchable = input(false);
+  /** Not usable (read-only field). */
+  readonly disabled = input(false);
+  /** Saving the last choice: dimmed, takes no clicks. */
+  readonly busy = input(false);
+  /** sm: 34 px high, for cards and dense rows. */
+  readonly size = input<'md' | 'sm'>('md');
   /** When set, a first row with this label unmarks everything ("Sin asignar"). */
   readonly noneLabel = input<string | null>(null);
   /** The whole new selection, after each mark or unmark. */

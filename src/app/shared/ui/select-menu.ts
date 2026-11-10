@@ -15,6 +15,9 @@ export const MENU_STYLES = `
     .trigger:hover { border-color: var(--color-text-faint); }
     .trigger.open, .trigger:focus-visible { outline: 0; border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); }
     .trigger:disabled { opacity: 0.6; cursor: not-allowed; }
+    .trigger[aria-busy='true'] { cursor: progress; }
+    :host(.compact) .trigger { min-height: 34px; padding: 3px 10px; font-size: 13px; }
+    :host(.compact) .ic { width: 22px; height: 22px; }
     .value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .placeholder { color: var(--color-text-faint); }
     .chev { --icon-size: 16px; color: var(--color-text-muted); }
@@ -77,7 +80,7 @@ export const normalize = (text: string) => text.normalize('NFD').replace(/\p{Dia
     }
   `,
   styles: MENU_STYLES,
-  host: { '(document:click)': 'onOutside($event)' },
+  host: { '(document:click)': 'onOutside($event)', '[class.compact]': "size() === 'sm'" },
 })
 export class SelectMenu {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -88,6 +91,8 @@ export class SelectMenu {
   readonly placeholder = input('Elige…');
   readonly searchable = input(false);
   readonly disabled = input(false);
+  /** sm: 34 px high, for cards and dense rows. */
+  readonly size = input<'md' | 'sm'>('md');
   readonly picked = output<string>();
 
   protected readonly open = signal(false);
