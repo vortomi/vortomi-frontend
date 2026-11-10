@@ -42,7 +42,7 @@ interface ConnectModel {
   selector: 'app-step-channel',
   imports: [PasswordField, FormField, FieldError, Icon, Pill, WhatsAppProfileFields],
   templateUrl: './step-channel.html',
-  styleUrls: ['./steps.scss', '../../auth/demo-box.scss'],
+  styleUrl: './steps.scss',
   styles: `
     .idbox { display: inline-flex; align-items: center; gap: 10px; background: var(--color-surface-muted); border: 1px solid var(--color-border);
       border-radius: var(--radius-sm); padding: 5px 6px 5px 12px; font-size: 14px; font-weight: 600; margin-top: 6px; }

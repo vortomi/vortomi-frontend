@@ -56,27 +56,7 @@
   cursor: pointer;
 }
 
-.danger {
-  color: #b42318;
-}
-
-.icon-btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  --icon-size: 15px;
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-}
+// .danger and .icon-btn come from the global styles (_forms.scss, _components.scss).
 
 .actions {
   display: flex;

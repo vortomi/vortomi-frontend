@@ -26,7 +26,6 @@ const UNREACHABLE = 'No pudimos conectar con el servidor de Vortomi. No es tu co
   selector: 'app-login-page',
   imports: [PasswordField, FormField, RouterLink, FieldError, Icon],
   templateUrl: './login.page.html',
-  styleUrl: './demo-box.scss',
 })
 export class LoginPage {
   protected readonly brand = BRAND;

@@ -46,7 +46,6 @@ type PageState = { status: 'loading' } | { status: 'valid'; view: InvitationView
   selector: 'app-invitation-page',
   imports: [PasswordField, FormField, RouterLink, Avatar, FieldError, Icon, PasswordMeter, Skeleton],
   templateUrl: './invitation.page.html',
-  styleUrl: './demo-box.scss',
   styles: `
     .company { display: flex; align-items: center; gap: 12px; border: 1px solid var(--color-border); background: var(--color-surface);
       border-radius: var(--radius-lg); padding: 12px 14px; }

@@ -14,7 +14,8 @@ export interface ConfirmRequest {
   cancelLabel?: string;
   /**
    * The work to do once the person says yes. While it runs the dialog stays open with the circle on
-   * the button; if it fails, the error is shown inside the dialog and nothing closes. Left out, the
+   * the button; if it throws, the error is shown inside the dialog and nothing closes; if it answers
+   * false (it showed its own notice), the dialog closes and ask() resolves false. Left out, the
    * dialog closes at once and the caller does the work.
    */
   action?: () => Promise<unknown>;
@@ -45,11 +46,14 @@ export class Confirm {
   async answer(value: boolean): Promise<void> {
     const current = this.pending();
     if (!current || this.busy()) return;
+    let answer = value;
     if (value && current.action) {
       this.busy.set(true);
       this.error.set(null);
       try {
-        await current.action();
+        // An action that reports its own failure (it answers false and shows its own notice)
+        // closes the dialog and counts as "no".
+        answer = (await current.action()) !== false;
       } catch (error) {
         this.error.set(toApiFailure(error).message);
         return;
@@ -58,7 +62,7 @@ export class Confirm {
       }
     }
     this.pending.set(null);
-    current.resolve(value);
+    current.resolve(answer);
   }
 }
 

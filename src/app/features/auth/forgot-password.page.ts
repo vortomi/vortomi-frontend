@@ -9,7 +9,6 @@ import { BRAND } from '../../core/brand';
 @Component({
   selector: 'app-forgot-password-page',
   imports: [FormField, RouterLink, FieldError, Icon],
-  styleUrl: './demo-box.scss',
   template: `
     <div class="auth-box">
       <h2>Recupera tu contraseña</h2>

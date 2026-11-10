@@ -33,7 +33,6 @@ import { Icon } from '../../shared/ui/icon';
       }
     </div>
   `,
-  styleUrl: './demo-box.scss',
   styles: '.code { letter-spacing: 8px; font-size: 20px; text-align: center; font-family: var(--font-mono); }',
 })
 export class VerifyPage {
