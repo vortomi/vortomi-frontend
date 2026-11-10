@@ -1,0 +1,23 @@
+// The prototype's demo hint in light and dark. The global .demo-box (styles/_auth.scss) still has
+// fixed light colours; until it moves to tokens, the screens that show it use this override.
+.demo-box {
+  border-color: var(--primary-200);
+  background: var(--color-primary-softer);
+  color: var(--color-primary-text);
+
+  .demo-options button,
+  .demo-options a {
+    border-color: var(--primary-200);
+    background: var(--color-surface);
+    color: var(--color-primary-text);
+  }
+}
+
+:host-context(.dark) .demo-box {
+  border-color: var(--primary-800);
+
+  .demo-options button,
+  .demo-options a {
+    border-color: var(--primary-800);
+  }
+}

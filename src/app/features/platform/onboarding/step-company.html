@@ -28,16 +28,12 @@
           <app-field-error [state]="companyForm.city()" />
         </div>
         <div class="field">
-          <label for="tz">Zona horaria</label>
-          <select id="tz" class="input" [formField]="companyForm.timezone">
-            @for (tz of timezones; track tz[0]) {
-              <option [value]="tz[0]">{{ tz[1] }}</option>
-            }
-          </select>
+          <span class="label">Zona horaria</span>
+          <app-select-menu label="Zona horaria" [options]="timezoneOptions" [value]="companyForm.timezone().value()" (picked)="setTimezone($event)" />
           <p class="field-hint">Define los horarios de los reportes y de la ventana de 24 h.</p>
         </div>
       </div>
-      <div class="field" style="margin-top: 12px">
+      <div class="field mt">
         <span class="label">Plan</span>
         <div class="plans" role="radiogroup" aria-label="Plan">
           @for (plan of plans; track plan[0]) {
@@ -66,7 +62,7 @@
           <app-field-error [state]="companyForm.taxId()" />
         </div>
       </div>
-      <div class="g2" style="margin-top: 12px">
+      <div class="g2 mt">
         <div class="field">
           <label for="fiscal-address">Dirección fiscal</label>
           <input id="fiscal-address" class="input" [formField]="companyForm.fiscalAddress" />
@@ -100,7 +96,7 @@
           <input id="admin-phone" class="input" type="tel" autocomplete="off" [formField]="companyForm.adminPhone" />
         </div>
       </div>
-      <div class="form-alert info" style="margin-top: 12px">
+      <div class="form-alert info mt">
         <app-icon name="lock" />
         <span>Al activar la empresa le llega una <b>invitación de un solo uso que vence en 72 horas</b>. Esa persona crea su contraseña: nosotros nunca la vemos ni la escribimos.</span>
       </div>
@@ -125,9 +121,9 @@
       <h2>Estado de la empresa</h2>
       <p class="d">Avanza solo a medida que se completan los pasos.</p>
       <div class="flow">
-        <app-pill tone="blue">Borrador</app-pill><app-icon name="arrow" />
-        <app-pill tone="neutral">Esperando canal</app-pill><app-icon name="arrow" />
-        <app-pill tone="neutral">Activa</app-pill>
+        <app-pill tone="blue" [dot]="true">Borrador</app-pill><app-icon name="arrow" />
+        <app-pill tone="neutral" [dot]="true">Esperando canal</app-pill><app-icon name="arrow" />
+        <app-pill tone="neutral" [dot]="true">Activa</app-pill>
       </div>
     </section>
   </div>
@@ -135,6 +131,8 @@
 
 <footer class="step-foot">
   <span class="count">Paso 1 de 4</span>
-  <button type="button" class="btn" (click)="saveDraft()">Guardar borrador</button>
-  <button type="submit" form="company-form" class="btn btn--primary">Siguiente: conectar WhatsApp<app-icon name="arrow" /></button>
+  <button type="button" class="btn" [disabled]="!!pending()" [attr.aria-busy]="pending() === 'draft'" (click)="saveDraft()"><span>Guardar borrador</span></button>
+  <button type="submit" form="company-form" class="btn btn--primary" [disabled]="!!pending()" [attr.aria-busy]="pending() === 'next'">
+    <span>Siguiente: conectar WhatsApp</span><app-icon name="arrow" />
+  </button>
 </footer>

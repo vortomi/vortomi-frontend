@@ -7,20 +7,31 @@
     <span class="visually-hidden">Buscar empresa</span>
     <input type="search" placeholder="Buscar empresa" [value]="search()" (input)="onSearch($event)" />
   </label>
-  <a class="btn btn--primary" routerLink="/platform/tenants/new"><app-icon name="plus" />Nueva empresa</a>
+  <a class="btn btn--primary" routerLink="/platform/tenants/new"><app-icon name="plus" /><span>Nueva empresa</span></a>
 </header>
 
 <div class="page-body">
   <app-unclassified-types (changed)="data.load()" />
-  <div class="kpis">
-    <div class="card kpi"><p>Empresas activas</p><b>{{ data.kpis().activeTenants }}</b></div>
-    <div class="card kpi"><p>Números conectados</p><b>{{ data.kpis().connectedNumbers }}</b></div>
-    <div class="card kpi"><p>Mensajes este mes</p><b>{{ count(data.kpis().monthMessages) }}</b></div>
-    <div class="card kpi"><p>Alertas abiertas</p><b [class.warn]="data.kpis().openAlerts > 0">{{ data.kpis().openAlerts }}</b></div>
-  </div>
+  @if (data.ready()) {
+    <div class="kpis">
+      <div class="card kpi"><span class="ic blue"><app-icon name="building" /></span><div><p>Empresas activas</p><b>{{ data.kpis().activeTenants }}</b></div></div>
+      <div class="card kpi"><span class="ic green"><app-icon name="phone" /></span><div><p>Números conectados</p><b>{{ data.kpis().connectedNumbers }}</b></div></div>
+      <div class="card kpi"><span class="ic violet"><app-icon name="chat" /></span><div><p>Mensajes este mes</p><b>{{ count(data.kpis().monthMessages) }}</b></div></div>
+      <div class="card kpi"><span class="ic amber"><app-icon name="alert" /></span><div><p>Alertas abiertas</p><b [class.warn]="data.kpis().openAlerts > 0">{{ data.kpis().openAlerts }}</b></div></div>
+    </div>
+  } @else {
+    <div class="kpis">
+      @for (k of [1, 2, 3, 4]; track k) {
+        <div class="card kpi"><span class="sk round ic"></span><div class="sk-lines"><span class="sk" style="width: 70%"></span><span class="sk" style="width: 40%; height: 20px"></span></div></div>
+      }
+    </div>
+  }
 
   <div class="split">
     <div class="card table-card">
+      @if (!data.ready()) {
+        <app-skeleton kind="table" [rows]="6" [cols]="6" />
+      } @else {
       <table class="data-table">
         <thead>
           <tr><th>Empresa</th><th>Plan</th><th>Números</th><th>Usuarios</th><th>Mensajes del mes</th><th>Canal</th><th>Calidad</th></tr>
@@ -36,7 +47,7 @@
                     <span>{{ typeOf(row.tenant) }}{{ typeOf(row.tenant) && row.tenant.city ? ' · ' : '' }}{{ row.tenant.city }}</span>
                   </div>
                   @if (row.tenant.status !== 'active') {
-                    <app-pill [tone]="labels.status[row.tenant.status].tone">{{ labels.status[row.tenant.status].text }}</app-pill>
+                    <app-pill [tone]="labels.status[row.tenant.status].tone" [dot]="true">{{ labels.status[row.tenant.status].text }}</app-pill>
                   }
                 </div>
               </td>
@@ -46,7 +57,7 @@
               <td>{{ count(row.usage?.totalMessages ?? 0) }}</td>
               <td>
                 @if (row.channelStatus; as status) {
-                  <app-pill [tone]="labels.channel[status].tone">{{ labels.channel[status].text }}</app-pill>
+                  <app-pill [tone]="labels.channel[status].tone" [dot]="true">{{ labels.channel[status].text }}</app-pill>
                 } @else {
                   <span class="muted">Sin número</span>
                 }
@@ -55,20 +66,25 @@
                 @if (row.channelStatus === 'disconnected' || !row.worstQuality) {
                   <span class="muted">—</span>
                 } @else {
-                  <app-pill [tone]="labels.quality[row.worstQuality].tone">{{ labels.quality[row.worstQuality].text }}</app-pill>
+                  <app-pill [tone]="labels.quality[row.worstQuality].tone" [dot]="true">{{ labels.quality[row.worstQuality].text }}</app-pill>
                 }
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="7" class="muted">Ninguna empresa coincide con la búsqueda.</td></tr>
+            <tr><td colspan="7"><p class="empty-state">{{ search().trim() ? 'Ninguna empresa coincide con la búsqueda.' : 'Todavía no hay empresas.' }}</p></td></tr>
           }
         </tbody>
       </table>
+      }
     </div>
 
     <aside class="card alerts">
       <h3>Alertas</h3>
-      <app-alert-list [alerts]="data.alerts()" />
+      @if (data.ready()) {
+        <app-alert-list [alerts]="data.alerts()" />
+      } @else {
+        <app-skeleton class="pad" kind="rows" [rows]="3" />
+      }
       <p class="rule"><app-icon name="shield" />Cada número pertenece a una sola empresa. Un mensaje nunca se entrega a otra.</p>
     </aside>
   </div>

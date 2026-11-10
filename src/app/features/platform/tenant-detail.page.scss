@@ -10,7 +10,7 @@
 
 .confirm {
   font-size: 13px;
-  color: #8a1d14;
+  color: var(--color-danger-text);
 }
 
 .grid {
@@ -20,11 +20,12 @@
 }
 
 .box {
-  padding: 16px 18px;
+  padding: 20px 22px;
 
   h2 {
-    font-size: 15px;
-    margin-bottom: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
   }
 }
 
@@ -32,7 +33,7 @@ dl {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 8px 14px;
-  font-size: 13.5px;
+  font-size: 14px;
 }
 
 dt {
@@ -49,8 +50,8 @@ dd {
 }
 
 .track {
-  height: 7px;
-  background: #eef0f3;
+  height: 8px;
+  background: var(--color-surface-hover);
   border-radius: var(--radius-pill);
   overflow: hidden;
   margin: 12px 0 8px;
@@ -58,7 +59,8 @@ dd {
   i {
     display: block;
     height: 100%;
-    background: var(--color-success);
+    border-radius: var(--radius-pill);
+    background: var(--color-primary);
 
     &.over {
       background: var(--color-warning);
@@ -79,9 +81,9 @@ dd {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 11px 16px;
-  border-bottom: 1px solid var(--color-border-soft);
-  font-size: 13px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
 }
 
 .who {
@@ -90,8 +92,12 @@ dd {
   display: flex;
   flex-direction: column;
 
+  b {
+    font-weight: 600;
+  }
+
   span {
-    font-size: 12px;
+    font-size: 12.5px;
     color: var(--color-text-muted);
   }
 }
@@ -111,10 +117,10 @@ dd {
   display: flex;
   gap: 8px;
   align-items: center;
-  padding: 10px 16px;
-  font-size: 12px;
+  padding: 12px 18px;
+  font-size: 12.5px;
   color: var(--color-text-muted);
-  background: #f7f8fb;
+  background: var(--color-surface-muted);
   --icon-size: 15px;
 }
 
@@ -123,7 +129,7 @@ dd {
 }
 
 .pad {
-  padding: 14px 16px;
+  padding: 14px 18px;
 }
 
 .number {

@@ -2,7 +2,7 @@
   <h1>Mi perfil</h1>
   <span class="sub">Tus datos y la seguridad de tu cuenta</span>
   <span class="spacer"></span>
-  <button type="button" class="btn" (click)="signOut()"><app-icon name="back" />Cerrar sesión</button>
+  <button type="button" class="btn" (click)="signOut()"><app-icon name="back" /><span>Cerrar sesión</span></button>
 </header>
 
 <div class="page-body">
@@ -21,7 +21,7 @@
             <input id="email" class="input" [value]="user.email" readonly />
             <p class="field-hint">Para cambiarlo, pídeselo a quien administra tu empresa.</p>
           </div>
-          <div class="actions"><button type="submit" class="btn btn--primary">Guardar</button></div>
+          <div class="actions"><button type="submit" class="btn btn--primary" [disabled]="nameForm().submitting()" [attr.aria-busy]="nameForm().submitting()"><span>Guardar</span></button></div>
         </form>
       </section>
 
@@ -44,19 +44,31 @@
             <app-password-field><input id="confirm" class="input" type="password" autocomplete="new-password" [formField]="passwordForm.next.confirm" /></app-password-field>
             <app-field-error [state]="passwordForm.next.confirm()" />
           </div>
-          <div class="actions"><button type="submit" class="btn btn--primary">Cambiar contraseña</button></div>
+          <div class="actions"><button type="submit" class="btn btn--primary" [disabled]="passwordForm().submitting()" [attr.aria-busy]="passwordForm().submitting()"><span>Cambiar contraseña</span></button></div>
         </form>
       </section>
 
       <section class="card">
         <h2>Verificación en dos pasos</h2>
         @if (session.isSuperAdmin()) {
-          <div class="muted-row"><span>Código de aplicación de autenticación</span><app-pill tone="green">Activada · obligatoria</app-pill></div>
+          <div class="muted-row"><span>Código de aplicación de autenticación</span><app-pill tone="green" [dot]="true">Activada · obligatoria</app-pill></div>
           <p class="field-hint">Es obligatoria para nuestro equipo porque la consola tiene acceso a todas las empresas.</p>
         } @else {
-          <div class="muted-row"><span>Código de aplicación de autenticación</span><app-pill tone="neutral">Desactivada</app-pill></div>
+          <div class="muted-row"><span>Código de aplicación de autenticación</span><app-pill tone="neutral" [dot]="true">Desactivada</app-pill></div>
           <p class="field-hint">Opcional para las empresas. Se podrá activar en una próxima versión.</p>
         }
+      </section>
+
+      <section class="card">
+        <h2>Apariencia</h2>
+        <div class="segmented" role="radiogroup" aria-label="Apariencia">
+          @for (m of themeModes; track m.mode) {
+            <button type="button" role="radio" [class.on]="theme.mode() === m.mode" [attr.aria-checked]="theme.mode() === m.mode" (click)="theme.set(m.mode)">
+              <app-icon [name]="m.icon" />{{ m.label }}
+            </button>
+          }
+        </div>
+        <p class="field-hint">«Sistema» sigue el modo claro u oscuro de este dispositivo. La elección se guarda en este navegador.</p>
       </section>
     </div>
   }

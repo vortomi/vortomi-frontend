@@ -2,6 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { META_RATES_USD } from '../../shared/billing/meta-pricing';
 import { formatCount, formatUnitPrice, formatUsdCents } from '../../shared/format/money';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { PlatformData } from './platform.data';
 
 /**
@@ -10,7 +11,7 @@ import { PlatformData } from './platform.data';
  */
 @Component({
   selector: 'app-usage-page',
-  imports: [RouterLink],
+  imports: [RouterLink, Skeleton],
   template: `
     <header class="page-top">
       <h1>Uso y salud</h1>
@@ -18,6 +19,9 @@ import { PlatformData } from './platform.data';
     </header>
     <div class="page-body">
       <div class="card table-card">
+        @if (!data.ready()) {
+          <app-skeleton kind="table" [rows]="5" [cols]="5" />
+        } @else {
         <table class="data-table">
           <thead><tr><th>Empresa</th><th>Mensajes totales</th><th>Respuestas usadas de las gratis</th><th></th><th>Estimado a Meta</th></tr></thead>
           <tbody>
@@ -29,9 +33,12 @@ import { PlatformData } from './platform.data';
                 <td class="bar-cell"><div class="track"><i [style.width.%]="row.percent" [class.over]="row.over"></i></div></td>
                 <td [class.over-text]="row.over">{{ row.cost }}</td>
               </tr>
+            } @empty {
+              <tr><td colspan="5"><p class="empty-state">Ninguna empresa usó WhatsApp este mes.</p></td></tr>
             }
           </tbody>
         </table>
+        }
       </div>
       <p class="field-hint foot">Estimado con {{ rates.service }} por respuesta o plantilla de utilidad y {{ rates.marketing }} por plantilla de marketing (tarifa de Venezuela). El monto real lo informa Meta días después.</p>
     </div>
@@ -39,15 +46,15 @@ import { PlatformData } from './platform.data';
   styleUrl: './platform-pages.scss',
   styles: `
     .bar-cell { width: 180px; }
-    .track { height: 7px; background: #eef0f3; border-radius: 99px; overflow: hidden; }
-    .track i { display: block; height: 100%; background: var(--color-success); }
+    .track { height: 8px; background: var(--color-surface-hover); border-radius: 99px; overflow: hidden; }
+    .track i { display: block; height: 100%; background: var(--color-primary); border-radius: 99px; }
     .track i.over { background: var(--color-warning); }
-    .over-text { color: #c2410c; font-weight: 600; }
+    .over-text { color: var(--color-warning); font-weight: 600; }
     .foot { margin-top: 10px; }
   `,
 })
 export class UsagePage {
-  private readonly data = inject(PlatformData);
+  protected readonly data = inject(PlatformData);
   protected readonly month = new Intl.DateTimeFormat('es-VE', { month: 'long', timeZone: 'America/Caracas' }).format(new Date());
 
   constructor() {

@@ -13,6 +13,7 @@ import { Avatar } from '../../shared/ui/avatar';
 import { FieldError } from '../../shared/ui/field-error';
 import { Icon } from '../../shared/ui/icon';
 import { PasswordMeter } from '../../shared/ui/password-meter';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { PasswordField } from '../../shared/ui/password-field';
 import { InvitationAcceptance } from './invitation-acceptance';
 import { InvitationRemote } from './invitation-remote';
@@ -43,8 +44,9 @@ type PageState = { status: 'loading' } | { status: 'valid'; view: InvitationView
 /** Where an invited person creates their password, or enters with the one they have (mockup web-13). */
 @Component({
   selector: 'app-invitation-page',
-  imports: [PasswordField, FormField, RouterLink, Avatar, FieldError, Icon, PasswordMeter],
+  imports: [PasswordField, FormField, RouterLink, Avatar, FieldError, Icon, PasswordMeter, Skeleton],
   templateUrl: './invitation.page.html',
+  styleUrl: './demo-box.scss',
   styles: `
     .company { display: flex; align-items: center; gap: 12px; border: 1px solid var(--color-border); background: var(--color-surface);
       border-radius: var(--radius-lg); padding: 12px 14px; }

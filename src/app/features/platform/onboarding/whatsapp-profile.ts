@@ -4,7 +4,9 @@ import { WHATSAPP_VERTICAL } from '../../../shared/api/labels';
 import type { WhatsAppVertical } from '../../../shared/api/models';
 import { imageFileError, readAsDataUrl } from '../../../shared/files/image';
 import { FieldError } from '../../../shared/ui/field-error';
+import { FileDrop } from '../../../shared/ui/file-drop';
 import { Icon } from '../../../shared/ui/icon';
+import { type MenuOption, SelectMenu } from '../../../shared/ui/select-menu';
 import { PROFILE_ABOUT_MAX } from './onboarding.rules';
 import type { WhatsAppProfile } from './onboarding.state';
 
@@ -15,7 +17,7 @@ const PHOTO_MAX_BYTES = 5_000_000;
 /** Profile of the number: what customers see when they open the business on WhatsApp. */
 @Component({
   selector: 'app-whatsapp-profile',
-  imports: [FormField, FieldError, Icon],
+  imports: [FormField, FieldError, FileDrop, Icon, SelectMenu],
   template: `
     @let f = profile();
     <div class="profile">
@@ -27,10 +29,8 @@ const PHOTO_MAX_BYTES = 5_000_000;
             <app-icon name="image" />
           }
         </span>
-        <label class="btn" [class.disabled]="locked()">
-          <input type="file" accept="image/png,image/jpeg" class="visually-hidden" [disabled]="locked()" (change)="pickPhoto($event)" />
-          {{ f.photoDataUrl().value() ? 'Cambiar foto' : 'Subir logo' }}
-        </label>
+        <app-file-drop accept="image/png,image/jpeg" [compact]="true" [disabled]="locked()"
+          [label]="f.photoDataUrl().value() ? 'Cambiar foto' : 'Subir logo'" (picked)="pickPhoto($event)" />
         @if (photoError(); as error) { <p class="field-error" role="alert">{{ error }}</p> }
         <p class="field-hint">Cuadrado, JPG o PNG. Se ve en círculo.</p>
       </div>
@@ -43,11 +43,9 @@ const PHOTO_MAX_BYTES = 5_000_000;
         </div>
         <div class="g2">
           <div class="field">
-            <label for="vertical">Categoría</label>
-            <select id="vertical" class="input" [formField]="f.vertical">
-              <option value="">Elige una</option>
-              @for (v of verticals; track v[0]) { <option [value]="v[0]">{{ v[1] }}</option> }
-            </select>
+            <span class="label">Categoría</span>
+            <app-select-menu label="Categoría" placeholder="Elige una" [searchable]="true" [options]="verticals" [disabled]="locked()"
+              [value]="f.vertical().value() || null" (picked)="setVertical($event)" />
             <app-field-error [state]="f.vertical()" />
           </div>
           <div class="field">
@@ -72,11 +70,9 @@ const PHOTO_MAX_BYTES = 5_000_000;
   styles: `
     .profile { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 16px; }
     .photo { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
-    .circle { width: 96px; height: 96px; border-radius: 50%; background: #eef0f3; display: flex; align-items: center;
+    .circle { width: 96px; height: 96px; border-radius: 50%; background: var(--color-surface-hover); display: flex; align-items: center;
       justify-content: center; overflow: hidden; color: var(--color-text-faint); --icon-size: 28px; }
     .circle img { width: 100%; height: 100%; object-fit: cover; }
-    .btn { height: 32px; font-size: 12.5px; cursor: pointer; }
-    .btn.disabled { opacity: 0.5; cursor: default; }
     .fields { display: flex; flex-direction: column; gap: 12px; }
     .g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     @media (max-width: 760px) { .profile, .g2 { grid-template-columns: minmax(0, 1fr); } }
@@ -87,15 +83,16 @@ export class WhatsAppProfileFields {
   /** Once the number is connected the profile has been sent; changes go through the company's settings. */
   readonly locked = input(false);
 
-  protected readonly verticals = Object.entries(WHATSAPP_VERTICAL) as [WhatsAppVertical, string][];
+  protected readonly verticals: MenuOption[] = (Object.entries(WHATSAPP_VERTICAL) as [WhatsAppVertical, string][]).map(([value, label]) => ({ value, label }));
   protected readonly photoError = signal<string | null>(null);
   protected readonly aboutLeft = computed(() => PROFILE_ABOUT_MAX - this.profile().about().value().length);
 
-  protected async pickPhoto(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = '';
-    if (!file) return;
+  protected setVertical(value: string): void {
+    this.profile().vertical().value.set(value as WhatsAppVertical);
+    this.profile().vertical().markAsTouched();
+  }
+
+  protected async pickPhoto(file: File): Promise<void> {
     const error = PHOTO_TYPES.includes(file.type) ? imageFileError(file, PHOTO_MAX_BYTES) : 'Usa una imagen JPG o PNG.';
     this.photoError.set(error);
     if (!error) this.profile().photoDataUrl().value.set(await readAsDataUrl(file));

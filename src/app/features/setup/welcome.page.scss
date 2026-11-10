@@ -20,7 +20,7 @@
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: var(--color-primary);
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
     color: #fff;
     display: flex;
     align-items: center;
@@ -30,12 +30,13 @@
 
   b {
     display: block;
-    font-size: 15px;
+    font-size: 16px;
+    font-weight: 700;
   }
 
   .sub,
   .progress {
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--color-text-muted);
   }
 
@@ -51,8 +52,8 @@
 
   span {
     flex: 1;
-    height: 4px;
-    border-radius: 2px;
+    height: 6px;
+    border-radius: 3px;
     background: var(--color-border);
 
     &.on {
@@ -62,18 +63,18 @@
 }
 
 .body {
-  padding: 26px 28px;
+  padding: 28px 30px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 
   h1 {
-    font-size: 21px;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
   }
 
   .lead {
-    font-size: 13.5px;
-    color: var(--color-text-muted);
     margin-top: -8px;
   }
 }
@@ -87,9 +88,9 @@
   background: var(--color-surface-muted);
 
   label {
-    font-size: 12.5px;
-    font-weight: 600;
-    color: #3b4555;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
   }
 }
 
@@ -103,18 +104,17 @@
   grid-template-columns: auto 170px minmax(0, 1fr);
   gap: 12px;
   align-items: start;
-  padding: 11px 0;
-  border-top: 1px solid var(--color-border-soft);
-  font-size: 13.5px;
+  padding: 12px 0;
+  border-top: 1px solid var(--color-border);
+  font-size: 14px;
   cursor: pointer;
 
   input {
-    margin-top: 2px;
-    accent-color: var(--color-primary);
+    margin-top: 1px;
   }
 
   span {
-    color: var(--color-text-2, var(--color-text));
+    color: var(--color-text-2);
   }
 
   small {
@@ -146,9 +146,6 @@
     flex: 1;
   }
 
-  .link {
-    color: var(--color-text-muted);
-  }
 }
 
 @media (max-width: 760px) {

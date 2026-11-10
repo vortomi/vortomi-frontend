@@ -15,10 +15,9 @@ import type { TeamMemberRow } from './team.actions';
       <app-access-fields [access]="access()" (changed)="access.set($event)" />
       @if (error(); as message) { <p class="field-error" role="alert">{{ message }}</p> }
       <div dialog-actions class="dialog-actions">
-        <button type="button" class="btn" [disabled]="saving()" (click)="close()">Cancelar</button>
+        <button type="button" class="btn" [disabled]="saving()" (click)="close()"><span>Cancelar</span></button>
         <button type="button" class="btn btn--primary" [disabled]="saving()" [attr.aria-busy]="saving()" (click)="save()">
-          @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
-          Guardar
+          <app-icon name="check" /><span>Guardar</span>
         </button>
       </div>
     </app-dialog>

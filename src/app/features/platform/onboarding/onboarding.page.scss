@@ -7,10 +7,15 @@
   min-height: 0;
 }
 
+.resume {
+  max-width: 760px;
+  padding: 24px;
+}
+
 .steps {
   display: flex;
   align-items: center;
-  padding: 13px 26px;
+  padding: 16px 28px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   list-style: none;
@@ -41,19 +46,20 @@
   &.done .c {
     background: var(--color-success);
     border-color: var(--color-success);
-    color: #fff;
+    color: var(--color-on-primary);
   }
 
   &.on .c {
     background: var(--color-primary);
     border-color: var(--color-primary);
-    color: #fff;
-    box-shadow: 0 0 0 4px var(--color-primary-soft);
+    color: var(--color-on-primary);
+    box-shadow: 0 0 0 4px var(--color-ring);
   }
 
   b {
     display: block;
-    font-size: 13.5px;
+    font-size: 14px;
+    font-weight: 600;
   }
 
   small {

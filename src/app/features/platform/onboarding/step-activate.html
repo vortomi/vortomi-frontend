@@ -10,16 +10,16 @@
         <p>Envíale este enlace a <b>{{ company.adminName }}</b> ({{ company.adminEmail }}) por WhatsApp o por correo. Con él crea su contraseña y entra a su panel. Sirve una sola vez y vence en 72 horas.</p>
         <div class="copy">
           <input class="input mono" aria-label="Enlace de invitación" readonly [value]="token" (focus)="select($event)" />
-          <button type="button" class="btn btn--primary" (click)="copy(token)"><app-icon name="copy" />Copiar</button>
+          <button type="button" class="btn btn--primary" (click)="copy(token)"><app-icon name="copy" /><span>Copiar</span></button>
         </div>
       } @else {
         <p>Enviamos la invitación a {{ company.adminEmail }}. Lo que escriban sus clientes al {{ channel?.number?.displayNumber }} ya entra en su bandeja.</p>
       }
       <div class="actions">
-        <a class="btn" [routerLink]="['/platform/tenants', state.tenantId()]">Ver la empresa</a>
-        <a class="btn" routerLink="/platform/tenants">Volver a empresas</a>
+        <a class="btn" [routerLink]="['/platform/tenants', state.tenantId()]"><span>Ver la empresa</span></a>
+        <a class="btn" routerLink="/platform/tenants"><span>Volver a empresas</span></a>
         @if (!state.real) {
-          <a class="btn btn--primary" [routerLink]="['/invitation', token]">Prototipo: abrir la invitación</a>
+          <a class="btn btn--primary" [routerLink]="['/invitation', token]"><span>Prototipo: abrir la invitación</span></a>
         }
       </div>
     </section>
@@ -43,9 +43,9 @@
             <td>Nombre visible</td>
             <td>
               «{{ channel?.number?.verifiedName }}»
-              @if (channel?.number?.nameStatus === 'approved') { <app-pill class="after-text" tone="green">Aprobado</app-pill> }
-              @else if (channel?.number?.nameStatus === 'pending_review') { <app-pill class="after-text" tone="amber">En revisión</app-pill><span class="x">Meta nos avisa cuando lo apruebe y se aplica solo.</span> }
-              @else { <app-pill class="after-text" tone="red">Rechazado</app-pill><span class="x">Hay que proponer otro en su WhatsApp Manager.</span> }
+              @if (channel?.number?.nameStatus === 'approved') { <app-pill class="after-text" tone="green" [dot]="true">Aprobado</app-pill> }
+              @else if (channel?.number?.nameStatus === 'pending_review') { <app-pill class="after-text" tone="amber" [dot]="true">En revisión</app-pill><span class="x">Meta nos avisa cuando lo apruebe y se aplica solo.</span> }
+              @else { <app-pill class="after-text" tone="red" [dot]="true">Rechazado</app-pill><span class="x">Hay que proponer otro en su WhatsApp Manager.</span> }
             </td>
           </tr>
           <tr>
@@ -57,26 +57,26 @@
               </span>
             </td>
           </tr>
-          <tr><td>Prueba de ida y vuelta</td><td><app-pill tone="green">Superada</app-pill></td></tr>
+          <tr><td>Prueba de ida y vuelta</td><td><app-pill tone="green" [dot]="true">Superada</app-pill></td></tr>
           <tr>
             <td>Verificación del negocio</td>
             <td>
-              @if (channel?.account?.businessVerified) { <app-pill tone="green">Verificado</app-pill> }
-              @else { <app-pill tone="amber">Sin verificar</app-pill><span class="x">Puede activarse. Escribe primero a hasta {{ unverifiedLimit }} clientes por día entre todos sus números hasta que verifique su negocio con el RIF.</span> }
+              @if (channel?.account?.businessVerified) { <app-pill tone="green" [dot]="true">Verificado</app-pill> }
+              @else { <app-pill tone="amber" [dot]="true">Sin verificar</app-pill><span class="x">Puede activarse. Escribe primero a hasta {{ unverifiedLimit }} clientes por día entre todos sus números hasta que verifique su negocio con el RIF.</span> }
             </td>
           </tr>
           <tr>
             <td>Método de pago en Meta</td>
             <td>
-              @if (channel?.account?.hasPaymentMethod) { <app-pill tone="green">Listo</app-pill> }
-              @else { <app-pill tone="amber">Falta</app-pill><span class="x">Puede activarse igual. Se le recordará en su panel hasta que lo agregue.</span> }
+              @if (channel?.account?.hasPaymentMethod) { <app-pill tone="green" [dot]="true">Listo</app-pill> }
+              @else { <app-pill tone="amber" [dot]="true">Falta</app-pill><span class="x">Puede activarse igual. Se le recordará en su panel hasta que lo agregue.</span> }
             </td>
           </tr>
         </table>
       </section>
       <section class="card sec">
         <h2>Al activar pasa esto</h2>
-        <ol class="olist" style="margin-top: 10px">
+        <ol class="olist mt">
           <li><span>La empresa pasa a <b>Activa</b> y aparece en la lista de empresas.</span></li>
           <li><span>Le llega la invitación a {{ firstName() }}. Si no la usa en 72 horas, se puede reenviar.</span></li>
           <li><span>Lo que escriban sus clientes a ese número empieza a entrar en su bandeja.</span></li>
@@ -86,7 +86,7 @@
       <section class="card sec">
         <h2>Lo completa {{ firstName() || 'el administrador' }} al entrar</h2>
         <p class="d">No hace falta para activar: lo conoce mejor el negocio. Su panel se lo va a ir pidiendo.</p>
-        <ol class="olist" style="margin-top: 10px">
+        <ol class="olist mt">
           <li><span><b>Horario de atención</b> y mensaje de ausencia, en Ajustes.</span></li>
           <li><span><b>Tasa del día</b> en bolívares, si vende con precios en dólares.</span></li>
           <li><span>Invitar a su <b>equipo</b> y elegir qué números atiende cada uno.</span></li>
@@ -113,10 +113,9 @@
   </div>
   <footer class="step-foot">
     <span class="count">Paso 4 de 4</span>
-    <button type="button" class="btn" (click)="state.goTo(2)">Atrás</button>
+    <button type="button" class="btn" [disabled]="activating()" (click)="state.goTo(2)"><span>Atrás</span></button>
     <button type="button" class="btn btn--success" [disabled]="activating()" [attr.aria-busy]="activating()" (click)="activate()">
-      @if (activating()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
-      Activar empresa
+      <app-icon name="check" /><span>Activar empresa</span>
     </button>
   </footer>
 }

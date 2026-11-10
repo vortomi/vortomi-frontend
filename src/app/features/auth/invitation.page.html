@@ -2,7 +2,7 @@
   @switch (state().status) {
     @case ('loading') {
       <h2>Revisando tu invitación…</h2>
-      <p class="lead"><span class="spinner" aria-hidden="true"></span></p>
+      <app-skeleton kind="form" [rows]="3" />
     }
     @case ('valid') {
       @if (view(); as v) {
@@ -38,7 +38,7 @@
               <app-field-error [state]="loginForm.password()" />
             </div>
             <button type="submit" class="btn btn--primary btn--block" [disabled]="loginForm().submitting()" [attr.aria-busy]="loginForm().submitting()">
-              @if (loginForm().submitting()) { <span class="spinner" aria-hidden="true"></span> } @else { Aceptar y entrar }
+              <span>Aceptar y entrar</span>
             </button>
           } @else {
             <div class="field">
@@ -62,7 +62,7 @@
               <app-field-error [state]="acceptForm.terms()" />
             </div>
             <button type="submit" class="btn btn--primary btn--block" [disabled]="acceptForm().submitting()" [attr.aria-busy]="acceptForm().submitting()">
-              @if (acceptForm().submitting()) { <span class="spinner" aria-hidden="true"></span> } @else { Crear cuenta y entrar }
+              <span>Crear cuenta y entrar</span>
             </button>
           }
         </form>
@@ -77,7 +77,7 @@
     @case ('used') {
       <h2>Esta invitación ya se usó</h2>
       <div class="form-alert info"><app-icon name="lock" />Cada invitación sirve una sola vez. Si ya creaste tu cuenta, inicia sesión.</div>
-      <a class="btn btn--primary btn--block" routerLink="/login">Iniciar sesión</a>
+      <a class="btn btn--primary btn--block" routerLink="/login"><span>Iniciar sesión</span></a>
     }
     @default {
       <h2>Enlace no válido</h2>

@@ -7,6 +7,7 @@ import type { SellMethod, Sells } from '../../shared/api/models';
 import { Icon } from '../../shared/ui/icon';
 import { OptionCards } from '../../shared/ui/option-cards';
 import { Toaster } from '../../shared/ui/toaster';
+import { ThemeToggle } from '../../shared/ui/theme-toggle';
 import { SetupData } from './setup.data';
 import { planLines } from './setup-plan';
 import { METHOD_OPTIONS, type PlanPart, SELLS_OPTIONS, type SetupAnswers, type SetupPlan } from './setup.models';
@@ -19,7 +20,7 @@ import { METHOD_OPTIONS, type PlanPart, SELLS_OPTIONS, type SetupAnswers, type S
  */
 @Component({
   selector: 'app-welcome-page',
-  imports: [Icon, OptionCards],
+  imports: [Icon, OptionCards, ThemeToggle],
   templateUrl: './welcome.page.html',
   styleUrl: './welcome.page.scss',
 })
@@ -46,6 +47,8 @@ export class WelcomePage {
   protected readonly plan = signal<SetupPlan | null>(null);
   protected readonly kept = signal<ReadonlySet<PlanPart>>(new Set());
   protected readonly busy = signal(false);
+  /** «Lo hago después» is saving the choice. */
+  protected readonly skipping = signal(false);
 
   /** Only attending customers: how it sells does not matter, so that question is not asked. */
   private readonly solo = computed(() => this.answers().sells === 'none');
@@ -99,9 +102,15 @@ export class WelcomePage {
   }
 
   protected async later(): Promise<void> {
-    if (await this.setup.skip()) {
-      this.toaster.show('Puedes hacerlo cuando quieras desde Ajustes → Empresa.', 'info');
-      await this.router.navigateByUrl('/inbox');
+    if (this.skipping() || this.busy()) return;
+    this.skipping.set(true);
+    try {
+      if (await this.setup.skip()) {
+        this.toaster.show('Puedes hacerlo cuando quieras desde Ajustes → Empresa.', 'info');
+        await this.router.navigateByUrl('/inbox');
+      }
+    } finally {
+      this.skipping.set(false);
     }
   }
 

@@ -11,7 +11,9 @@ import { Confirm } from '../../shared/ui/confirm';
 import { Icon } from '../../shared/ui/icon';
 import { InvitationLinkDialog } from '../../shared/ui/invitation-link.dialog';
 import { Pill } from '../../shared/ui/pill';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
+import { failIf } from './fail-if';
 import { PlatformData, type PlatformInvitation } from './platform.data';
 
 const TZ = 'America/Caracas';
@@ -19,7 +21,7 @@ const TZ = 'America/Caracas';
 /** One company seen from the console: data, numbers, team, usage and audit. No conversations. */
 @Component({
   selector: 'app-tenant-detail-page',
-  imports: [RouterLink, Avatar, Icon, Pill, InvitationLinkDialog],
+  imports: [RouterLink, Avatar, Icon, Pill, Skeleton, InvitationLinkDialog],
   templateUrl: './tenant-detail.page.html',
   styleUrls: ['./platform-pages.scss', './tenant-detail.page.scss'],
 })
@@ -36,6 +38,8 @@ export class TenantDetailPage {
   protected readonly labels = { status: TENANT_STATUS, plan: TENANT_PLAN, channel: CHANNEL_STATUS, quality: QUALITY, role: ROLE };
   protected readonly link = signal<{ link: string; name: string } | null>(null);
   protected readonly busy = signal(false);
+  /** This company's people and invitations arrived (they come apart from the list). */
+  protected readonly detailLoaded = signal(false);
 
   protected readonly row = computed(() => this.data.row(this.tenantId()));
   protected readonly members = computed(() => (this.row() ? this.data.members(this.row()!.tenant.id) : []));
@@ -64,8 +68,12 @@ export class TenantDetailPage {
       const id = this.tenantId();
       if (!id) return;
       untracked(() => {
+        this.detailLoaded.set(false);
         if (!this.data.ready()) void this.data.load().then(this.report);
-        void this.data.loadDetail(id).then(this.report);
+        void this.data.loadDetail(id).then((error) => {
+          this.detailLoaded.set(true);
+          this.report(error);
+        });
       });
     });
   }
@@ -85,17 +93,24 @@ export class TenantDetailPage {
   protected async suspend(): Promise<void> {
     const row = this.row();
     if (!row) return;
-    const yes = await this.confirm.ask({
+    const question = {
       title: `¿Suspender ${row.tenant.name}?`,
       message: 'Nadie de la empresa podrá entrar hasta que la reactives. Sus datos, conversaciones y números se conservan.',
       confirmLabel: 'Suspender',
       danger: true,
-    });
-    if (yes) await this.changeStatus('suspended', 'Empresa suspendida. Sus datos se conservan.');
+    };
+    await this.changeStatus('suspended', question, 'Empresa suspendida. Sus datos se conservan.');
   }
 
   protected async reactivate(): Promise<void> {
-    await this.changeStatus('active', 'Empresa reactivada');
+    const row = this.row();
+    if (!row) return;
+    const question = {
+      title: `¿Reactivar ${row.tenant.name}?`,
+      message: 'Su equipo vuelve a entrar al panel y a atender sus números.',
+      confirmLabel: 'Reactivar',
+    };
+    await this.changeStatus('active', question, 'Empresa reactivada');
   }
 
   protected requestReconnect(channel: ChannelAccount): void {
@@ -105,19 +120,32 @@ export class TenantDetailPage {
   protected async renew(invitation: PlatformInvitation): Promise<void> {
     const id = this.row()?.tenant.id;
     if (!id) return;
-    const result = await this.data.renewInvitation(id, invitation.id);
-    if ('error' in result) return this.toaster.show(result.error, 'info');
-    this.link.set({ link: result.link, name: invitation.name });
+    let link: string | null = null;
+    const done = await this.confirm.ask({
+      title: `¿Crear un enlace nuevo para ${invitation.name}?`,
+      message: 'El enlace anterior deja de funcionar y el nuevo vale 72 horas.',
+      confirmLabel: 'Crear enlace',
+      action: async () => {
+        const result = await this.data.renewInvitation(id, invitation.id);
+        if ('error' in result) failIf(result.error);
+        else link = result.link;
+      },
+    });
+    if (done && link) this.link.set({ link, name: invitation.name });
   }
 
-  private async changeStatus(status: 'active' | 'suspended', success: string): Promise<void> {
+  /** Asks first; the dialog shows the circle while the server answers and any error inside it. */
+  private async changeStatus(
+    status: 'active' | 'suspended',
+    question: { title: string; message: string; confirmLabel: string; danger?: boolean },
+    success: string,
+  ): Promise<void> {
     const id = this.row()?.tenant.id;
     if (!id || this.busy()) return;
     this.busy.set(true);
-    const error = await this.data.setStatus(id, status);
+    const done = await this.confirm.ask({ ...question, action: async () => failIf(await this.data.setStatus(id, status)) });
     this.busy.set(false);
-    if (error) this.toaster.show(error, 'info');
-    else this.toaster.show(success, status === 'suspended' ? 'info' : 'success');
+    if (done) this.toaster.show(success, status === 'suspended' ? 'info' : 'success');
   }
 
   private readonly report = (error: string | null) => {

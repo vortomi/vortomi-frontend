@@ -8,6 +8,7 @@
     </div>
     <span class="spacer"></span>
     <span class="progress">{{ step() < 3 ? 'Paso ' + (position() + 1) + ' de ' + (steps().length - 1) : 'Listo para preparar' }}</span>
+    <app-theme-toggle align="right" />
   </header>
   <div class="bar" aria-hidden="true">
     @for (s of steps(); track s; let i = $index) { <span [class.on]="i <= position()"></span> }
@@ -67,18 +68,16 @@
     }
 
     <footer class="actions">
-      <button type="button" class="link" [disabled]="busy()" (click)="later()">Lo hago después</button>
+      <button type="button" class="btn btn--ghost" [disabled]="busy() || skipping()" [attr.aria-busy]="skipping()" (click)="later()"><span>Lo hago después</span></button>
       <span class="spacer"></span>
-      @if (step() > 0) { <button type="button" class="btn" [disabled]="busy()" (click)="back()">Atrás</button> }
+      @if (step() > 0) { <button type="button" class="btn" [disabled]="busy() || skipping()" (click)="back()"><span>Atrás</span></button> }
       @if (step() < 3) {
-        <button type="button" class="btn btn--primary" [disabled]="busy()" [attr.aria-busy]="busy()" (click)="next()">
-          @if (busy()) { <span class="spinner" aria-hidden="true"></span> }
-          Siguiente
+        <button type="button" class="btn btn--primary" [disabled]="busy() || skipping()" [attr.aria-busy]="busy()" (click)="next()">
+          <span>Siguiente</span><app-icon name="arrow" />
         </button>
       } @else {
-        <button type="button" class="btn btn--primary" [disabled]="busy()" [attr.aria-busy]="busy()" (click)="apply()">
-          @if (busy()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
-          Preparar mi panel
+        <button type="button" class="btn btn--primary" [disabled]="busy() || skipping()" [attr.aria-busy]="busy()" (click)="apply()">
+          <app-icon name="check" /><span>Preparar mi panel</span>
         </button>
       }
     </footer>
