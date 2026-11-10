@@ -1,5 +1,7 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import type { CustomField, CustomValue, CustomValues, Id } from '../../shared/api/models';
+import { DatePicker } from '../../shared/ui/date-picker';
+import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
 import { isAnswered } from './custom-field-rules';
 
 /** Lists this short show as buttons; longer ones as a selector. */
@@ -13,6 +15,7 @@ const CHIPS_SHOWN = 12;
  */
 @Component({
   selector: 'app-custom-values-form',
+  imports: [DatePicker, SelectMenu],
   template: `
     @for (field of shown(); track field.id) {
       @let value = values()[field.id];
@@ -26,26 +29,24 @@ const CHIPS_SHOWN = 12;
             <input class="input num" inputmode="decimal" [attr.aria-label]="field.label" [value]="value ?? ''" (change)="setNumber(field.id, $event)" />
           }
           @case ('date') {
-            <input class="input date" type="date" [attr.aria-label]="field.label" [value]="value ?? ''" (change)="set(field.id, text($event))" />
+            <app-date-picker class="date" [label]="field.label" [value]="$any(value) ?? null" [clearable]="!field.required" (picked)="set(field.id, $event ?? undefined)" />
           }
           @case ('boolean') {
-            <div class="seg" role="radiogroup" [attr.aria-label]="field.label">
+            <div class="segmented" role="radiogroup" [attr.aria-label]="field.label">
               <button type="button" role="radio" [class.on]="value === true" [attr.aria-checked]="value === true" (click)="toggle(field, true)">Sí</button>
               <button type="button" role="radio" [class.on]="value === false" [attr.aria-checked]="value === false" (click)="toggle(field, false)">No</button>
             </div>
           }
           @case ('choice') {
             @if (field.options.length <= buttonsUpTo) {
-              <div class="seg" role="radiogroup" [attr.aria-label]="field.label">
+              <div class="segmented" role="radiogroup" [attr.aria-label]="field.label">
                 @for (o of field.options; track o.id) {
                   <button type="button" role="radio" [class.on]="value === o.id" [attr.aria-checked]="value === o.id" (click)="toggle(field, o.id)">{{ o.value }}</button>
                 }
               </div>
             } @else {
-              <select class="input" [attr.aria-label]="field.label" (change)="set(field.id, text($event))">
-                <option value="" [selected]="!value">Elige…</option>
-                @for (o of field.options; track o.id) { <option [value]="o.id" [selected]="value === o.id">{{ o.value }}</option> }
-              </select>
+              <app-select-menu [label]="field.label" [options]="choiceOptions(field)" [value]="$any(value) ?? ''" [searchable]="field.options.length > 7"
+                (picked)="set(field.id, $event)" />
             }
           }
           @case ('multi_choice') {
@@ -74,16 +75,15 @@ const CHIPS_SHOWN = 12;
   styles: `
     :host { display: flex; flex-direction: column; gap: 12px; }
     .cf { display: flex; flex-direction: column; gap: 5px; }
-    .label { font-size: 12.5px; font-weight: 600; color: #3b4555; }
+    .label { font-size: 14px; font-weight: 500; color: var(--color-text); }
     .req { color: var(--color-danger); }
-    .num { max-width: 200px; } .date { max-width: 200px; }
-    .seg { display: inline-flex; align-self: flex-start; flex-wrap: wrap; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); overflow: hidden; }
-    .seg button { border: 0; border-right: 1px solid var(--color-border-strong); background: var(--color-surface); padding: 7px 14px; font: inherit; font-size: 13px; cursor: pointer; }
-    .seg button:last-child { border-right: 0; }
-    .seg button.on { background: #1a237e; color: #fff; }
+    .num { max-width: 200px; }
+    .segmented { align-self: flex-start; flex-wrap: wrap; }
+    .date { max-width: 280px; }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-    .chip { border: 1px solid var(--color-border-strong); background: var(--color-surface); border-radius: var(--radius-pill); padding: 5px 12px; font: inherit; font-size: 13px; cursor: pointer; }
-    .chip.on { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary-strong); }
+    .chip { border: 1px solid var(--color-border-strong); background: var(--color-surface); color: var(--color-text-2); border-radius: var(--radius-pill); padding: 5px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+    .chip:hover { border-color: var(--color-primary); }
+    .chip.on { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary-text); }
     .more { align-self: flex-start; font-size: 13px; }
   `,
 })
@@ -103,6 +103,11 @@ export class CustomValuesForm {
   private readonly first = computed(() => this.fields().filter((f) => f.required || isAnswered(this.values()[f.id]) || this.touched().has(f.id)));
   protected readonly hidden = computed(() => this.fields().filter((f) => !this.first().includes(f)));
   protected readonly shown = computed(() => (this.showAll() ? this.fields() : this.first()));
+
+  /** A longer list: «Elige…» (no answer) and its options. */
+  protected choiceOptions(field: CustomField): MenuOption[] {
+    return [{ value: '', label: 'Elige…' }, ...field.options.map((o) => ({ value: o.id, label: o.value }))];
+  }
 
   protected text(event: Event): string {
     return (event.target as HTMLInputElement).value;

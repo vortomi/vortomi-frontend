@@ -2,19 +2,27 @@
   <h1>Reportes</h1>
   <span class="sub">Cómo atiende el equipo y cuánto se gasta en WhatsApp</span>
   <span class="spacer"></span>
-  <div class="periods" role="group" aria-label="Período">
+  <div class="segmented" role="group" aria-label="Período">
     @for (p of periods(); track p.id) {
       <button type="button" [class.on]="period() === p.id" [attr.aria-pressed]="period() === p.id" (click)="period.set(p.id)">
         {{ p.label }}
       </button>
     }
   </div>
-  <button type="button" class="btn" (click)="exportCsv()"><app-icon name="down" />Exportar</button>
+  <button type="button" class="btn" [disabled]="!data.ready()" (click)="exportCsv()"><app-icon name="down" /><span>Exportar</span></button>
 </header>
 
 <div class="page-body">
   @if (!data.ready()) {
-    <p class="muted">Cargando reportes…</p>
+    <section class="kpis" role="status" aria-label="Cargando reportes">
+      @for (k of [1, 2, 3, 4]; track k) {
+        <div class="card kpi"><span class="sk" style="width: 55%"></span><span class="sk kpi-sk"></span><span class="sk" style="width: 70%; height: 10px"></span></div>
+      }
+    </section>
+    <section class="grid">
+      <div class="card chart-card"><span class="sk" style="width: 40%; height: 14px"></span><span class="sk chart-sk"></span></div>
+      <div class="card chart-card"><app-skeleton kind="rows" [rows]="5" /></div>
+    </section>
   } @else {
     <section class="kpis">
       <article class="card kpi">

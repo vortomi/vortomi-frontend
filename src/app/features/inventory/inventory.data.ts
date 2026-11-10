@@ -190,11 +190,12 @@ export class InventoryData {
     this.variantTable.patch(variantId, { onHand: roundQuantity(variant.onHand + quantity) });
   }
 
-  setAvailable(variantId: Id, available: boolean): void {
+  /** Resolves once the server stored it (or showed why not), so the switch can wait meanwhile. */
+  async setAvailable(variantId: Id, available: boolean): Promise<void> {
     const variant = this.variantById().get(variantId);
     const remote = this.remote;
     if (remote && variant) {
-      void this.attempt(async () => this.variantTable.upsert(await remote.updateVariant(this.tenantId(), { ...variant, available })));
+      await this.attempt(async () => this.variantTable.upsert(await remote.updateVariant(this.tenantId(), { ...variant, available })));
       return;
     }
     this.variantTable.patch(variantId, { available });

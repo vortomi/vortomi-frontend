@@ -1,7 +1,11 @@
 .lead {
-  font-size: 13px;
-  color: var(--color-text-muted);
   margin-top: 2px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
 }
 
 .sources {
@@ -34,6 +38,18 @@
 
   &:disabled {
     cursor: wait;
+  }
+
+  &[aria-busy='true'] {
+    cursor: progress;
+  }
+
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border-width: 2px;
+    color: var(--color-primary);
+    flex-shrink: 0;
   }
 
   .radio {
@@ -100,10 +116,10 @@
   display: flex;
   gap: 12px;
   padding: 14px 16px;
-  border: 1px solid #a7e3c4;
+  border: 1px solid color-mix(in srgb, var(--color-success) 30%, transparent);
   border-radius: var(--radius-md);
-  background: #effaf4;
-  color: #145c36;
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
   --icon-size: 20px;
 
   .head {
@@ -131,7 +147,7 @@
   .next {
     margin-top: 10px;
     padding-top: 10px;
-    border-top: 1px solid #a7e3c4;
+    border-top: 1px solid color-mix(in srgb, var(--color-success) 30%, transparent);
     font-size: 13px;
     color: var(--color-text);
   }
@@ -160,6 +176,11 @@
     color: var(--color-text-muted);
     padding: 24px;
   }
+}
+
+.history .scroll {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
 }
 
 @media (max-width: 760px) {
@@ -198,7 +219,7 @@
 
   &.on .badge {
     background: var(--color-primary);
-    color: #fff;
+    color: var(--color-on-primary);
   }
 
   .grow {

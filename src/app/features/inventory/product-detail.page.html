@@ -1,26 +1,31 @@
 @let f = form();
 <header class="page-top">
   <a class="back" routerLink="/inventory" aria-label="Volver al inventario"><app-icon name="back" /></a>
-  <h1>{{ isNew() ? 'Nuevo producto' : (product()?.name ?? 'Producto no encontrado') }}</h1>
+  @if (isNew() || product() || data.ready()) {
+    <h1>{{ isNew() ? 'Nuevo producto' : (product()?.name ?? 'Producto no encontrado') }}</h1>
+  } @else {
+    <span class="sk title-sk"></span>
+  }
   @if (product(); as p) {
-    @if (!p.active) { <app-pill tone="neutral">Inactivo</app-pill> }
+    @if (!p.active) { <app-pill tone="neutral" [dot]="true">Inactivo</app-pill> }
   }
   <span class="spacer"></span>
   @if (canEdit() && (isNew() || product())) {
     @if (editing()) {
       <span class="editing-hint">Editando · los cambios se aplican al pulsar «Guardar».</span>
-      <button type="button" class="btn" [disabled]="saving()" (click)="cancel()">Cancelar</button>
+      <button type="button" class="btn" [disabled]="saving()" (click)="cancel()"><span>Cancelar</span></button>
       <button type="button" class="btn btn--primary" [disabled]="saving()" [attr.aria-busy]="saving()" (click)="save()">
-        @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
-        Guardar
+        <app-icon name="check" /><span>Guardar</span>
       </button>
     } @else {
-      <button type="button" class="btn btn--primary" (click)="edit()"><app-icon name="edit" />Editar</button>
+      <button type="button" class="btn btn--primary" (click)="edit()"><app-icon name="edit" /><span>Editar</span></button>
     }
   }
 </header>
 
-@if (isNew() || product()) {
+@if (!isNew() && !product() && !data.ready()) {
+  <div class="page-body"><app-skeleton kind="detail" [rows]="6" /></div>
+} @else if (isNew() || product()) {
   <div class="page-body">
     <div class="grid">
       <div class="col">
@@ -48,9 +53,9 @@
             @if (!data.onServer) {
               <div class="photo-row">
                 @if (f.photo; as src) { <img class="photo" [src]="src" alt="Foto del producto" /> } @else { <span class="photo ph"><app-icon name="image" /></span> }
-                <div class="field">
-                  <label for="photo">Foto</label>
-                  <input id="photo" type="file" accept="image/png,image/jpeg,image/webp" (change)="onPhoto($event)" />
+                <div class="field grow">
+                  <span class="label">Foto</span>
+                  <app-file-drop label="Elegir foto" accept="image/png,image/jpeg,image/webp" [compact]="true" (picked)="onPhoto($event)" />
                   <p class="field-hint">PNG, JPG o WebP de hasta 800 KB. Es la que se envía al cliente por WhatsApp.</p>
                 </div>
               </div>
@@ -61,24 +66,18 @@
                 <input id="p-name" class="input" [value]="f.name" (input)="patch({ name: value($event) })" />
               </div>
               <div class="field">
-                <label for="p-cat">Categoría</label>
-                <select id="p-cat" class="input" (change)="patch({ categoryId: value($event) })">
-                  <option value="" [selected]="!f.categoryId">Elige una categoría</option>
-                  @for (c of categories.list(); track c.id) {
-                    <option [value]="c.id" [selected]="c.id === f.categoryId">{{ c.name }}</option>
-                  }
-                </select>
+                <span class="label">Categoría</span>
+                <app-select-menu label="Categoría" placeholder="Elige una categoría" [searchable]="categoryOptions().length > 7"
+                  [options]="categoryOptions()" [value]="f.categoryId || null" (picked)="patch({ categoryId: $event })" />
                 <p class="field-hint">
                   @if (!categories.list().length) { Todavía no hay categorías. }
                   <a class="link" routerLink="/inventory/categories">Administrar categorías</a>
                 </p>
               </div>
               <div class="field">
-                <label for="p-mode">Cómo se controla la existencia</label>
-                <select id="p-mode" class="input" [disabled]="stockModeLocked()" (change)="patch({ stockMode: $any(value($event)) })">
-                  <option value="units" [selected]="f.stockMode === 'units'">Se cuenta (se compra y se revende)</option>
-                  <option value="availability" [selected]="f.stockMode === 'availability'">Disponible hoy (se hace por encargo)</option>
-                </select>
+                <span class="label">Cómo se controla la existencia</span>
+                <app-select-menu label="Cómo se controla la existencia" [options]="stockModeOptions" [value]="f.stockMode" [disabled]="stockModeLocked()"
+                  (picked)="patch({ stockMode: $any($event) })" />
               </div>
               <label class="checkbox active"><input type="checkbox" [checked]="f.active" (change)="patch({ active: !f.active })" />Activo: se puede ofrecer y enviar</label>
             </div>
@@ -131,7 +130,7 @@
           } @else {
             <div class="versions" role="radiogroup" aria-label="¿Viene en varias versiones?">
               <span class="label">¿Viene en varias versiones? <small class="muted">Por ejemplo tallas, colores o marcas.</small></span>
-              <div class="seg">
+              <div class="segmented">
                 <button type="button" role="radio" [class.on]="!f.versions" [attr.aria-checked]="!f.versions" (click)="setVersions(false)">No, una sola</button>
                 <button type="button" role="radio" [class.on]="f.versions" [attr.aria-checked]="f.versions" (click)="setVersions(true)">Sí, varias</button>
               </div>
@@ -142,12 +141,8 @@
               <span class="label">¿En qué se diferencian?</span>
               <div class="type-slots">
                 @for (slot of typeSlots(); track $index; let i = $index) {
-                  <select class="input" [attr.aria-label]="'Clase ' + (i + 1)" [disabled]="typesLocked()" (change)="setType(i, $event)">
-                    <option value="" [selected]="!slot">{{ i === 0 ? 'Les pongo nombre yo' : (slot ? 'Quitar esta clase' : '+ Agregar otra (opcional)') }}</option>
-                    @for (t of typeChoices(i); track t.type.id) {
-                      <option [value]="t.type.id" [selected]="t.type.id === slot">{{ t.type.name }}</option>
-                    }
-                  </select>
+                  <app-select-menu class="type-slot" [label]="'Clase ' + (i + 1)" [options]="typeOptions(i, slot)" [value]="slot"
+                    [disabled]="typesLocked()" (picked)="setType(i, $event)" />
                   @if (i < typeSlots().length - 1) { <span class="times">×</span> }
                 }
               </div>
@@ -201,7 +196,9 @@
                     <input class="input" aria-label="Existencia inicial" inputmode="decimal" [value]="row.initialStock" [disabled]="f.stockMode === 'availability'"
                       (input)="setRow(i, 'initialStock', $event)" />
                   }
-                  @if (f.versions) { <button type="button" class="link danger" (click)="removeRow(i)">Quitar</button> } @else { <span></span> }
+                  @if (f.versions) {
+                    <button type="button" class="icon-btn danger" aria-label="Quitar esta versión" (click)="removeRow(i)"><app-icon name="trash" /></button>
+                  } @else { <span></span> }
                 </div>
               } @empty {
                 <p class="field-hint">{{ f.variantTypeIds.length ? 'Marca al menos un valor de cada una para armar las versiones.' : 'Agrega la primera versión.' }}</p>
@@ -209,7 +206,7 @@
             </div>
             <p class="field-hint">El código es el que usas para identificar el producto (en tu factura o etiqueta): mayúsculas, números y guiones.</p>
             @if (f.versions && !f.variantTypeIds.length) {
-              <button type="button" class="btn add" (click)="addRow()"><app-icon name="plus" />Agregar versión</button>
+              <button type="button" class="btn add" (click)="addRow()"><app-icon name="plus" /><span>Agregar versión</span></button>
             }
           }
         </section>
@@ -223,20 +220,16 @@
               @for (v of variants(); track v.id) {
                 <div class="stock-line">
                   <span>{{ v.name }} <small class="muted">{{ money(v.priceCents) }}</small></span>
-                  <app-pill [tone]="statusLabel[status(p, v)].tone">{{ qty(free(v)) }} · {{ statusLabel[status(p, v)].text }}</app-pill>
+                  <app-pill [tone]="statusLabel[status(p, v)].tone" [dot]="true">{{ qty(free(v)) }} · {{ statusLabel[status(p, v)].text }}</app-pill>
                 </div>
               }
               @if (canEdit()) {
                 <div class="move">
-                  <select class="input" aria-label="Variante" (change)="setMovement('variantId', $event)">
-                    @for (v of variants(); track v.id) { <option [value]="v.id" [selected]="v.id === movement().variantId">{{ v.name }}</option> }
-                  </select>
-                  <select class="input" aria-label="Tipo de movimiento" (change)="setMovement('kind', $event)">
-                    @for (k of manualKinds; track k) { <option [value]="k" [selected]="k === movement().kind">{{ kindLabel[k] }}</option> }
-                  </select>
+                  <app-select-menu label="Variante" [options]="variantOptions()" [value]="movement().variantId || null" (picked)="setMovementValue('variantId', $event)" />
+                  <app-select-menu label="Tipo de movimiento" [options]="kindOptions" [value]="movement().kind" (picked)="setMovementValue('kind', $event)" />
                   <input class="input" inputmode="decimal" [attr.aria-label]="'Cantidad en ' + unitText[p.saleUnit].many" [value]="movement().quantity" (input)="setMovement('quantity', $event)" />
                   <input class="input" aria-label="Motivo" placeholder="Motivo (ej.: factura 0012)" [value]="movement().reason" (input)="setMovement('reason', $event)" />
-                  <button type="button" class="btn" (click)="record()">Registrar</button>
+                  <button type="button" class="btn" [disabled]="recording()" [attr.aria-busy]="recording()" (click)="record()"><span>Registrar</span></button>
                   <p class="field-hint">Cantidad en {{ unitText[p.saleUnit].many }}. Venta y merma restan; en Ajuste usa negativo para restar. Nadie edita la existencia a mano: todo queda en el historial.</p>
                 </div>
               }
@@ -244,6 +237,9 @@
           }
           <section class="card box">
             <h2>Historial</h2>
+            @if (movementsLoading()) {
+              <app-skeleton kind="rows" [rows]="3" />
+            } @else {
             <ol class="history">
               @for (m of movements(); track m.id) {
                 <li>
@@ -254,11 +250,14 @@
                 <li class="muted">Sin movimientos.</li>
               }
             </ol>
+            }
           </section>
         </aside>
       }
     </div>
   </div>
 } @else {
-  <div class="page-body"><p class="muted">Ese producto no existe. <a class="link" routerLink="/inventory">Volver</a></p></div>
+  <div class="page-body">
+    <div class="card empty-state"><app-icon name="tag" /><b>Ese producto no existe</b><a class="link" routerLink="/inventory">Volver al inventario</a></div>
+  </div>
 }

@@ -11,6 +11,7 @@ import { formatDuration } from '../../shared/format/duration';
 import { formatCount, formatUsdCents } from '../../shared/format/money';
 import { Avatar } from '../../shared/ui/avatar';
 import { Icon } from '../../shared/ui/icon';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
 import { InboxData } from '../inbox/inbox.data';
 import { waitingMs } from '../pipeline/pipeline.rules';
@@ -43,7 +44,7 @@ interface AgentRow {
 /** How the team answers and what WhatsApp costs this month (mockup web-5). Admins only. */
 @Component({
   selector: 'app-reports-page',
-  imports: [Avatar, Icon, DailyChart, MetaSpendCard, NumberHealth],
+  imports: [Avatar, Icon, DailyChart, MetaSpendCard, NumberHealth, Skeleton],
   templateUrl: './reports.page.html',
   styleUrl: './reports.page.scss',
 })

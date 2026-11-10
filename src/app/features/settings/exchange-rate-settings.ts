@@ -3,12 +3,17 @@ import { Clock } from '../../core/clock';
 import { Session } from '../../core/session';
 import type { RateSource } from '../../shared/api/models';
 import { calendarDay, formatShortDate, formatTime } from '../../shared/format/date-time';
+import { Confirm } from '../../shared/ui/confirm';
+import { DatePicker } from '../../shared/ui/date-picker';
 import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
 import { Switch } from '../../shared/ui/switch';
 import { Toaster } from '../../shared/ui/toaster';
 import { ExchangeRates } from '../exchange-rates/exchange-rates.data';
 import { formatIsoDay, formatRate, normalizeRate, weekdayOf } from '../exchange-rates/rate-format';
+
+/** What the card is saving: a source, the system switch, a BCV read or a new rate. */
+type PendingAction = RateSource | 'system' | 'refresh' | 'rate';
 
 const SOURCES: { value: RateSource; label: string; detail: string }[] = [
   { value: 'bcv', label: 'Tasa BCV (automática)', detail: 'Se actualiza sola con la tasa oficial del Banco Central de Venezuela.' },
@@ -23,7 +28,7 @@ const SOURCES: { value: RateSource; label: string; detail: string }[] = [
  */
 @Component({
   selector: 'app-exchange-rate-settings',
-  imports: [Icon, Pill, Switch],
+  imports: [Icon, Pill, Switch, DatePicker],
   templateUrl: './exchange-rate-settings.html',
   styleUrls: ['../../shared/ui/section.scss', './exchange-rate-settings.scss'],
 })
@@ -32,13 +37,17 @@ export class ExchangeRateSettings {
   private readonly session = inject(Session);
   private readonly clock = inject(Clock);
   private readonly toaster = inject(Toaster);
+  private readonly confirm = inject(Confirm);
+
+  /** Which action is being saved, so only its own control shows the circle. */
+  protected readonly pending = signal<PendingAction | null>(null);
 
   protected readonly sources = SOURCES;
   protected readonly formatRate = formatRate;
   protected readonly formatIsoDay = formatIsoDay;
   protected readonly weekdayOf = weekdayOf;
 
-  private readonly today = computed(() => calendarDay(this.clock.now().toISOString(), this.session.timezone()));
+  protected readonly today = computed(() => calendarDay(this.clock.now().toISOString(), this.session.timezone()));
   protected readonly source = computed(() => this.rates.book()?.rateSource ?? 'custom');
   protected readonly bcv = computed(() => this.rates.book()?.bcv ?? null);
   protected readonly history = computed(() => this.rates.book()?.exchangeRates ?? []);
@@ -77,8 +86,44 @@ export class ExchangeRateSettings {
     return (event.target as HTMLInputElement).value;
   }
 
+  /** Changes the bolívar prices every customer sees: ask first. */
   protected async choose(source: RateSource): Promise<void> {
-    if (source !== this.source()) await this.rates.setSource(source);
+    if (source === this.source() || this.pending()) return;
+    const yes = await this.confirm.ask({
+      title: source === 'bcv' ? '¿Usar la tasa del BCV?' : '¿Usar una tasa personalizada?',
+      message:
+        source === 'bcv'
+          ? 'Los precios en bolívares que ven tus clientes pasan a calcularse con la tasa oficial del BCV, que se actualiza sola.'
+          : 'Los precios en bolívares siguen con la tasa actual hasta que registres una tuya. Desde entonces la tasa del BCV ya no se aplica sola.',
+      confirmLabel: source === 'bcv' ? 'Usar la tasa del BCV' : 'Usar tasa personalizada',
+    });
+    if (yes) await this.track(source, () => this.rates.setSource(source));
+  }
+
+  /** Which rate the customer prices use: theirs or the one configured here. Ask first. */
+  protected async useSystemRate(on: boolean): Promise<void> {
+    if (this.pending()) return;
+    const yes = await this.confirm.ask({
+      title: on ? '¿Usar la tasa de tu sistema?' : '¿Dejar de usar la tasa de tu sistema?',
+      message: on
+        ? 'Los precios en bolívares que ven tus clientes salen de tu propio sistema, igual que en la caja de tu tienda.'
+        : 'Los precios en bolívares que ven tus clientes se calculan con la tasa que configures aquí y pueden no coincidir con los de tu caja.',
+      confirmLabel: on ? 'Usar la de mi sistema' : 'Usar la de aquí',
+    });
+    if (yes) await this.track('system', () => this.rates.setUseSystemRate(on));
+  }
+
+  protected async refreshBcv(): Promise<void> {
+    if (!this.pending()) await this.track('refresh', () => this.rates.refreshBcv());
+  }
+
+  private async track(action: PendingAction, work: () => Promise<boolean>): Promise<boolean> {
+    this.pending.set(action);
+    try {
+      return await work();
+    } finally {
+      this.pending.set(null);
+    }
   }
 
   protected async addRate(): Promise<void> {
@@ -87,6 +132,14 @@ export class ExchangeRateSettings {
       this.toaster.show('Escribe la tasa en bolívares por dólar, por ejemplo 36,52.', 'info');
       return;
     }
-    if (await this.rates.addRate(rate, this.rateDate())) this.rateDraft.set('');
+    if (this.pending()) return;
+    // A registered rate is never edited nor deleted, and customer prices change at once.
+    const yes = await this.confirm.ask({
+      title: `¿Registrar ${formatRate(rate)} Bs por dólar?`,
+      message: `Vale desde el ${formatIsoDay(this.rateDate())} y los precios en bolívares la usan de inmediato. Queda en el historial: no se edita ni se borra.`,
+      confirmLabel: 'Registrar tasa',
+    });
+    if (!yes) return;
+    if (await this.track('rate', () => this.rates.addRate(rate, this.rateDate()))) this.rateDraft.set('');
   }
 }

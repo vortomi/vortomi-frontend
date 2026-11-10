@@ -9,8 +9,29 @@
 
 .back {
   display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
   color: var(--color-text-muted);
-  --icon-size: 22px;
+  --icon-size: 20px;
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+  }
+}
+
+.title-sk {
+  width: 240px;
+  height: 22px;
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+  align-items: flex-start;
 }
 
 .grid {
@@ -56,7 +77,7 @@
   flex-shrink: 0;
 
   &.ph {
-    background: #eef0f3;
+    background: var(--color-surface-hover);
     color: var(--color-text-faint);
     display: flex;
     align-items: center;
@@ -172,10 +193,6 @@
   align-self: flex-start;
 }
 
-.danger {
-  color: #b42318;
-}
-
 .stock-line {
   display: flex;
   justify-content: space-between;
@@ -228,19 +245,19 @@
 .qty {
   width: 42px;
   font-weight: 700;
-  color: #166534;
+  color: var(--color-success);
   flex-shrink: 0;
 
   &.neg {
-    color: #b42318;
+    color: var(--color-danger);
   }
 }
 
 // Combined variants: up to three types, the values picked for each, and one row per combination.
 .label {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #3b4555;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
 }
 
 .versions {
@@ -253,33 +270,8 @@
   }
 }
 
-.seg {
-  display: inline-flex;
+.segmented {
   align-self: flex-start;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-
-  button {
-    border: 0;
-    border-right: 1px solid var(--color-border-strong);
-    background: var(--color-surface);
-    padding: 8px 16px;
-    font: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--color-text);
-    cursor: pointer;
-
-    &:last-child {
-      border-right: 0;
-    }
-
-    &.on {
-      background: #1a237e;
-      color: #fff;
-    }
-  }
 }
 
 .types {
@@ -294,8 +286,8 @@
   gap: 8px;
   flex-wrap: wrap;
 
-  .input {
-    width: 220px;
+  .type-slot {
+    width: 230px;
   }
 }
 
@@ -337,7 +329,8 @@
   cursor: pointer;
 
   input {
-    accent-color: var(--color-primary);
+    width: 16px;
+    height: 16px;
   }
 
   &.on {

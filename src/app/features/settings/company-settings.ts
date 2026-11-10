@@ -6,7 +6,11 @@ import { Workspace } from '../../core/workspace';
 import { TIMEZONES, WEEKDAYS } from '../../shared/api/labels';
 import type { DayHours, WorkMode } from '../../shared/api/models';
 import { Avatar } from '../../shared/ui/avatar';
+import { Confirm } from '../../shared/ui/confirm';
+import { FileDrop } from '../../shared/ui/file-drop';
 import { Icon } from '../../shared/ui/icon';
+import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
+import { TimeSelect } from '../../shared/ui/time-select';
 import { Toaster } from '../../shared/ui/toaster';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
 import { SetupData } from '../setup/setup.data';
@@ -30,19 +34,18 @@ const WORK_MODES: { id: WorkMode; title: string; detail: string }[] = [
 /** The company's general settings: shown read-only, changed only after «Editar» and kept with «Guardar». */
 @Component({
   selector: 'app-company-settings',
-  imports: [Avatar, Icon, RouterLink],
+  imports: [Avatar, Icon, RouterLink, SelectMenu, TimeSelect, FileDrop],
   template: `
     @let f = form();
     <div class="bar">
       @if (editing()) {
         <span class="hint">Editando · los cambios se aplican al pulsar «Guardar».</span>
-        <button type="button" class="btn" [disabled]="saving()" (click)="cancel()">Cancelar</button>
+        <button type="button" class="btn" [disabled]="saving()" (click)="cancel()"><span>Cancelar</span></button>
         <button type="button" class="btn btn--primary" [disabled]="hasErrors() || saving()" [attr.aria-busy]="saving()" (click)="save()">
-          @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
-          Guardar
+          <app-icon name="check" /><span>Guardar</span>
         </button>
       } @else {
-        <button type="button" class="btn btn--primary" (click)="edit()"><app-icon name="edit" />Editar</button>
+        <button type="button" class="btn btn--primary" (click)="edit()"><app-icon name="edit" /><span>Editar</span></button>
       }
     </div>
 
@@ -54,7 +57,7 @@ const WORK_MODES: { id: WorkMode; title: string; detail: string }[] = [
             <h2>Preparar según mi rubro</h2>
             <p class="setup-text">{{ setupText() }}</p>
           </div>
-          <a class="btn" routerLink="/welcome">Abrir la bienvenida</a>
+          <a class="btn" routerLink="/welcome"><span>Abrir la bienvenida</span></a>
         </div>
       </section>
     }
@@ -74,9 +77,9 @@ const WORK_MODES: { id: WorkMode; title: string; detail: string }[] = [
             } @else {
               <app-avatar size="lg" class="logo" [name]="f.name || '?'" [seed]="session.tenant()?.id" />
             }
-            <div class="field">
-              <label for="logo">Logo</label>
-              <input id="logo" type="file" accept="image/png,image/jpeg,image/webp" (change)="onLogo($event)" />
+            <div class="field logo-field">
+              <span class="label">Logo</span>
+              <app-file-drop label="Elegir logo" accept="image/png,image/jpeg,image/webp" [compact]="true" (picked)="onLogo($event)" />
               <p class="field-hint">PNG, JPG o WebP de hasta 500 KB. Se ve en el panel de tu equipo.</p>
               @if (f.logo) { <button type="button" class="link danger" (click)="patch({ logo: null })">Quitar logo</button> }
             </div>
@@ -88,12 +91,9 @@ const WORK_MODES: { id: WorkMode; title: string; detail: string }[] = [
             <input id="company-name" class="input" maxlength="80" [value]="f.name" (input)="patch({ name: value($event) })" />
           </div>
           <div class="field">
-            <label for="tz">Zona horaria</label>
-            <select id="tz" class="input" (change)="patch({ timezone: value($event) })">
-              @for (tz of timezones; track tz[0]) {
-                <option [value]="tz[0]" [selected]="tz[0] === f.timezone">{{ tz[1] }}</option>
-              }
-            </select>
+            <span class="label">Zona horaria</span>
+            <app-select-menu label="Zona horaria" [options]="timezoneOptions" [value]="f.timezone" [searchable]="timezoneOptions.length > 7"
+              (picked)="patch({ timezone: $event })" />
           </div>
         </div>
       }
@@ -133,9 +133,9 @@ const WORK_MODES: { id: WorkMode; title: string; detail: string }[] = [
             <div class="row">
               <label class="checkbox day"><input type="checkbox" [checked]="day.open !== null" (change)="toggleDay(i)" />{{ weekdays[day.day] }}</label>
               @if (day.open !== null) {
-                <input type="time" class="input time" [attr.aria-label]="'Abre el ' + weekdays[day.day]" [value]="day.open" (change)="setTime(i, 'open', $event)" />
+                <app-time-select class="time" [label]="'Abre el ' + weekdays[day.day]" [value]="day.open" (picked)="setTime(i, 'open', $event)" />
                 <span class="muted">a</span>
-                <input type="time" class="input time" [attr.aria-label]="'Cierra el ' + weekdays[day.day]" [value]="day.close" (change)="setTime(i, 'close', $event)" />
+                <app-time-select class="time" [label]="'Cierra el ' + weekdays[day.day]" [value]="day.close" (picked)="setTime(i, 'close', $event)" />
                 @if (dayError(day); as message) { <span class="field-error">{{ message }}</span> }
               } @else {
                 <span class="muted">Cerrado</span>
@@ -159,10 +159,13 @@ const WORK_MODES: { id: WorkMode; title: string; detail: string }[] = [
     .logo { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; }
     .g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; }
     .day { width: 130px; }
-    .time { width: 120px; }
+    .time { width: 160px; }
+    .label { font-size: 14px; font-weight: 500; color: var(--color-text); }
+    .logo-field { flex: 1; min-width: 0; align-items: flex-start; }
+    .danger { color: var(--color-danger); }
     .mode-read { font-size: 13.5px; color: var(--color-text-2); }
     .setup { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-    .setup-ic { width: 40px; height: 40px; border-radius: 10px; background: var(--color-primary-soft); color: var(--color-primary-strong);
+    .setup-ic { width: 40px; height: 40px; border-radius: 10px; background: var(--color-primary-soft); color: var(--color-primary-text);
       display: flex; align-items: center; justify-content: center; --icon-size: 20px; flex-shrink: 0; }
     .setup .grow { flex: 1; min-width: 220px; }
     .setup-text { font-size: 13px; color: var(--color-text-muted); margin-top: 2px; }
@@ -170,7 +173,7 @@ const WORK_MODES: { id: WorkMode; title: string; detail: string }[] = [
     .mode { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md);
       padding: 10px 12px; cursor: pointer; }
     .mode.on { border-color: var(--color-primary); background: var(--color-primary-softer); box-shadow: 0 0 0 1px var(--color-primary); }
-    .mode input { margin-top: 3px; accent-color: var(--color-primary); }
+    .mode input { margin-top: 2px; }
     .mode b { display: block; font-size: 13.5px; } .mode small { font-size: 12px; color: var(--color-text-muted); }
     @media (max-width: 760px) { .modes, .g2 { grid-template-columns: minmax(0, 1fr); } }
   `,
@@ -180,6 +183,7 @@ export class CompanySettings {
   private readonly workspace = inject(Workspace);
   private readonly actions = inject(SettingsActions);
   private readonly toaster = inject(Toaster);
+  private readonly confirm = inject(Confirm);
 
   protected readonly logoEditable = this.actions.logoEditable;
   private readonly setup = inject(SetupData);
@@ -193,7 +197,7 @@ export class CompanySettings {
       ? `Rubro: ${label}. Vuelve a hacer las 3 preguntas y agrega lo que falte, sin tocar lo que ya tienes.`
       : 'Todavía no respondiste la bienvenida: 3 preguntas para dejar tu panel listo según tu negocio.';
   });
-  protected readonly timezones = TIMEZONES;
+  protected readonly timezoneOptions: MenuOption[] = TIMEZONES.map(([value, label]) => ({ value, label }));
   protected readonly weekdays = WEEKDAYS;
   protected readonly workModes = WORK_MODES;
 
@@ -262,21 +266,13 @@ export class CompanySettings {
     });
   }
 
-  protected setTime(index: number, key: 'open' | 'close', event: Event): void {
-    const value = this.value(event);
+  protected setTime(index: number, key: 'open' | 'close', value: string): void {
     this.patch({ hours: this.form().hours.map((h, i) => (i === index ? { ...h, [key]: value } : h)) });
   }
 
-  protected onLogo(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
+  protected onLogo(file: File): void {
     const error = logoError(file);
-    if (error) {
-      this.toaster.show(error, 'info');
-      input.value = '';
-      return;
-    }
+    if (error) return this.toaster.show(error, 'info');
     const reader = new FileReader();
     reader.onload = () => this.patch({ logo: String(reader.result) });
     reader.readAsDataURL(file);
@@ -286,6 +282,15 @@ export class CompanySettings {
     const settings = this.workspace.settings();
     if (!settings || this.hasErrors() || this.saving()) return;
     const f = this.form();
+    // Support only hides the pipeline and the inventory for the whole team: say it before it happens.
+    if (f.workMode === 'support_only' && this.saved().workMode !== 'support_only') {
+      const yes = await this.confirm.ask({
+        title: '¿Cambiar a «Solo atención»?',
+        message: 'El pipeline, el inventario y las ventas de los reportes se ocultan para todo el equipo. Lo puedes volver a cambiar cuando quieras; no se borra nada.',
+        confirmLabel: 'Cambiar a Solo atención',
+      });
+      if (!yes) return;
+    }
     this.saving.set(true);
     const ok = await this.actions.saveCompany(f.name, f.timezone, {
       ...settings,

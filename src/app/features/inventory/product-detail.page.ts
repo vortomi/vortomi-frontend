@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { ApiFailure } from '../../core/api/api-error';
 import { Directory } from '../../core/directory';
 import { Session } from '../../core/session';
 import { STOCK_STATUS } from '../../shared/api/labels';
@@ -7,8 +8,12 @@ import type { CustomValues, Id, Product, ProductVariant, SaleUnit, StockMode, St
 import { formatShortDate } from '../../shared/format/date-time';
 import { formatUsdCents, formatVes } from '../../shared/format/money';
 import { imageFileError, readAsDataUrl } from '../../shared/files/image';
+import { Confirm } from '../../shared/ui/confirm';
+import { FileDrop } from '../../shared/ui/file-drop';
 import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
+import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
 import { appliesTo, cleanValues, formatValue, missingRequired } from '../custom-fields/custom-field-rules';
@@ -63,6 +68,11 @@ const MANUAL_KINDS: StockMovementKind[] = ['purchase', 'sale', 'loss', 'return',
 /** These always remove: the person types how much, the sign is implied. */
 const REMOVING: StockMovementKind[] = ['sale', 'loss'];
 
+const STOCK_MODE_OPTIONS: MenuOption[] = [
+  { value: 'units', label: 'Se cuenta (se compra y se revende)' },
+  { value: 'availability', label: 'Disponible hoy (se hace por encargo)' },
+];
+
 const emptyRow = (name = '', optionIds: Id[] = []): VariantRow => ({ id: null, optionIds, name, sku: '', price: '', threshold: '0', initialStock: '0' });
 
 /** The values each type uses in the rows, in the rows' order. */
@@ -112,7 +122,7 @@ function formOf(product: Product | null, variants: ProductVariant[], defaults: N
  */
 @Component({
   selector: 'app-product-detail-page',
-  imports: [RouterLink, Icon, Pill, SaleUnitPicker, CustomValuesForm],
+  imports: [RouterLink, Icon, Pill, SaleUnitPicker, CustomValuesForm, SelectMenu, Skeleton, FileDrop],
   templateUrl: './product-detail.page.html',
   styleUrl: './product-detail.page.scss',
 })
@@ -126,6 +136,7 @@ export class ProductDetailPage {
   private readonly directory = inject(Directory);
   private readonly router = inject(Router);
   private readonly toaster = inject(Toaster);
+  private readonly confirm = inject(Confirm);
 
   readonly productId = input<string>();
 
@@ -140,6 +151,13 @@ export class ProductDetailPage {
   protected readonly manualKinds = MANUAL_KINDS;
   protected readonly unitText = SALE_UNIT;
   protected readonly number = formatNumber;
+  protected readonly stockModeOptions = STOCK_MODE_OPTIONS;
+  protected readonly kindOptions: MenuOption[] = MANUAL_KINDS.map((k) => ({ value: k, label: MOVEMENT_LABEL[k] }));
+  protected readonly categoryOptions = computed<MenuOption[]>(() => this.categories.list().map((c) => ({ value: c.id, label: c.name })));
+  protected readonly variantOptions = computed<MenuOption[]>(() => this.variants().map((v) => ({ value: v.id, label: v.name })));
+  /** 'api' mode: the movement history is on its way. */
+  protected readonly movementsLoading = signal(false);
+  protected readonly recording = signal(false);
 
   /** What is saved; the form starts from it and «Cancelar» goes back to it. */
   private readonly saved = computed(() => {
@@ -181,7 +199,7 @@ export class ProductDetailPage {
     // 'api' mode: the history is read when the product opens, not with the whole catalog.
     effect(() => {
       const id = this.productId();
-      if (id && this.data.ready()) untracked(() => void this.data.loadMovements(id));
+      if (id && this.data.ready()) untracked(() => void this.loadMovements(id));
     });
     // While reading, the view follows what is saved (it may arrive after the page opens).
     // While editing it never does: a stock movement must not wipe changes not saved yet.
@@ -195,6 +213,15 @@ export class ProductDetailPage {
         if (!this.movement().variantId) this.movement.update((m) => ({ ...m, variantId: this.variants()[0]?.id ?? '' }));
       });
     });
+  }
+
+  private async loadMovements(productId: Id): Promise<void> {
+    this.movementsLoading.set(this.data.onServer);
+    try {
+      await this.data.loadMovements(productId);
+    } finally {
+      this.movementsLoading.set(false);
+    }
   }
 
   protected value(event: Event): string {
@@ -213,8 +240,7 @@ export class ProductDetailPage {
    * Choosing, changing or removing a type («''») changes which values tell variants apart: the
    * values are picked again and the new rows start over. Saved rows always stay.
    */
-  protected setType(slot: number, event: Event): void {
-    const chosen = this.value(event);
+  protected setType(slot: number, chosen: string): void {
     const current = this.form().variantTypeIds;
     const variantTypeIds = chosen ? [...current.slice(0, slot), chosen, ...current.slice(slot + 1)] : current.filter((_, i) => i !== slot);
     this.patch({ variantTypeIds, picked: variantTypeIds.map(() => []), rows: this.form().rows.filter((r) => r.id !== null) });
@@ -241,6 +267,12 @@ export class ProductDetailPage {
     }
     const keep = saved[0] ?? f.rows[0] ?? emptyRow();
     this.patch({ versions, variantTypeIds: [], picked: [], rows: [{ ...keep, optionIds: [], name: keep.id ? keep.name : 'Única' }] });
+  }
+
+  /** The options of one type slot: the first «none» choice, then the types not used in another slot. */
+  protected typeOptions(slot: number, current: string): MenuOption[] {
+    const none = slot === 0 ? 'Les pongo nombre yo' : current ? 'Quitar esta clase' : '+ Agregar otra (opcional)';
+    return [{ value: '', label: none }, ...this.typeChoices(slot).map((t) => ({ value: t.type.id, label: t.type.name }))];
   }
 
   /** Types already chosen in another slot are not offered again. */
@@ -301,15 +333,9 @@ export class ProductDetailPage {
     this.patch({ rows: this.form().rows.filter((_, i) => i !== index) });
   }
 
-  protected async onPhoto(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
+  protected async onPhoto(file: File): Promise<void> {
     const error = imageFileError(file, PHOTO_MAX_BYTES);
-    if (error) {
-      input.value = '';
-      return this.toaster.show(error, 'info');
-    }
+    if (error) return this.toaster.show(error, 'info');
     this.patch({ photo: await readAsDataUrl(file) });
   }
 
@@ -400,7 +426,10 @@ export class ProductDetailPage {
   }
 
   protected setMovement(key: 'variantId' | 'kind' | 'quantity' | 'reason', event: Event): void {
-    const raw = this.value(event);
+    this.setMovementValue(key, this.value(event));
+  }
+
+  protected setMovementValue(key: 'variantId' | 'kind' | 'quantity' | 'reason', raw: string): void {
     this.movement.update((m) => ({ ...m, [key]: raw }));
   }
 
@@ -413,8 +442,20 @@ export class ProductDetailPage {
       return this.toaster.show(takesDecimals(unit) ? 'Escribe una cantidad mayor que cero, con hasta 2 decimales.' : 'Escribe una cantidad entera mayor que cero.', 'info');
     }
     const signed = REMOVING.includes(kind) ? -amount : kind === 'adjustment' && negative ? -amount : amount;
-    const error = await this.data.recordMovement(variantId, kind, signed, reason);
-    if (error) return this.toaster.show(error, 'info');
+    if (this.recording()) return;
+    // A movement is history: it is never edited nor deleted, so the person checks it first.
+    this.recording.set(true);
+    const done = await this.confirm.ask({
+      title: 'Registrar el movimiento',
+      message: `${MOVEMENT_LABEL[kind]} de ${formatNumber(signed)} en «${this.variantName(variantId)}». Queda en el historial y no se puede borrar ni editar.`,
+      confirmLabel: 'Registrar',
+      action: async () => {
+        const error = await this.data.recordMovement(variantId, kind, signed, reason);
+        if (error) throw new ApiFailure(0, 'movement_refused', error);
+      },
+    });
+    this.recording.set(false);
+    if (!done) return;
     this.movement.update((m) => ({ ...m, quantity: '1', reason: '' }));
     this.toaster.show('Movimiento registrado');
   }

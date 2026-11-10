@@ -3,6 +3,8 @@ import type { CustomField, CustomFieldEntity, CustomFieldKind, Id } from '../../
 import { Confirm } from '../../shared/ui/confirm';
 import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
+import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
 import { ContactsData } from '../contacts/contacts.data';
@@ -31,7 +33,7 @@ const blank = (): Draft => ({ id: null, label: '', kind: 'text', required: false
  */
 @Component({
   selector: 'app-custom-fields-settings',
-  imports: [Icon, Pill],
+  imports: [Icon, Pill, SelectMenu, Skeleton],
   templateUrl: './custom-fields-settings.html',
   styleUrls: ['../../shared/ui/section.scss', './custom-fields-settings.scss'],
 })
@@ -46,6 +48,10 @@ export class CustomFieldsSettings implements OnInit {
   private readonly toaster = inject(Toaster);
 
   protected readonly kinds = KINDS;
+  protected readonly kindOptions: MenuOption[] = KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }));
+  protected readonly ready = this.data.ready;
+  /** The note being turned into a field, while the server works. */
+  protected readonly organizing = signal<string | null>(null);
   protected readonly kindLabel = KIND_LABEL;
   protected readonly kindExample = KIND_EXAMPLE;
   protected readonly isList = isList;
@@ -131,7 +137,18 @@ export class CustomFieldsSettings implements OnInit {
     this.patch({ options: this.draft()!.options.map((o, i) => (i === index ? { ...o, value } : o)) });
   }
 
-  protected removeOption(index: number): void {
+  /** A saved option takes its answers with it when the field is saved: ask first. A new one just goes. */
+  protected async removeOption(index: number): Promise<void> {
+    const option = this.draft()!.options[index];
+    if (option?.id) {
+      const yes = await this.confirm.ask({
+        title: `¿Quitar «${option.value}»?`,
+        message: 'Al guardar el dato, se borra de las fichas que la tenían elegida. Si solo quieres cambiarle el nombre, escríbelo encima.',
+        confirmLabel: 'Quitar opción',
+        danger: true,
+      });
+      if (!yes) return;
+    }
     this.patch({ options: this.draft()!.options.filter((_, i) => i !== index) });
   }
 
@@ -168,20 +185,34 @@ export class CustomFieldsSettings implements OnInit {
     if (!draft?.id) return;
     const answered = this.answeredCount(draft.id);
     const where = this.isProduct() ? 'productos' : 'clientes';
-    const yes = await this.confirm.ask({
+    let removed = false;
+    await this.confirm.ask({
       title: `¿Borrar «${draft.label}»?`,
       message: answered ? `Se borran también sus respuestas en ${answered} ${where}. No se puede deshacer.` : 'Ningún registro lo tiene respondido todavía.',
       confirmLabel: 'Borrar dato',
       danger: true,
+      action: async () => {
+        removed = await this.data.remove(draft.id!);
+      },
     });
-    if (yes && (await this.data.remove(draft.id))) {
+    if (removed) {
       this.toaster.show('Dato borrado');
       this.draft.set(null);
     }
   }
 
+  /** Changes the notes of every customer that has one with that name: ask first, then wait on the button. */
   protected async organize(label: string): Promise<void> {
-    const moved = await this.data.organizeNotes(label);
+    if (this.organizing()) return;
+    const count = this.notes().find((n) => n.label === label)?.count ?? 0;
+    const yes = await this.confirm.ask({
+      title: `¿Convertir «${label}» en un dato?`,
+      message: `Se crea el dato «${label}» (o se usa el que ya tienes) y se llena en ${count} ${count === 1 ? 'cliente' : 'clientes'} con lo que tenían anotado. La nota se quita de su ficha.`,
+      confirmLabel: 'Convertir en dato',
+    });
+    if (!yes) return;
+    this.organizing.set(label);
+    const moved = await this.data.organizeNotes(label).finally(() => this.organizing.set(null));
     if (moved === null) return;
     this.toaster.show(`Listo: ${moved} ${moved === 1 ? 'cliente tiene' : 'clientes tienen'} ahora el dato «${label}».`);
     await this.loadNotes();
