@@ -49,7 +49,7 @@
                 <a class="chat" [routerLink]="['/inbox', card.conversation.id]" (click)="$event.stopPropagation()" aria-label="Abrir conversación"><app-icon name="inbox" /></a>
               }
               <span class="move" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
-                <app-select-menu [label]="'Mover a ' + contact.name" [options]="stageOptions()" [value]="contact.stageId" [disabled]="moving().has(contact.id)"
+                <app-select-menu size="sm" [label]="'Mover a ' + contact.name" [options]="stageOptions()" [value]="contact.stageId" [disabled]="moving().has(contact.id)"
                   (picked)="moveFromMenu(contact, $event)" />
               </span>
             </div>
