@@ -11,11 +11,13 @@
       </p>
     </div>
     @if (!draft() && fields().length < max) {
-      <button type="button" class="btn" (click)="startNew()"><app-icon name="plus" />Nuevo dato</button>
+      <button type="button" class="btn" [disabled]="!ready()" (click)="startNew()"><app-icon name="plus" /><span>Nuevo dato</span></button>
     }
   </div>
 
-  @if (fields().length) {
+  @if (!ready()) {
+    <app-skeleton kind="rows" [rows]="3" />
+  } @else if (fields().length) {
     <div class="list">
       <div class="lrow lhead" [class.product]="isProduct()"><span>Dato</span><span>Se responde con</span>@if (isProduct()) { <span>Aparece en</span> }<span></span></div>
       @for (field of fields(); track field.id) {
@@ -28,7 +30,7 @@
       }
     </div>
   } @else if (!draft()) {
-    <p class="empty">Todavía no tienes datos propios. Crea el primero o toma una idea de las de abajo.</p>
+    <div class="empty-state"><app-icon name="note" />Todavía no tienes datos propios. Crea el primero con «Nuevo dato».</div>
   }
   @if (fields().length >= max) {
     <p class="field-hint">Llegaste al máximo de {{ max }} datos: así cada ficha se mantiene corta.</p>
@@ -57,10 +59,8 @@
         <input id="cf-label" class="input" maxlength="40" [placeholder]="isProduct() ? 'Ej.: Sirve para' : 'Ej.: Zona'" [value]="d.label" (input)="patch({ label: value($event) })" />
       </div>
       <div class="field">
-        <label for="cf-kind">Se responde con</label>
-        <select id="cf-kind" class="input" [disabled]="!!d.id" (change)="patch({ kind: $any(value($event)) })">
-          @for (k of kinds; track k) { <option [value]="k" [selected]="k === d.kind">{{ kindLabel[k] }}</option> }
-        </select>
+        <span class="label">Se responde con</span>
+        <app-select-menu label="Se responde con" [options]="kindOptions" [value]="d.kind" [disabled]="!!d.id" (picked)="patch({ kind: $any($event) })" />
         <p class="field-hint">{{ d.id ? 'No se cambia después de crearlo: las respuestas guardadas dependen de él.' : kindExample[d.kind] }}</p>
       </div>
     </div>
@@ -72,12 +72,12 @@
           @for (o of d.options; track $index; let i = $index) {
             <span class="option">
               <input class="input" [attr.aria-label]="'Opción ' + (i + 1)" maxlength="60" [value]="o.value" (input)="renameOption(i, $event)" />
-              <button type="button" class="x" [attr.aria-label]="'Quitar ' + o.value" (click)="removeOption(i)"><app-icon name="x" /></button>
+              <button type="button" class="icon-btn danger" [attr.aria-label]="'Quitar ' + o.value" (click)="removeOption(i)"><app-icon name="x" /></button>
             </span>
           }
           <span class="option add">
             <input class="input" placeholder="Nueva opción" aria-label="Nueva opción" maxlength="60" [value]="optionText()" (input)="optionText.set(value($event))" (keydown)="onOptionKey($event)" />
-            <button type="button" class="btn" (click)="addOption()"><app-icon name="plus" />Agregar</button>
+            <button type="button" class="btn" (click)="addOption()"><app-icon name="plus" /><span>Agregar</span></button>
           </span>
         </div>
         @if (d.id) { <p class="field-hint">Si quitas una opción, se borra de las fichas que la tenían elegida. Si solo la renombras, se conserva.</p> }
@@ -101,8 +101,8 @@
     <div class="actions">
       @if (d.id) { <button type="button" class="link danger" (click)="remove()">Borrar dato</button> }
       <span class="spacer"></span>
-      <button type="button" class="btn" [disabled]="saving()" (click)="cancel()">Cancelar</button>
-      <button type="button" class="btn btn--primary" [disabled]="saving()" (click)="save()"><app-icon name="check" />Guardar dato</button>
+      <button type="button" class="btn" [disabled]="saving()" (click)="cancel()"><span>Cancelar</span></button>
+      <button type="button" class="btn btn--primary" [disabled]="saving()" [attr.aria-busy]="saving()" (click)="save()"><app-icon name="check" /><span>Guardar dato</span></button>
     </div>
   </section>
 }
@@ -116,7 +116,7 @@
         <div class="lrow notes">
           <span class="name">{{ note.label }}</span>
           <span class="muted">{{ note.count }} {{ note.count === 1 ? 'cliente' : 'clientes' }}</span>
-          <button type="button" class="link" (click)="organize(note.label)">Convertir en dato</button>
+          <button type="button" class="btn btn--sm" [disabled]="!!organizing()" [attr.aria-busy]="organizing() === note.label" (click)="organize(note.label)"><span>Convertir en dato</span></button>
         </div>
       }
     </div>

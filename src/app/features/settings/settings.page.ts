@@ -23,7 +23,7 @@ type Tab = 'company' | 'agent' | 'delivery' | 'rate' | 'receipt' | 'product-fiel
       <h1>Ajustes</h1>
       <span class="sub">Cómo funciona {{ brand.name }} para tu empresa</span>
     </header>
-    <nav class="tabs" role="tablist" aria-label="Secciones de ajustes">
+    <nav class="tabs-line tabs" role="tablist" aria-label="Secciones de ajustes">
       @for (t of tabs(); track t.id) {
         <button type="button" role="tab" [class.on]="tab() === t.id" [attr.aria-selected]="tab() === t.id" (click)="select(t.id)">{{ t.label }}</button>
       }
@@ -45,11 +45,7 @@ type Tab = 'company' | 'agent' | 'delivery' | 'rate' | 'receipt' | 'product-fiel
   `,
   styles: `
     :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-    .tabs { display: flex; gap: 22px; padding: 0 26px; background: var(--color-surface); border-bottom: 1px solid var(--color-border);
-      flex-shrink: 0; overflow-x: auto; }
-    .tabs button { border: 0; background: none; padding: 12px 0; font-size: 13.5px; color: var(--color-text-muted); cursor: pointer;
-      border-bottom: 2px solid transparent; white-space: nowrap; }
-    .tabs button.on { color: var(--color-primary); font-weight: 600; border-bottom-color: var(--color-primary); }
+    .tabs { padding: 0 16px; background: var(--color-surface); flex-shrink: 0; }
   `,
 })
 export class SettingsPage {

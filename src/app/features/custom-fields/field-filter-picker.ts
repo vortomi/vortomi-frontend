@@ -1,6 +1,7 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import type { CustomField, Id } from '../../shared/api/models';
 import { Icon } from '../../shared/ui/icon';
+import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
 import type { FieldFilter } from './custom-field-rules';
 
 /**
@@ -9,31 +10,25 @@ import type { FieldFilter } from './custom-field-rules';
  */
 @Component({
   selector: 'app-field-filter-picker',
-  imports: [Icon],
+  imports: [Icon, SelectMenu],
   template: `
     @if (!open()) {
-      <button type="button" class="btn" (click)="open.set(true)"><app-icon name="filter" />Filtrar por dato</button>
+      <button type="button" class="btn" (click)="open.set(true)"><app-icon name="filter" /><span>Filtrar por dato</span></button>
     } @else {
       <div class="picker">
-        <select class="select" aria-label="Dato" (change)="pickField($event)">
-          <option value="" [selected]="!fieldId()">Elige un dato…</option>
-          @for (f of fields(); track f.id) { <option [value]="f.id" [selected]="f.id === fieldId()">{{ f.label }}</option> }
-        </select>
+        <app-select-menu class="pick" label="Dato" placeholder="Elige un dato…" [options]="fieldOptions()" [value]="fieldId() || null"
+          [searchable]="fieldOptions().length > 7" (picked)="pickField($event)" />
         @if (field(); as f) {
           @if (f.kind === 'boolean') {
-            <select class="select" aria-label="Respuesta" (change)="value.set(text($event))">
-              <option value="">Elige…</option><option value="true">Sí</option><option value="false">No</option>
-            </select>
+            <app-select-menu class="pick" label="Respuesta" placeholder="Elige…" [options]="yesNo" [value]="value() || null" (picked)="value.set($event)" />
           } @else if (f.kind === 'choice' || f.kind === 'multi_choice') {
-            <select class="select" aria-label="Respuesta" (change)="value.set(text($event))">
-              <option value="">Elige…</option>
-              @for (o of f.options; track o.id) { <option [value]="o.id">{{ o.value }}</option> }
-            </select>
+            <app-select-menu class="pick" label="Respuesta" placeholder="Elige…" [options]="answerOptions(f)" [value]="value() || null"
+              [searchable]="f.options.length > 7" (picked)="value.set($event)" />
           } @else {
             <input class="input" aria-label="Contiene" [placeholder]="f.kind === 'date' ? 'Ej.: 03/1990' : 'Contiene…'" (input)="value.set(text($event))" (keydown.enter)="apply()" />
           }
         }
-        <button type="button" class="btn btn--primary" [disabled]="!fieldId() || !value().trim()" (click)="apply()">Aplicar</button>
+        <button type="button" class="btn btn--primary" [disabled]="!fieldId() || !value().trim()" (click)="apply()"><span>Aplicar</span></button>
         <button type="button" class="link" (click)="close()">Cancelar</button>
       </div>
     }
@@ -41,6 +36,7 @@ import type { FieldFilter } from './custom-field-rules';
   styles: `
     .picker { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .input { width: 180px; }
+    .pick { width: 200px; }
   `,
 })
 export class FieldFilterPicker {
@@ -52,12 +48,22 @@ export class FieldFilterPicker {
   protected readonly value = signal('');
   protected readonly field = computed(() => this.fields().find((f) => f.id === this.fieldId()) ?? null);
 
+  protected readonly yesNo: MenuOption[] = [
+    { value: 'true', label: 'Sí' },
+    { value: 'false', label: 'No' },
+  ];
+  protected readonly fieldOptions = computed<MenuOption[]>(() => this.fields().map((f) => ({ value: f.id, label: f.label })));
+
+  protected answerOptions(field: CustomField): MenuOption[] {
+    return field.options.map((o) => ({ value: o.id, label: o.value }));
+  }
+
   protected text(event: Event): string {
     return (event.target as HTMLInputElement).value;
   }
 
-  protected pickField(event: Event): void {
-    this.fieldId.set(this.text(event));
+  protected pickField(id: string): void {
+    this.fieldId.set(id);
     this.value.set('');
   }
 

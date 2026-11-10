@@ -3,6 +3,7 @@ import { Workspace } from '../../core/workspace';
 import type { Id, PipelineStage } from '../../shared/api/models';
 import { Confirm } from '../../shared/ui/confirm';
 import { Dialog } from '../../shared/ui/dialog';
+import { ColorPicker } from '../../shared/ui/color-picker';
 import { Icon } from '../../shared/ui/icon';
 import { Toaster } from '../../shared/ui/toaster';
 import { ContactsData } from '../contacts/contacts.data';
@@ -17,7 +18,7 @@ interface StageForm {
 
 @Component({
   selector: 'app-stages-settings',
-  imports: [Dialog, Icon],
+  imports: [Dialog, Icon, ColorPicker],
   template: `
     <section class="card box">
       <div class="section-head">
@@ -25,16 +26,16 @@ interface StageForm {
           <h2>Etapas del pipeline</h2>
           <p class="field-hint">El recorrido de una venta, de izquierda a derecha. Se usan en la ficha del cliente y en el pipeline.</p>
         </div>
-        <button type="button" class="btn btn--primary" (click)="openNew()"><app-icon name="plus" />Nueva etapa</button>
+        <button type="button" class="btn btn--primary" (click)="openNew()"><app-icon name="plus" /><span>Nueva etapa</span></button>
       </div>
       <div class="rows">
         @for (stage of workspace.stages(); track stage.id; let first = $first, last = $last) {
           <div class="row">
-            <button type="button" class="icon-btn" [disabled]="first || moving()" [attr.aria-label]="'Subir ' + stage.name" (click)="move(stage, -1)">
-              <app-icon name="down" class="up" />
+            <button type="button" class="icon-btn" [disabled]="first || !!moving()" [attr.aria-busy]="moving() === stage.id + ':up'" [attr.aria-label]="'Subir ' + stage.name" (click)="move(stage, -1)">
+              @if (moving() === stage.id + ':up') { <span class="spinner"></span> } @else { <app-icon name="down" class="up" /> }
             </button>
-            <button type="button" class="icon-btn" [disabled]="last || moving()" [attr.aria-label]="'Bajar ' + stage.name" (click)="move(stage, 1)">
-              <app-icon name="down" />
+            <button type="button" class="icon-btn" [disabled]="last || !!moving()" [attr.aria-busy]="moving() === stage.id + ':down'" [attr.aria-label]="'Bajar ' + stage.name" (click)="move(stage, 1)">
+              @if (moving() === stage.id + ':down') { <span class="spinner"></span> } @else { <app-icon name="down" /> }
             </button>
             <span class="swatch" [style.background]="stage.color" aria-hidden="true"></span>
             <span class="name">{{ stage.name }}</span>
@@ -45,7 +46,7 @@ interface StageForm {
             </span>
           </div>
         } @empty {
-          <p class="empty">Todavía no hay etapas. Crea la primera con «Nueva etapa».</p>
+          <div class="empty-state"><app-icon name="kanban" />Todavía no hay etapas. Crea la primera con «Nueva etapa».</div>
         }
       </div>
     </section>
@@ -57,22 +58,27 @@ interface StageForm {
           <input id="stage-name" class="input" maxlength="40" [value]="f.name" (input)="set('name', $event)" />
         </div>
         <div class="field">
-          <label for="stage-color">Color</label>
-          <input id="stage-color" type="color" class="color" [value]="f.color" (input)="set('color', $event)" />
+          <span class="label">Color</span>
+          <app-color-picker label="Color de la etapa" [value]="f.color" (picked)="setColor($event)" />
         </div>
         @if (error(); as message) { <p class="field-error" role="alert">{{ message }}</p> }
       }
       <ng-container dialog-actions>
-        <button type="button" class="btn" [disabled]="saving()" (click)="close()">Cancelar</button>
+        <button type="button" class="btn" [disabled]="saving()" (click)="close()"><span>Cancelar</span></button>
         <button type="button" class="btn btn--primary" [disabled]="saving()" [attr.aria-busy]="saving()" (click)="save()">
-          @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
-          Guardar
+          <app-icon name="check" /><span>Guardar</span>
         </button>
       </ng-container>
     </app-dialog>
   `,
   styleUrl: '../../shared/ui/section.scss',
-  styles: '.up { transform: rotate(180deg); }',
+  styles: `
+    .up { transform: rotate(180deg); }
+    .label { font-size: 14px; font-weight: 500; color: var(--color-text); }
+    .danger { color: var(--color-danger); }
+    .icon-btn { border-color: var(--color-border); background: var(--color-surface); color: var(--color-text-muted); }
+    .icon-btn .spinner { width: 14px; height: 14px; border-width: 2px; color: var(--color-primary); }
+  `,
 })
 export class StagesSettings {
   protected readonly workspace = inject(Workspace);
@@ -84,7 +90,8 @@ export class StagesSettings {
   protected readonly form = signal<StageForm | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly saving = signal(false);
-  protected readonly moving = signal(false);
+  /** «stageId:up» or «stageId:down» while that move is saved. */
+  protected readonly moving = signal<string | null>(null);
 
   protected usage(stageId: Id): number {
     return this.contacts.all().filter((c) => c.stageId === stageId).length;
@@ -99,7 +106,14 @@ export class StagesSettings {
   }
 
   protected set(key: 'name' | 'color', event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
+    this.setValue(key, (event.target as HTMLInputElement).value);
+  }
+
+  protected setColor(color: string): void {
+    this.setValue('color', color);
+  }
+
+  private setValue(key: 'name' | 'color', value: string): void {
     this.form.update((f) => (f ? { ...f, [key]: value } : f));
     this.error.set(null);
   }
@@ -124,22 +138,27 @@ export class StagesSettings {
 
   /** An explicit button, saved at once: the toast says so. */
   protected async move(stage: PipelineStage, direction: -1 | 1): Promise<void> {
-    this.moving.set(true);
+    if (this.moving()) return;
+    this.moving.set(`${stage.id}:${direction < 0 ? 'up' : 'down'}`);
     const ok = await this.actions.moveStage(stage.id, direction);
-    this.moving.set(false);
+    this.moving.set(null);
     if (ok) this.toaster.show('Orden guardado');
   }
 
   protected async remove(stage: PipelineStage): Promise<void> {
     const blocked = stageDeleteError(this.usage(stage.id));
     if (blocked) return this.toaster.show(blocked, 'info');
-    const yes = await this.confirm.ask({
+    let removed = false;
+    await this.confirm.ask({
       title: `¿Borrar «${stage.name}»?`,
       message: 'Ningún contacto está en esta etapa. No se puede deshacer.',
       confirmLabel: 'Borrar etapa',
       danger: true,
+      action: async () => {
+        removed = await this.actions.removeStage(stage.id);
+      },
     });
-    if (yes && (await this.actions.removeStage(stage.id))) this.toaster.show(`Etapa «${stage.name}» borrada`);
+    if (removed) this.toaster.show(`Etapa «${stage.name}» borrada`);
   }
 
   private open(form: StageForm): void {

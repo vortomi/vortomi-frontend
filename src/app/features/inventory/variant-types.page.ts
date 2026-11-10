@@ -4,6 +4,7 @@ import type { Id, VariantOption, VariantType } from '../../shared/api/models';
 import { Confirm } from '../../shared/ui/confirm';
 import { Dialog } from '../../shared/ui/dialog';
 import { Icon } from '../../shared/ui/icon';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
 import { InventoryData } from './inventory.data';
 import { VariantTypesData } from './variant-types.data';
@@ -14,16 +15,19 @@ type VariantForm = { kind: 'type'; id: Id | null; text: string } | { kind: 'valu
 /** Inventory → Variantes: the types a product's variants pick values from. Admins only (route guard). */
 @Component({
   selector: 'app-variant-types-page',
-  imports: [RouterLink, Dialog, Icon],
+  imports: [RouterLink, Dialog, Icon, Skeleton],
   template: `
     <header class="page-top">
       <a class="back" routerLink="/inventory" aria-label="Volver al inventario"><app-icon name="back" /></a>
       <h1>Variantes</h1>
       <span class="sub">Qué distingue a las variantes de un producto: marca, talla, presentación…</span>
       <span class="spacer"></span>
-      <button type="button" class="btn btn--primary" (click)="openType(null)"><app-icon name="plus" />Nuevo tipo</button>
+      <button type="button" class="btn btn--primary" (click)="openType(null)"><app-icon name="plus" /><span>Nuevo tipo</span></button>
     </header>
     <div class="page-body">
+      @if (!types.ready()) {
+        <section class="card box"><app-skeleton kind="rows" [rows]="4" /></section>
+      } @else {
       @for (entry of types.list(); track entry.type.id) {
         <section class="card box">
           <div class="section-head">
@@ -50,14 +54,16 @@ type VariantForm = { kind: 'type'; id: Id | null; text: string } | { kind: 'valu
               <p class="empty">Sin valores todavía.</p>
             }
           </div>
-          <div><button type="button" class="btn" (click)="openValue(entry.type.id, null)"><app-icon name="plus" />Agregar valor</button></div>
+          <div><button type="button" class="btn btn--sm" (click)="openValue(entry.type.id, null)"><app-icon name="plus" /><span>Agregar valor</span></button></div>
         </section>
       } @empty {
-        <section class="card box">
-          <p class="empty">
-            Todavía no hay tipos. Crea uno con «Nuevo tipo», por ejemplo <b>Marca</b>, y agrégale sus valores: Bosch, Brembo…
-          </p>
+        <section class="card">
+          <div class="empty-state">
+            <app-icon name="swap" />
+            <span>Todavía no hay tipos. Crea uno con «Nuevo tipo», por ejemplo <b>Marca</b>, y agrégale sus valores: Bosch, Brembo…</span>
+          </div>
         </section>
+      }
       }
     </div>
 
@@ -74,10 +80,9 @@ type VariantForm = { kind: 'type'; id: Id | null; text: string } | { kind: 'valu
         @if (error(); as message) { <p class="field-error" role="alert">{{ message }}</p> }
       }
       <ng-container dialog-actions>
-        <button type="button" class="btn" [disabled]="saving()" (click)="close()">Cancelar</button>
+        <button type="button" class="btn" [disabled]="saving()" (click)="close()"><span>Cancelar</span></button>
         <button type="button" class="btn btn--primary" [disabled]="saving()" [attr.aria-busy]="saving()" (click)="save()">
-          @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
-          Guardar
+          <app-icon name="check" /><span>Guardar</span>
         </button>
       </ng-container>
     </app-dialog>
@@ -85,7 +90,11 @@ type VariantForm = { kind: 'type'; id: Id | null; text: string } | { kind: 'valu
   styleUrl: '../../shared/ui/section.scss',
   styles: `
     :host { max-width: none; }
-    .back { display: inline-flex; color: var(--color-text-muted); --icon-size: 20px; }
+    .back { display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center; border-radius: var(--radius-sm);
+      color: var(--color-text-muted); --icon-size: 20px; }
+    .back:hover { background: var(--color-surface-hover); color: var(--color-text); }
+    .danger { color: var(--color-danger); }
+    .empty-state b { font-size: inherit; }
   `,
 })
 export class VariantTypesPage {
@@ -148,25 +157,33 @@ export class VariantTypesPage {
   protected async removeType(type: VariantType, values: number): Promise<void> {
     const products = this.productsUsing(type.id);
     if (products) return this.toaster.show(`«${type.name}» lo usan ${products} productos. Cámbiales el tipo antes de borrarlo.`, 'info');
-    const yes = await this.confirm.ask({
+    let removed = false;
+    await this.confirm.ask({
       title: `¿Borrar «${type.name}»?`,
       message: values ? `Se borran también sus ${values} valores. No se puede deshacer.` : 'No se puede deshacer.',
       confirmLabel: 'Borrar tipo',
       danger: true,
+      action: async () => {
+        removed = await this.types.removeType(type.id);
+      },
     });
-    if (yes && (await this.types.removeType(type.id))) this.toaster.show(`«${type.name}» borrado`);
+    if (removed) this.toaster.show(`«${type.name}» borrado`);
   }
 
   protected async removeValue(option: VariantOption): Promise<void> {
     const used = this.variantsUsing(option.id);
     if (used) return this.toaster.show(`«${option.value}» lo usan ${used} variantes. No se puede borrar mientras tanto.`, 'info');
-    const yes = await this.confirm.ask({
+    let removed = false;
+    await this.confirm.ask({
       title: `¿Borrar «${option.value}»?`,
       message: 'Ninguna variante lo usa. No se puede deshacer.',
       confirmLabel: 'Borrar valor',
       danger: true,
+      action: async () => {
+        removed = await this.types.removeValue(option.id);
+      },
     });
-    if (yes && (await this.types.removeValue(option.id))) this.toaster.show(`«${option.value}» borrado`);
+    if (removed) this.toaster.show(`«${option.value}» borrado`);
   }
 
   private write(f: VariantForm, text: string): Promise<boolean> {

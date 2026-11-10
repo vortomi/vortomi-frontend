@@ -42,7 +42,7 @@ import { Pill } from '../../shared/ui/pill';
     .text { flex: 1; min-width: 0; font-size: 14px; }
     .text span { display: block; font-size: 12.5px; color: var(--color-text-muted); margin-top: 2px; }
     .free { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
-    .track { flex: 0 0 70px; height: 5px; background: #eef0f3; border-radius: 99px; overflow: hidden; }
+    .track { flex: 0 0 70px; height: 5px; background: var(--color-surface-hover); border-radius: 99px; overflow: hidden; }
     .track i { display: block; height: 100%; background: var(--color-success); }
     .track i.over { background: var(--color-warning); }
     small { font-size: 12px; color: var(--color-text-muted); white-space: nowrap; }

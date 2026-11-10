@@ -25,7 +25,7 @@ interface ReplyForm {
           <h2>Respuestas rápidas</h2>
           <p class="field-hint">En la bandeja, escribe / y el atajo para insertarlas. Son de toda la empresa.</p>
         </div>
-        <button type="button" class="btn btn--primary" (click)="openNew()"><app-icon name="plus" />Nueva respuesta</button>
+        <button type="button" class="btn btn--primary" (click)="openNew()"><app-icon name="plus" /><span>Nueva respuesta</span></button>
       </div>
       <div class="rows">
         @for (reply of workspace.quickReplies(); track reply.id) {
@@ -40,7 +40,7 @@ interface ReplyForm {
             </span>
           </div>
         } @empty {
-          <p class="empty">Todavía no hay respuestas rápidas. Crea la primera con «Nueva respuesta».</p>
+          <div class="empty-state"><app-icon name="bolt" />Todavía no hay respuestas rápidas. Crea la primera con «Nueva respuesta».</div>
         }
       </div>
     </section>
@@ -63,10 +63,9 @@ interface ReplyForm {
         @if (error(); as message) { <p class="field-error" role="alert">{{ message }}</p> }
       }
       <ng-container dialog-actions>
-        <button type="button" class="btn" [disabled]="saving()" (click)="close()">Cancelar</button>
+        <button type="button" class="btn" [disabled]="saving()" (click)="close()"><span>Cancelar</span></button>
         <button type="button" class="btn btn--primary" [disabled]="saving()" [attr.aria-busy]="saving()" (click)="save()">
-          @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
-          Guardar
+          <app-icon name="check" /><span>Guardar</span>
         </button>
       </ng-container>
     </app-dialog>
@@ -78,7 +77,8 @@ interface ReplyForm {
     .reply-text b { font-size: 13.5px; font-weight: 600; }
     .reply-text p { font-size: 13px; color: var(--color-text-muted); margin-top: 3px; white-space: pre-wrap;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .slash { font-family: var(--font-mono); font-weight: 700; color: var(--color-primary-strong); }
+    .slash { font-family: var(--font-mono); font-weight: 700; color: var(--color-primary-text); }
+    .danger { color: var(--color-danger); }
     .shortcut { display: flex; gap: 6px; align-items: center; }
     .shortcut .input { font-family: var(--font-mono); }
   `,
@@ -128,13 +128,17 @@ export class QuickRepliesSettings {
   }
 
   protected async remove(reply: QuickReply): Promise<void> {
-    const yes = await this.confirm.ask({
+    let removed = false;
+    await this.confirm.ask({
       title: `¿Borrar /${reply.shortcut}?`,
       message: 'Nadie del equipo podrá insertarla más. No se puede deshacer.',
       confirmLabel: 'Borrar respuesta',
       danger: true,
+      action: async () => {
+        removed = await this.actions.removeQuickReply(reply.id);
+      },
     });
-    if (yes && (await this.actions.removeQuickReply(reply.id))) this.toaster.show(`Respuesta /${reply.shortcut} borrada`);
+    if (removed) this.toaster.show(`Respuesta /${reply.shortcut} borrada`);
   }
 
   private open(form: ReplyForm): void {

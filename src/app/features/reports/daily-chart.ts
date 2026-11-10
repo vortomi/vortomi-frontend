@@ -25,7 +25,8 @@ const MAX_LABELS = 10;
         }
       </div>
       @for (bar of view(); track bar.date) {
-        <div class="day" [title]="bar.title" aria-hidden="true">
+        <div class="day" aria-hidden="true">
+          <span class="tip">{{ bar.title }}</span>
           <div class="pair">
             <i class="received" [style.height.%]="bar.received"></i>
             <i class="on-time" [style.height.%]="bar.onTime"></i>
@@ -51,10 +52,16 @@ const MAX_LABELS = 10;
     .grid span { position: absolute; left: 0; right: 0; border-top: 1px solid var(--color-border-soft); }
     .grid i { position: absolute; right: calc(100% + 8px); top: -8px; font-style: normal; font-size: 11.5px;
       color: var(--color-text-faint); }
-    .day { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .day { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; border-radius: 6px; }
+    .day:hover { background: var(--color-surface-muted); }
+    /* Our own tooltip (no native title): the day's figures above its bars. */
+    .tip { position: absolute; bottom: calc(100% - 6px); left: 50%; transform: translateX(-50%); z-index: 5; display: none; white-space: nowrap;
+      padding: 6px 10px; border-radius: var(--radius-sm); background: var(--color-text); color: var(--color-canvas); font-size: 12px;
+      box-shadow: var(--shadow-pop); pointer-events: none; }
+    .day:hover .tip { display: block; }
     .pair { flex: 1; display: flex; align-items: flex-end; justify-content: center; gap: 3px; position: relative; }
     .pair i { flex: 0 1 18px; min-width: 3px; border-radius: 4px 4px 0 0; }
-    .received { background: #c9cff7; }
+    .received { background: color-mix(in srgb, var(--color-primary) 30%, transparent); }
     .on-time { background: var(--color-primary); }
     .label { height: 24px; line-height: 24px; text-align: center; font-size: 11.5px; color: var(--color-text-muted);
       white-space: nowrap; overflow: visible; }

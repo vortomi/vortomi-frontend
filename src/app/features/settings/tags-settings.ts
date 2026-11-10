@@ -6,6 +6,7 @@ import { Confirm } from '../../shared/ui/confirm';
 import { Dialog } from '../../shared/ui/dialog';
 import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
+import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
 import { Toaster } from '../../shared/ui/toaster';
 import { ContactsData } from '../contacts/contacts.data';
 import { SettingsActions } from './settings.actions';
@@ -19,7 +20,7 @@ interface TagForm {
 
 @Component({
   selector: 'app-tags-settings',
-  imports: [Dialog, Icon, Pill],
+  imports: [Dialog, Icon, Pill, SelectMenu],
   template: `
     <section class="card box">
       <div class="section-head">
@@ -27,7 +28,7 @@ interface TagForm {
           <h2>Etiquetas</h2>
           <p class="field-hint">Sirven para agrupar contactos y filtrar la bandeja.</p>
         </div>
-        <button type="button" class="btn btn--primary" (click)="openNew()"><app-icon name="plus" />Nueva etiqueta</button>
+        <button type="button" class="btn btn--primary" (click)="openNew()"><app-icon name="plus" /><span>Nueva etiqueta</span></button>
       </div>
       <div class="rows">
         @for (tag of workspace.tags(); track tag.id) {
@@ -40,7 +41,7 @@ interface TagForm {
             </span>
           </div>
         } @empty {
-          <p class="empty">Todavía no hay etiquetas. Crea la primera con «Nueva etiqueta».</p>
+          <div class="empty-state"><app-icon name="tag" />Todavía no hay etiquetas. Crea la primera con «Nueva etiqueta».</div>
         }
       </div>
     </section>
@@ -52,26 +53,25 @@ interface TagForm {
           <input id="tag-name" class="input" maxlength="40" [value]="f.name" (input)="set('name', $event)" />
         </div>
         <div class="field">
-          <label for="tag-tone">Color</label>
-          <select id="tag-tone" class="input" (change)="set('tone', $event)">
-            @for (tone of tones; track tone.id) {
-              <option [value]="tone.id" [selected]="tone.id === f.tone">{{ tone.text }}</option>
-            }
-          </select>
+          <span class="label">Color</span>
+          <app-select-menu label="Color" [options]="toneOptions" [value]="f.tone" (picked)="setTone($event)" />
         </div>
         <div class="preview">Así se verá: <app-pill [tone]="f.tone">{{ f.name || 'Etiqueta' }}</app-pill></div>
         @if (error(); as message) { <p class="field-error" role="alert">{{ message }}</p> }
       }
       <ng-container dialog-actions>
-        <button type="button" class="btn" [disabled]="saving()" (click)="close()">Cancelar</button>
+        <button type="button" class="btn" [disabled]="saving()" (click)="close()"><span>Cancelar</span></button>
         <button type="button" class="btn btn--primary" [disabled]="saving()" [attr.aria-busy]="saving()" (click)="save()">
-          @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
-          Guardar
+          <app-icon name="check" /><span>Guardar</span>
         </button>
       </ng-container>
     </app-dialog>
   `,
   styleUrl: '../../shared/ui/section.scss',
+  styles: `
+    .label { font-size: 14px; font-weight: 500; color: var(--color-text); }
+    .danger { color: var(--color-danger); }
+  `,
 })
 export class TagsSettings {
   protected readonly workspace = inject(Workspace);
@@ -80,7 +80,7 @@ export class TagsSettings {
   private readonly confirm = inject(Confirm);
   private readonly toaster = inject(Toaster);
 
-  protected readonly tones = TONES;
+  protected readonly toneOptions: MenuOption[] = TONES.map((t) => ({ value: t.id, label: t.text }));
   protected readonly form = signal<TagForm | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly saving = signal(false);
@@ -98,7 +98,14 @@ export class TagsSettings {
   }
 
   protected set(key: 'name' | 'tone', event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
+    this.setValue(key, (event.target as HTMLInputElement).value);
+  }
+
+  protected setTone(tone: string): void {
+    this.setValue('tone', tone);
+  }
+
+  private setValue(key: 'name' | 'tone', value: string): void {
     this.form.update((f) => (f ? { ...f, [key]: value } : f));
     this.error.set(null);
   }
@@ -123,13 +130,17 @@ export class TagsSettings {
 
   protected async remove(tag: Tag): Promise<void> {
     const count = this.usage(tag.id);
-    const yes = await this.confirm.ask({
+    let removed = false;
+    await this.confirm.ask({
       title: `¿Borrar «${tag.name}»?`,
       message: count ? `Se quitará de ${count} contactos. No se puede deshacer.` : 'No la tiene ningún contacto. No se puede deshacer.',
       confirmLabel: 'Borrar etiqueta',
       danger: true,
+      action: async () => {
+        removed = await this.actions.removeTag(tag.id);
+      },
     });
-    if (yes && (await this.actions.removeTag(tag.id))) this.toaster.show(`Etiqueta «${tag.name}» borrada`);
+    if (removed) this.toaster.show(`Etiqueta «${tag.name}» borrada`);
   }
 
   private open(form: TagForm): void {

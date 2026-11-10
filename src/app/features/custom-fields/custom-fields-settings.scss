@@ -6,9 +6,17 @@
 }
 
 .lead {
-  font-size: 13px;
-  color: var(--color-text-muted);
   margin-top: 2px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.danger {
+  color: var(--color-danger);
 }
 
 .list {
@@ -18,23 +26,23 @@
 
 .lrow {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr) auto;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr) 64px;
   gap: 10px;
   align-items: center;
   padding: 10px 0;
-  border-top: 1px solid var(--color-border-soft);
-  font-size: 13.5px;
+  border-top: 1px solid var(--color-border);
+  font-size: 14px;
 
   &.product {
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr) minmax(0, 1.3fr) auto;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr) minmax(0, 1.3fr) 64px;
   }
 
   &.lhead {
     border-top: 0;
-    font-size: 11px;
+    font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--color-text-faint);
+    letter-spacing: 0.3px;
+    color: var(--color-text-muted);
     font-weight: 600;
   }
 
@@ -48,11 +56,6 @@
     gap: 8px;
     font-weight: 600;
   }
-}
-
-.empty {
-  font-size: 13px;
-  color: var(--color-text-muted);
 }
 
 .editor {
@@ -76,8 +79,11 @@
   font-size: 12.5px;
   cursor: pointer;
 
+  color: var(--color-text-2);
+
   &:hover {
     border-color: var(--color-primary);
+    color: var(--color-primary-text);
   }
 }
 
@@ -107,14 +113,6 @@
   }
 }
 
-.x {
-  border: 0;
-  background: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  --icon-size: 15px;
-}
-
 .cats {
   display: flex;
   flex-wrap: wrap;
@@ -137,4 +135,8 @@
   .lrow.product {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.lrow > .link {
+  justify-self: end;
 }

@@ -1,5 +1,6 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import type { SaleUnit } from '../../shared/api/models';
+import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
 import { SALE_UNIT, SALE_UNIT_GROUPS, formatNumber, formatQuantity, minChoices, stepChoices, takesDecimals } from './sale-units';
 
 export interface SaleSettings {
@@ -22,6 +23,7 @@ export function defaultsFor(saleUnit: SaleUnit): SaleSettings {
  */
 @Component({
   selector: 'app-sale-unit-picker',
+  imports: [SelectMenu],
   template: `
     @let current = value();
     <div class="chips" role="radiogroup" aria-label="Se vende por">
@@ -60,16 +62,12 @@ export function defaultsFor(saleUnit: SaleUnit): SaleSettings {
     @if (decimals() && showAmounts()) {
       <div class="amounts">
         <div class="field">
-          <label for="sale-min">Lo mínimo que se vende</label>
-          <select id="sale-min" class="input" (change)="setMin($event)">
-            @for (n of mins(); track n) { <option [value]="n" [selected]="n === current.minQuantity">{{ quantity(n) }}</option> }
-          </select>
+          <span class="label">Lo mínimo que se vende</span>
+          <app-select-menu label="Lo mínimo que se vende" [options]="minOptions()" [value]="'' + current.minQuantity" (picked)="setMin($event)" />
         </div>
         <div class="field">
-          <label for="sale-step">De cuánto en cuánto</label>
-          <select id="sale-step" class="input" (change)="setStep($event)">
-            @for (n of steps(); track n) { <option [value]="n" [selected]="n === current.quantityStep">{{ number(n) }} en {{ number(n) }}</option> }
-          </select>
+          <span class="label">De cuánto en cuánto</span>
+          <app-select-menu label="De cuánto en cuánto" [options]="stepOptions()" [value]="'' + current.quantityStep" (picked)="setStep($event)" />
         </div>
       </div>
     }
@@ -79,12 +77,13 @@ export function defaultsFor(saleUnit: SaleUnit): SaleSettings {
     .groups { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--color-surface-muted); }
     .group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .title { width: 62px; font-size: 12px; color: var(--color-text-muted); }
-    .chips { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); overflow: hidden; }
-    .chips button { border: 0; border-right: 1px solid var(--color-border-strong); background: var(--color-surface); padding: 8px 16px;
-      font: inherit; font-size: 13px; font-weight: 600; color: var(--color-text); cursor: pointer; }
-    .chips button:last-child { border-right: 0; }
-    .chips button:hover { background: var(--color-primary-softer); }
-    .chips button.on { background: #1a237e; color: #fff; }
+    .chips { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: var(--radius-md); background: var(--color-surface-hover); }
+    .chips button { border: 0; border-radius: 7px; background: none; height: 32px; padding: 0 14px;
+      font: inherit; font-size: 13px; font-weight: 500; color: var(--color-text-muted); cursor: pointer; }
+    .chips button:hover { color: var(--color-text); }
+    .chips button.on { background: var(--color-surface); color: var(--color-text); box-shadow: var(--shadow-sm); }
+    :host-context(.dark) .chips button.on { background: var(--color-border-strong); }
+    .label { font-size: 14px; font-weight: 500; color: var(--color-text); }
     .more { font-size: 12.5px; }
     .field-hint .link { font-size: inherit; }
     .amounts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; max-width: 520px; }
@@ -105,6 +104,8 @@ export class SaleUnitPicker {
   protected readonly decimals = computed(() => takesDecimals(this.value().saleUnit));
   protected readonly steps = computed(() => stepChoices(this.value().saleUnit));
   protected readonly mins = computed(() => minChoices(this.value().saleUnit, this.value().quantityStep));
+  protected readonly minOptions = computed<MenuOption[]>(() => this.mins().map((n) => ({ value: String(n), label: this.quantity(n) })));
+  protected readonly stepOptions = computed<MenuOption[]>(() => this.steps().map((n) => ({ value: String(n), label: `${formatNumber(n)} en ${formatNumber(n)}` })));
 
   protected quantity(n: number): string {
     return formatQuantity(n, this.value().saleUnit);
@@ -114,13 +115,13 @@ export class SaleUnitPicker {
     if (saleUnit !== this.value().saleUnit) this.changed.emit(defaultsFor(saleUnit));
   }
 
-  protected setMin(event: Event): void {
-    this.changed.emit({ ...this.value(), minQuantity: Number((event.target as HTMLSelectElement).value) });
+  protected setMin(picked: string): void {
+    this.changed.emit({ ...this.value(), minQuantity: Number(picked) });
   }
 
   /** A new step keeps the minimum when it still fits, or takes the smallest one that does. */
-  protected setStep(event: Event): void {
-    const quantityStep = Number((event.target as HTMLSelectElement).value);
+  protected setStep(picked: string): void {
+    const quantityStep = Number(picked);
     const fitting = minChoices(this.value().saleUnit, quantityStep);
     const minQuantity = fitting.includes(this.value().minQuantity) ? this.value().minQuantity : fitting[0]!;
     this.changed.emit({ ...this.value(), quantityStep, minQuantity });

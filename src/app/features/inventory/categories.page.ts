@@ -4,6 +4,7 @@ import type { Id, ProductCategory } from '../../shared/api/models';
 import { Confirm } from '../../shared/ui/confirm';
 import { Dialog } from '../../shared/ui/dialog';
 import { Icon } from '../../shared/ui/icon';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
 import { CategoriesData } from './categories.data';
 import { InventoryData } from './inventory.data';
@@ -16,12 +17,12 @@ interface CategoryForm {
 /** Inventory → Categorías: the list products pick from. Admins only (route guard). */
 @Component({
   selector: 'app-categories-page',
-  imports: [RouterLink, Dialog, Icon],
+  imports: [RouterLink, Dialog, Icon, Skeleton],
   template: `
     <header class="page-top">
       <a class="back" routerLink="/inventory" aria-label="Volver al inventario"><app-icon name="back" /></a>
       <h1>Categorías</h1>
-      <span class="sub">{{ categories.list().length }} categorías de productos</span>
+      @if (categories.ready()) { <span class="sub">{{ categories.list().length }} categorías de productos</span> }
     </header>
     <div class="page-body">
       <section class="card box">
@@ -30,8 +31,11 @@ interface CategoryForm {
             <h2>Categorías de productos</h2>
             <p class="field-hint">Cada producto se ubica en una. Sirven para ordenar y filtrar el inventario.</p>
           </div>
-          <button type="button" class="btn btn--primary" (click)="openNew()"><app-icon name="plus" />Nueva categoría</button>
+          <button type="button" class="btn btn--primary" (click)="openNew()"><app-icon name="plus" /><span>Nueva categoría</span></button>
         </div>
+        @if (!categories.ready()) {
+          <app-skeleton kind="rows" [rows]="4" />
+        } @else {
         <div class="rows">
           @for (category of categories.list(); track category.id) {
             <div class="row">
@@ -43,9 +47,10 @@ interface CategoryForm {
               </span>
             </div>
           } @empty {
-            <p class="empty">Todavía no hay categorías. Crea la primera con «Nueva categoría».</p>
+            <div class="empty-state"><app-icon name="filter" />Todavía no hay categorías. Crea la primera con «Nueva categoría».</div>
           }
         </div>
+        }
       </section>
     </div>
 
@@ -58,10 +63,9 @@ interface CategoryForm {
         @if (error(); as message) { <p class="field-error" role="alert">{{ message }}</p> }
       }
       <ng-container dialog-actions>
-        <button type="button" class="btn" [disabled]="saving()" (click)="close()">Cancelar</button>
+        <button type="button" class="btn" [disabled]="saving()" (click)="close()"><span>Cancelar</span></button>
         <button type="button" class="btn btn--primary" [disabled]="saving()" [attr.aria-busy]="saving()" (click)="save()">
-          @if (saving()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="check" /> }
-          Guardar
+          <app-icon name="check" /><span>Guardar</span>
         </button>
       </ng-container>
     </app-dialog>
@@ -69,7 +73,10 @@ interface CategoryForm {
   styleUrl: '../../shared/ui/section.scss',
   styles: `
     :host { max-width: none; }
-    .back { display: inline-flex; color: var(--color-text-muted); --icon-size: 20px; }
+    .back { display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center; border-radius: var(--radius-sm);
+      color: var(--color-text-muted); --icon-size: 20px; }
+    .back:hover { background: var(--color-surface-hover); color: var(--color-text); }
+    .danger { color: var(--color-danger); }
   `,
 })
 export class CategoriesPage {
@@ -121,13 +128,18 @@ export class CategoriesPage {
   protected async remove(category: ProductCategory): Promise<void> {
     const count = this.usage(category.id);
     if (count) return this.toaster.show(`«${category.name}» tiene ${count} productos. Cámbialos de categoría antes de borrarla.`, 'info');
-    const yes = await this.confirm.ask({
+    // The dialog stays open with the circle while the server deletes it; a refusal comes as a toast.
+    let removed = false;
+    await this.confirm.ask({
       title: `¿Borrar «${category.name}»?`,
       message: 'Ningún producto la usa. No se puede deshacer.',
       confirmLabel: 'Borrar categoría',
       danger: true,
+      action: async () => {
+        removed = await this.categories.remove(category.id);
+      },
     });
-    if (yes && (await this.categories.remove(category.id))) this.toaster.show(`Categoría «${category.name}» borrada`);
+    if (removed) this.toaster.show(`Categoría «${category.name}» borrada`);
   }
 
   private open(form: CategoryForm): void {

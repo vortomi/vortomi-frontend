@@ -7,11 +7,22 @@
   min-height: 0;
 }
 
+// Search and filters on top of the table, as in mockup web-15.
+.tools {
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--color-border);
+}
+
 .search {
-  height: 38px;
-  width: 240px;
+  height: 42px;
+  width: 280px;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
+  background: var(--color-input);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -19,35 +30,40 @@
   color: var(--color-text-faint);
   --icon-size: 16px;
 
+  &:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
+
   input {
     flex: 1;
     min-width: 0;
     border: 0;
     outline: 0;
     background: transparent;
-    font-size: 13.5px;
+    font-size: 14px;
     color: var(--color-text);
   }
 }
 
-.filters {
-  display: flex;
-  gap: 10px;
-  padding: 12px 26px;
-  align-items: center;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
-  flex-shrink: 0;
+.filter {
+  width: 220px;
 }
 
 .rate {
   margin-left: auto;
-  font-size: 12.5px;
+  font-size: 13px;
+  color: var(--color-text-2);
 }
 
+// The card stays open so the filter menus can drop below it; only the table scrolls sideways.
 .table-card {
+  overflow: visible;
+}
+
+.scroll {
   overflow-x: auto;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 
 tr.inactive td {
@@ -57,7 +73,7 @@ tr.inactive td {
 .prod {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
 
   img,
   .ph {
@@ -69,7 +85,7 @@ tr.inactive td {
   }
 
   .ph {
-    background: #eef0f3;
+    background: var(--color-surface-hover);
     color: var(--color-text-faint);
     display: flex;
     align-items: center;
@@ -79,10 +95,11 @@ tr.inactive td {
 
   b {
     display: block;
+    color: var(--color-text);
   }
 
   span {
-    font-size: 12px;
+    font-size: 12.5px;
     color: var(--color-text-muted);
   }
 }
@@ -95,9 +112,10 @@ tr.inactive td {
 
 .variant {
   font-size: 12px;
-  background: #eef0f3;
+  background: var(--color-surface-hover);
+  color: var(--color-text-2);
   border-radius: 6px;
-  padding: 2px 7px;
+  padding: 2px 8px;
 }
 
 .ves {
@@ -112,17 +130,13 @@ tr.inactive td {
   gap: 8px;
 }
 
-.empty {
-  padding: 30px;
-  text-align: center;
-}
-
 .foot {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 @include mixins.phone {
-  .search {
+  .search,
+  .filter {
     width: 100%;
   }
 

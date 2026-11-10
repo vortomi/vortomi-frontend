@@ -7,6 +7,8 @@ import { formatUsdCents, formatVes } from '../../shared/format/money';
 import { toCsv } from '../../shared/files/csv';
 import { downloadText } from '../../shared/files/download';
 import { Icon } from '../../shared/ui/icon';
+import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { Pill } from '../../shared/ui/pill';
 import { Switch } from '../../shared/ui/switch';
 import { Toaster } from '../../shared/ui/toaster';
@@ -16,12 +18,21 @@ import { type StockStatus, toBolivares } from './inventory.rules';
 import { ProductImportDialog } from './product-import.dialog';
 import { SALE_UNIT, formatNumber, formatQuantity, perUnit } from './sale-units';
 
+const STATUS_OPTIONS: MenuOption[] = [
+  { value: '', label: 'Cualquier estado' },
+  { value: 'available', label: 'Disponible' },
+  { value: 'low', label: 'Quedan pocas' },
+  { value: 'out', label: 'Agotado' },
+  { value: 'unavailable', label: 'No disponible hoy' },
+  { value: 'inactive', label: 'Inactivo' },
+];
+
 const normalize = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
 
 /** Products and stock of the company (documentations/05-inventario.md). */
 @Component({
   selector: 'app-inventory-page',
-  imports: [RouterLink, Icon, Pill, Switch, ProductImportDialog],
+  imports: [RouterLink, Icon, Pill, Switch, ProductImportDialog, SelectMenu, Skeleton],
   templateUrl: './inventory.page.html',
   styleUrl: './inventory.page.scss',
 })
@@ -37,6 +48,13 @@ export class InventoryPage {
   protected readonly category = signal('');
   protected readonly status = signal<StockStatus | ''>('');
   protected readonly importing = signal(false);
+  protected readonly statusOptions = STATUS_OPTIONS;
+  protected readonly categoryOptions = computed<MenuOption[]>(() => [
+    { value: '', label: 'Todas las categorías' },
+    ...this.data.categories().map((c) => ({ value: c, label: c })),
+  ]);
+  /** Variants whose «Disponible hoy» is being saved. */
+  protected readonly busy = signal<ReadonlySet<string>>(new Set());
 
   protected readonly rate = inject(ExchangeRates).current;
   protected readonly rows = computed(() => {
@@ -77,6 +95,16 @@ export class InventoryPage {
 
   protected value(event: Event): string {
     return (event.target as HTMLInputElement).value;
+  }
+
+  protected async setAvailable(variantId: string, available: boolean): Promise<void> {
+    if (this.busy().has(variantId)) return;
+    this.busy.update((ids) => new Set([...ids, variantId]));
+    try {
+      await this.data.setAvailable(variantId, available);
+    } finally {
+      this.busy.update((ids) => new Set([...ids].filter((id) => id !== variantId)));
+    }
   }
 
   protected open(item: InventoryItem): void {
