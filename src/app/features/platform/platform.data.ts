@@ -23,7 +23,7 @@ import { newId } from '../../shared/api/mock-db';
 import { type MetaSpend, estimateSpend } from '../../shared/billing/meta-pricing';
 import { calendarDay } from '../../shared/format/date-time';
 import { platformAlerts } from './platform-alerts';
-import { PlatformRemote } from './platform-remote';
+import { PlatformRemote, type TenantFields } from './platform-remote';
 
 export interface TenantRow {
   tenant: Tenant;
@@ -191,7 +191,7 @@ export class PlatformData {
   }
 
   /** Resolves to an error message, or null once the status changed. */
-  async setStatus(tenantId: Id, status: Extract<TenantStatus, 'active' | 'suspended'>): Promise<string | null> {
+  async setStatus(tenantId: Id, status: Extract<TenantStatus, 'active' | 'suspended' | 'cancelled'>): Promise<string | null> {
     const remote = this.remote;
     if (remote) {
       try {
@@ -204,13 +204,33 @@ export class PlatformData {
     }
     const tenant = this.directory.tenantById().get(tenantId);
     if (!tenant || tenant.status === status) return null;
-    const reactivating = tenant.status === 'suspended' && status === 'active';
+    const reactivating = (tenant.status === 'suspended' || tenant.status === 'cancelled') && status === 'active';
     this.directory.updateTenant(tenantId, { status });
-    this.audit(
-      tenantId,
-      status === 'suspended' ? 'tenant.suspended' : reactivating ? 'tenant.reactivated' : 'tenant.activated',
-      status === 'suspended' ? 'Acceso suspendido; los datos se conservan' : 'Acceso restablecido',
-    );
+    if (status === 'cancelled') this.audit(tenantId, 'tenant.cancelled', 'Dada de baja; los datos se conservan');
+    else
+      this.audit(
+        tenantId,
+        status === 'suspended' ? 'tenant.suspended' : reactivating ? 'tenant.reactivated' : 'tenant.activated',
+        status === 'suspended' ? 'Acceso suspendido; los datos se conservan' : 'Acceso restablecido',
+      );
+    return null;
+  }
+
+  /** The company's data (name, type, city, time zone, plan, fiscal data). Resolves to an error message, or null. */
+  async updateTenant(tenantId: Id, fields: TenantFields): Promise<string | null> {
+    const remote = this.remote;
+    if (remote) {
+      try {
+        await remote.update(tenantId, fields);
+        await this.load();
+        return null;
+      } catch (error) {
+        return toApiFailure(error).message;
+      }
+    }
+    if (!this.directory.tenantById().get(tenantId)) return 'Esa empresa ya no existe.';
+    this.directory.updateTenant(tenantId, fields);
+    this.audit(tenantId, 'tenant.updated', 'Datos de la empresa actualizados');
     return null;
   }
 

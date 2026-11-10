@@ -8,12 +8,18 @@
     </div>
     <app-pill [tone]="labels.status[r.tenant.status].tone" [dot]="true">{{ labels.status[r.tenant.status].text }}</app-pill>
     <span class="spacer"></span>
+    @if (r.tenant.status !== 'draft' && r.tenant.status !== 'awaiting_channel') {
+      <button type="button" class="btn" [disabled]="busy()" (click)="editing.set(true)"><app-icon name="edit" /><span>Editar datos</span></button>
+    }
     @if (r.tenant.status === 'active') {
       <button type="button" class="btn" [disabled]="busy()" (click)="suspend()"><span>Suspender</span></button>
-    } @else if (r.tenant.status === 'suspended') {
+    } @else if (r.tenant.status === 'suspended' || r.tenant.status === 'cancelled') {
       <button type="button" class="btn btn--success" [disabled]="busy()" (click)="reactivate()"><app-icon name="check" /><span>Reactivar</span></button>
     } @else if (r.tenant.status === 'draft' || r.tenant.status === 'awaiting_channel') {
       <a class="btn btn--primary" routerLink="/platform/tenants/new" [queryParams]="{ resume: r.tenant.id }"><app-icon name="arrow" /><span>Seguir el alta</span></a>
+    }
+    @if (r.tenant.status === 'active' || r.tenant.status === 'suspended') {
+      <button type="button" class="btn btn--danger" [disabled]="busy()" (click)="cancel()"><app-icon name="trash" /><span>Dar de baja</span></button>
     }
   </header>
 
@@ -145,3 +151,7 @@
 }
 
 <app-invitation-link-dialog [link]="link()?.link ?? null" [name]="link()?.name ?? ''" (closed)="link.set(null)" />
+
+@if (row(); as r) {
+  <app-tenant-edit-dialog [tenant]="r.tenant" [open]="editing()" (closed)="editing.set(false)" (saved)="onSaved()" />
+}

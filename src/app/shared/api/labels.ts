@@ -21,7 +21,7 @@ export const TENANT_STATUS: Record<TenantStatus, Label> = {
   awaiting_channel: { text: 'Esperando canal', tone: 'amber' },
   active: { text: 'Activa', tone: 'green' },
   suspended: { text: 'Suspendida', tone: 'red' },
-  cancelled: { text: 'Cancelada', tone: 'neutral' },
+  cancelled: { text: 'Dada de baja', tone: 'neutral' },
 };
 
 export const TENANT_PLAN: Record<TenantPlan, { text: string; detail: string }> = {

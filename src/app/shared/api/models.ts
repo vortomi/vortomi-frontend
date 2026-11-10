@@ -454,6 +454,8 @@ export type AuditAction =
   | 'tenant.activated'
   | 'tenant.suspended'
   | 'tenant.reactivated'
+  | 'tenant.updated'
+  | 'tenant.cancelled'
   | 'channel.connected'
   | 'invitation.sent'
   | 'invitation.accepted';

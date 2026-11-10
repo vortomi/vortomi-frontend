@@ -15,13 +15,14 @@ import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
 import { failIf } from './fail-if';
 import { PlatformData, type PlatformInvitation } from './platform.data';
+import { TenantEditDialog } from './tenant-edit.dialog';
 
 const TZ = 'America/Caracas';
 
 /** One company seen from the console: data, numbers, team, usage and audit. No conversations. */
 @Component({
   selector: 'app-tenant-detail-page',
-  imports: [RouterLink, Avatar, Icon, Pill, Skeleton, InvitationLinkDialog],
+  imports: [RouterLink, Avatar, Icon, Pill, Skeleton, InvitationLinkDialog, TenantEditDialog],
   templateUrl: './tenant-detail.page.html',
   styleUrls: ['./platform-pages.scss', './tenant-detail.page.scss'],
 })
@@ -38,6 +39,8 @@ export class TenantDetailPage {
   protected readonly labels = { status: TENANT_STATUS, plan: TENANT_PLAN, channel: CHANNEL_STATUS, quality: QUALITY, role: ROLE };
   protected readonly link = signal<{ link: string; name: string } | null>(null);
   protected readonly busy = signal(false);
+  /** «Editar datos» is open. */
+  protected readonly editing = signal(false);
   /** This company's people and invitations arrived (they come apart from the list). */
   protected readonly detailLoaded = signal(false);
 
@@ -95,7 +98,7 @@ export class TenantDetailPage {
     if (!row) return;
     const question = {
       title: `¿Suspender ${row.tenant.name}?`,
-      message: 'Nadie de la empresa podrá entrar hasta que la reactives. Sus datos, conversaciones y números se conservan.',
+      message: 'Nadie de la empresa podrá entrar y el agente deja de responder a sus clientes hasta que la reactives. Sus datos, conversaciones y números se conservan.',
       confirmLabel: 'Suspender',
       danger: true,
     };
@@ -107,10 +110,30 @@ export class TenantDetailPage {
     if (!row) return;
     const question = {
       title: `¿Reactivar ${row.tenant.name}?`,
-      message: 'Su equipo vuelve a entrar al panel y a atender sus números.',
+      message: 'Su equipo vuelve a entrar al panel y a atender sus números, y el agente vuelve a responder si estaba encendido.',
       confirmLabel: 'Reactivar',
     };
     await this.changeStatus('active', question, 'Empresa reactivada');
+  }
+
+  /** Leaves the company out (status «cancelled»): nobody enters and nothing answers its customers; every row is kept. */
+  protected async cancel(): Promise<void> {
+    const row = this.row();
+    if (!row) return;
+    const question = {
+      title: `¿Dar de baja a ${row.tenant.name}?`,
+      message:
+        'Nadie de la empresa podrá entrar, y ni el agente ni el mensaje de ausencia responderán a sus clientes. ' +
+        'No se borra nada: conversaciones, pedidos y recibos se conservan, y se puede reactivar después.',
+      confirmLabel: 'Dar de baja',
+      danger: true,
+    };
+    await this.changeStatus('cancelled', question, 'Empresa dada de baja. Sus datos se conservan.');
+  }
+
+  protected onSaved(): void {
+    this.editing.set(false);
+    this.toaster.show('Datos de la empresa actualizados');
   }
 
   protected requestReconnect(channel: ChannelAccount): void {
@@ -136,7 +159,7 @@ export class TenantDetailPage {
 
   /** Asks first; the dialog shows the circle while the server answers and any error inside it. */
   private async changeStatus(
-    status: 'active' | 'suspended',
+    status: 'active' | 'suspended' | 'cancelled',
     question: { title: string; message: string; confirmLabel: string; danger?: boolean },
     success: string,
   ): Promise<void> {
@@ -145,7 +168,7 @@ export class TenantDetailPage {
     this.busy.set(true);
     const done = await this.confirm.ask({ ...question, action: async () => failIf(await this.data.setStatus(id, status)) });
     this.busy.set(false);
-    if (done) this.toaster.show(success, status === 'suspended' ? 'info' : 'success');
+    if (done) this.toaster.show(success, status === 'active' ? 'success' : 'info');
   }
 
   private readonly report = (error: string | null) => {
