@@ -63,7 +63,7 @@
     <h2 class="section-title">Números</h2>
     <div class="card table-card">
       <table class="data-table">
-        <thead><tr><th>Número</th><th>Estado</th><th>Calidad</th><th>Clientes nuevos por día</th><th>Acceso a Meta vence</th><th></th></tr></thead>
+        <thead><tr><th>Número</th><th>Estado</th><th>Calidad</th><th>Clientes por día</th><th>Acceso vence</th><th></th></tr></thead>
         <tbody>
           @for (channel of r.channels; track channel.id) {
             <tr>
@@ -76,6 +76,9 @@
                 @if (channel.status === 'disconnected') {
                   <button type="button" class="btn btn--sm" (click)="requestReconnect(channel)"><span>Pedir reconexión</span></button>
                 }
+                <button type="button" class="btn btn--sm" [disabled]="refreshing() === channel.id" [attr.aria-busy]="refreshing() === channel.id"
+                  (click)="refreshNumber(channel)" aria-label="Actualizar el número desde Meta"><app-icon name="swap" /><span>Actualizar</span></button>
+                <button type="button" class="btn btn--sm" (click)="changing.set(channel)"><app-icon name="edit" /><span>Cambiar número</span></button>
               </td>
             </tr>
           } @empty {
@@ -154,4 +157,7 @@
 
 @if (row(); as r) {
   <app-tenant-edit-dialog [tenant]="r.tenant" [open]="editing()" (closed)="editing.set(false)" (saved)="onSaved()" />
+  @if (changing(); as channel) {
+    <app-change-number-dialog [tenantId]="r.tenant.id" [channel]="channel" [open]="true" (closed)="changing.set(null)" (changed)="onNumberChanged()" />
+  }
 }

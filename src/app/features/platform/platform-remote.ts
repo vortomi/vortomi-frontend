@@ -76,6 +76,21 @@ export class PlatformRemote {
     return this.api.post(this.path(tenantId, 'channels/lookup'), { wabaId, accessToken });
   }
 
+  /** An existing number's account: without a token, the one stored for the number serves. */
+  lookupForChannel(tenantId: Id, channelId: Id, wabaId: string, accessToken: string): Promise<ApiWabaLookup> {
+    return this.api.post(this.path(tenantId, `channels/${encodeURIComponent(channelId)}/lookup`), { wabaId, accessToken });
+  }
+
+  /** Points the number at another one of Meta (a number connected by mistake, or the real one). */
+  replaceNumber(tenantId: Id, channelId: Id, change: { wabaId: string; phoneNumberId: string; accessToken: string }): Promise<{ displayNumber: string; subscribed: boolean }> {
+    return this.api.put(this.path(tenantId, `channels/${encodeURIComponent(channelId)}`), change);
+  }
+
+  /** Writes the number again as Meta shows it. */
+  refreshNumber(tenantId: Id, channelId: Id): Promise<{ displayNumber: string }> {
+    return this.api.post(this.path(tenantId, `channels/${encodeURIComponent(channelId)}/refresh`));
+  }
+
   connect(tenantId: Id, connection: ChannelConnection): Promise<{ id: Id; subscribed: boolean }> {
     return this.api.post(this.path(tenantId, 'channels'), connection);
   }

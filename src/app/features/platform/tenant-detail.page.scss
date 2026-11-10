@@ -70,6 +70,11 @@ dd {
 
 .actions-cell {
   text-align: right;
+  white-space: nowrap;
+
+  .btn + .btn {
+    margin-left: 8px;
+  }
 }
 
 .list {
@@ -134,4 +139,5 @@ dd {
 
 .number {
   margin-left: 8px;
+  white-space: nowrap;
 }

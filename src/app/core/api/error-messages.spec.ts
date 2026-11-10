@@ -17,7 +17,7 @@ const SERVER_CODES = [
   'variant_option_in_use', 'variant_type_locked', 'invalid_variant', 'member_not_found', 'channel_not_found',
   'unknown_channel', 'last_admin', 'cannot_disable_self', 'already_member', 'invitation_exists',
   'invitation_not_found', 'invitation_expired', 'invitation_email_mismatch', 'email_in_use',
-  'company_unavailable', 'tenant_not_found', 'no_channel', 'waba_taken', 'phone_number_taken',
+  'company_unavailable', 'tenant_not_found', 'no_channel', 'waba_taken', 'phone_number_taken', 'number_not_in_account', 'token_required', 'meta_refused',
   'contact_exists', 'owner_not_member', 'invalid_quantity', 'fractional_stock',
   'custom_field_not_found', 'field_limit', 'invalid_field', 'invalid_field_value', 'field_label_taken', 'field_option_taken', 'unknown_category',
   'unknown_business_type', 'business_type_exists',

@@ -94,6 +94,9 @@ const MESSAGES: Record<string, string> = {
   no_channel: 'La empresa necesita un número conectado antes de activarse.',
   waba_taken: 'Esa cuenta de WhatsApp ya pertenece a otra empresa de la plataforma.',
   phone_number_taken: 'Ese número ya está conectado a una empresa de la plataforma.',
+  number_not_in_account: 'Ese número no está en esa cuenta de WhatsApp. Búscalo de nuevo.',
+  token_required: 'Para esa cuenta hace falta el token de acceso.',
+  meta_refused: 'Meta no dejó ver esa cuenta: revisa el identificador de la cuenta y el token.',
 
   // Generic
   invalid_request: 'Hay datos que no son válidos. Revisa el formulario.',

@@ -4,7 +4,7 @@ import { toApiFailure } from '../../core/api/api-error';
 import { Clock } from '../../core/clock';
 import { Directory } from '../../core/directory';
 import { Session } from '../../core/session';
-import type { ApiPlatformTenant, ApiPlatformTenantDetail } from '../../shared/api/contract';
+import type { ApiPlatformTenant, ApiPlatformTenantDetail, ApiWabaLookup } from '../../shared/api/contract';
 import { toChannel, toUsage } from '../../shared/api/mappers';
 import type {
   AuditAction,
@@ -24,6 +24,9 @@ import { type MetaSpend, estimateSpend } from '../../shared/billing/meta-pricing
 import { calendarDay } from '../../shared/format/date-time';
 import { platformAlerts } from './platform-alerts';
 import { PlatformRemote, type TenantFields } from './platform-remote';
+
+/** Changing a number asks Meta: the sample data (preview) cannot. */
+const SERVER_ONLY = 'Cambiar el número solo funciona con el servidor conectado a Meta.';
 
 export interface TenantRow {
   tenant: Tenant;
@@ -232,6 +235,40 @@ export class PlatformData {
     this.directory.updateTenant(tenantId, fields);
     this.audit(tenantId, 'tenant.updated', 'Datos de la empresa actualizados');
     return null;
+  }
+
+  /** The numbers of a WhatsApp account, for changing a connected number (Meta is asked: server only). */
+  async lookupForChannel(tenantId: Id, channelId: Id, wabaId: string, accessToken: string): Promise<ApiWabaLookup | { error: string }> {
+    if (!this.remote) return { error: SERVER_ONLY };
+    try {
+      return await this.remote.lookupForChannel(tenantId, channelId, wabaId.replace(/\D/g, ''), accessToken.trim());
+    } catch (error) {
+      return { error: toApiFailure(error).message };
+    }
+  }
+
+  /** Points a connected number at another one of Meta. Resolves to an error message, or null. */
+  async replaceNumber(tenantId: Id, channelId: Id, change: { wabaId: string; phoneNumberId: string; accessToken: string }): Promise<string | null> {
+    if (!this.remote) return SERVER_ONLY;
+    try {
+      await this.remote.replaceNumber(tenantId, channelId, { ...change, wabaId: change.wabaId.replace(/\D/g, ''), accessToken: change.accessToken.trim() });
+      await Promise.all([this.load(), this.loadDetail(tenantId)]);
+      return null;
+    } catch (error) {
+      return toApiFailure(error).message;
+    }
+  }
+
+  /** Writes the number again as Meta shows it. Resolves to an error message, or null. */
+  async refreshNumber(tenantId: Id, channelId: Id): Promise<string | null> {
+    if (!this.remote) return SERVER_ONLY;
+    try {
+      await this.remote.refreshNumber(tenantId, channelId);
+      await Promise.all([this.load(), this.loadDetail(tenantId)]);
+      return null;
+    } catch (error) {
+      return toApiFailure(error).message;
+    }
   }
 
   /** A fresh link with a new 72 h window; the old one stops working. Resolves to the link, or an error. */

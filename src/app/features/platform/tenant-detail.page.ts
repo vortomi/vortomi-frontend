@@ -16,13 +16,14 @@ import { Toaster } from '../../shared/ui/toaster';
 import { failIf } from './fail-if';
 import { PlatformData, type PlatformInvitation } from './platform.data';
 import { TenantEditDialog } from './tenant-edit.dialog';
+import { ChangeNumberDialog } from './change-number.dialog';
 
 const TZ = 'America/Caracas';
 
 /** One company seen from the console: data, numbers, team, usage and audit. No conversations. */
 @Component({
   selector: 'app-tenant-detail-page',
-  imports: [RouterLink, Avatar, Icon, Pill, Skeleton, InvitationLinkDialog, TenantEditDialog],
+  imports: [RouterLink, Avatar, Icon, Pill, Skeleton, InvitationLinkDialog, TenantEditDialog, ChangeNumberDialog],
   templateUrl: './tenant-detail.page.html',
   styleUrls: ['./platform-pages.scss', './tenant-detail.page.scss'],
 })
@@ -41,6 +42,10 @@ export class TenantDetailPage {
   protected readonly busy = signal(false);
   /** «Editar datos» is open. */
   protected readonly editing = signal(false);
+  /** The number whose «Cambiar número» is open. */
+  protected readonly changing = signal<ChannelAccount | null>(null);
+  /** The number being read again from Meta. */
+  protected readonly refreshing = signal<string | null>(null);
   /** This company's people and invitations arrived (they come apart from the list). */
   protected readonly detailLoaded = signal(false);
 
@@ -129,6 +134,21 @@ export class TenantDetailPage {
       danger: true,
     };
     await this.changeStatus('cancelled', question, 'Empresa dada de baja. Sus datos se conservan.');
+  }
+
+  /** Writes again the number as Meta shows it (a number typed by hand may be wrong). */
+  protected async refreshNumber(channel: ChannelAccount): Promise<void> {
+    const id = this.row()?.tenant.id;
+    if (!id || this.refreshing()) return;
+    this.refreshing.set(channel.id);
+    const failure = await this.data.refreshNumber(id, channel.id);
+    this.refreshing.set(null);
+    this.toaster.show(failure ?? `Número ${channel.label} actualizado desde Meta`, failure ? 'info' : 'success');
+  }
+
+  protected onNumberChanged(): void {
+    this.changing.set(null);
+    this.toaster.show('Número cambiado. Desde ahora llegan los mensajes del número nuevo.');
   }
 
   protected onSaved(): void {
