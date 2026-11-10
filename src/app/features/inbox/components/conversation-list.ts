@@ -8,12 +8,13 @@ import { formatListStamp } from '../../../shared/format/date-time';
 import { Avatar } from '../../../shared/ui/avatar';
 import { ChannelBadge } from '../../../shared/ui/channel-badge';
 import { Pill } from '../../../shared/ui/pill';
+import { type MenuOption, SelectMenu } from '../../../shared/ui/select-menu';
 import type { InboxFilters, InboxItem, InboxView, ViewCounts } from '../inbox.filters';
 import { HANDOFF_LABEL } from '../../agent/agent.models';
 
 @Component({
   selector: 'app-conversation-list',
-  imports: [RouterLink, Avatar, ChannelBadge, Pill],
+  imports: [RouterLink, Avatar, ChannelBadge, Pill, SelectMenu],
   templateUrl: './conversation-list.html',
   styleUrl: './conversation-list.scss',
 })
@@ -35,6 +36,16 @@ export class ConversationList {
     { id: 'all', label: 'Todas' },
   ]);
 
+  /** '' is "all": the filters keep null for it. */
+  protected readonly channelOptions = computed<MenuOption[]>(() => [
+    { value: '', label: 'Todos los números' },
+    ...this.workspace.channels().map((c) => ({ value: c.id, label: c.label })),
+  ]);
+  protected readonly tagOptions = computed<MenuOption[]>(() => [
+    { value: '', label: 'Etiquetas' },
+    ...this.workspace.tags().map((t) => ({ value: t.id, label: t.name })),
+  ]);
+
   protected stamp(iso: string): string {
     return formatListStamp(iso, this.clock.now(), this.session.timezone());
   }
@@ -47,13 +58,13 @@ export class ConversationList {
     this.filters.update((f) => ({ ...f, view }));
   }
 
-  protected setChannel(event: Event): void {
-    const channelId = (event.target as HTMLSelectElement).value || null;
+  protected setChannel(value: string): void {
+    const channelId = value || null;
     this.filters.update((f) => ({ ...f, channelId }));
   }
 
-  protected setTag(event: Event): void {
-    const tagId = (event.target as HTMLSelectElement).value || null;
+  protected setTag(value: string): void {
+    const tagId = value || null;
     this.filters.update((f) => ({ ...f, tagId }));
   }
 }

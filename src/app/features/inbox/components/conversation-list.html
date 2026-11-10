@@ -1,5 +1,5 @@
 <div class="toolbar">
-  <div class="seg" role="tablist" aria-label="Vista de la bandeja">
+  <div class="segmented" role="tablist" aria-label="Vista de la bandeja">
     @for (view of views(); track view.id) {
       <button type="button" role="tab" [class.on]="filters().view === view.id" [attr.aria-selected]="filters().view === view.id"
         (click)="setView(view.id)">
@@ -8,18 +8,8 @@
     }
   </div>
   <div class="selects">
-    <select class="select" aria-label="Filtrar por número" (change)="setChannel($event)">
-      <option value="" [selected]="!filters().channelId">Todos los números</option>
-      @for (channel of workspace.channels(); track channel.id) {
-        <option [value]="channel.id" [selected]="filters().channelId === channel.id">{{ channel.label }}</option>
-      }
-    </select>
-    <select class="select" aria-label="Filtrar por etiqueta" (change)="setTag($event)">
-      <option value="" [selected]="!filters().tagId">Etiquetas</option>
-      @for (tag of workspace.tags(); track tag.id) {
-        <option [value]="tag.id" [selected]="filters().tagId === tag.id">{{ tag.name }}</option>
-      }
-    </select>
+    <app-select-menu label="Filtrar por número" [options]="channelOptions()" [value]="filters().channelId ?? ''" (picked)="setChannel($event)" />
+    <app-select-menu label="Filtrar por etiqueta" [options]="tagOptions()" [value]="filters().tagId ?? ''" [searchable]="tagOptions().length > 8" (picked)="setTag($event)" />
   </div>
 </div>
 
@@ -42,14 +32,14 @@
               <app-channel-badge [channel]="channel" />
             }
             @if (conversation.status === 'resolved') {
-              <app-pill tone="green">Resuelta</app-pill>
+              <app-pill tone="green" [dot]="true">Resuelta</app-pill>
             } @else if (conversation.assigneeIds.length) {
               <span class="assignees">
                 @for (id of conversation.assigneeIds.slice(0, 3); track id) { <app-avatar size="sm" [name]="userName(id)" [seed]="id" /> }
                 @if (conversation.assigneeIds.length > 3) { <span class="more">+{{ conversation.assigneeIds.length - 3 }}</span> }
               </span>
             } @else {
-              <app-pill tone="amber">Sin asignar</app-pill>
+              <app-pill tone="amber" [dot]="true">Sin asignar</app-pill>
             }
             @if (conversation.handoffReason && conversation.status === 'open') {
               <app-pill tone="amber">{{ handoffLabel[conversation.handoffReason] }}</app-pill>
@@ -62,6 +52,6 @@
       </a>
     </li>
   } @empty {
-    <li class="empty">No hay conversaciones con estos filtros.</li>
+    <li class="empty-state">No hay conversaciones con estos filtros.</li>
   }
 </ul>

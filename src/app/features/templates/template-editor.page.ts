@@ -5,7 +5,9 @@ import { Session } from '../../core/session';
 import { Workspace } from '../../core/workspace';
 import { TEMPLATE_CATEGORY } from '../../shared/api/labels';
 import type { TemplateCategory } from '../../shared/api/models';
+import { Confirm } from '../../shared/ui/confirm';
 import { Icon } from '../../shared/ui/icon';
+import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
 import { TemplatePreview } from './template-preview';
 import { TemplatesActions } from './templates.actions';
 import { MAX_BODY_LENGTH, type TemplateDraft, renderPreview, templateIssues, templateVariables } from './templates.rules';
@@ -19,13 +21,13 @@ interface EditorModel {
 /** New template (/templates/new, or ?from=<id> to fix a rejected one). */
 @Component({
   selector: 'app-template-editor-page',
-  imports: [FormField, RouterLink, Icon, TemplatePreview],
+  imports: [FormField, RouterLink, Icon, SelectMenu, TemplatePreview],
   templateUrl: './template-editor.page.html',
   styles: `
     :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
     .back { display: inline-flex; color: var(--color-text-muted); --icon-size: 22px; }
     .layout { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: start; }
-    .box { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+    .box { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
     .g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; }
     .issues { display: flex; flex-direction: column; gap: 8px; }
     .count { text-align: right; }
@@ -38,12 +40,16 @@ export class TemplateEditorPage {
   protected readonly session = inject(Session);
   private readonly actions = inject(TemplatesActions);
   private readonly router = inject(Router);
+  private readonly confirm = inject(Confirm);
 
   /** ?from=<templateId> copies a rejected template to fix it. */
   readonly from = input<string>();
 
   protected readonly categories = Object.entries(TEMPLATE_CATEGORY) as [TemplateCategory, (typeof TEMPLATE_CATEGORY)[TemplateCategory]][];
   protected readonly maxLength = MAX_BODY_LENGTH;
+  protected readonly categoryOptions: MenuOption[] = this.categories.map(([value, info]) => ({ value, label: info.text }));
+  /** Sending it to Meta: the button waits. */
+  protected readonly sending = signal(false);
   protected readonly examples = signal<string[]>([]);
 
   private readonly model = signal<EditorModel>({ name: '', category: 'utility', body: '' });
@@ -80,13 +86,30 @@ export class TemplateEditorPage {
     });
   }
 
-  protected send(event: Event): void {
+  protected pickCategory(value: string): void {
+    this.editor.category().value.set(value as TemplateCategory);
+  }
+
+  /** It goes to Meta for review and cannot be edited after: asked first. */
+  protected async send(event: Event): Promise<void> {
     event.preventDefault();
+    if (this.sending()) return;
     this.showIssues.set(true);
     this.editor.name().markAsTouched();
     this.editor.body().markAsTouched();
     if (this.blocking()) return;
-    const template = this.actions.submit(this.draft());
-    void this.router.navigate(['/templates'], { queryParams: { selected: template.id } });
+    const yes = await this.confirm.ask({
+      title: '¿Enviar «' + this.model().name + '» a revisión?',
+      message: 'Meta revisa la plantilla antes de poder usarla. Una vez enviada no se edita: si hace falta un cambio, se crea una versión nueva.',
+      confirmLabel: 'Enviar a revisión',
+    });
+    if (!yes) return;
+    this.sending.set(true);
+    try {
+      const template = this.actions.submit(this.draft());
+      await this.router.navigate(['/templates'], { queryParams: { selected: template.id } });
+    } finally {
+      this.sending.set(false);
+    }
   }
 }

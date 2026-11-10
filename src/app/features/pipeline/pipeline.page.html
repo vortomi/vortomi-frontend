@@ -7,16 +7,17 @@
     <span class="visually-hidden">Buscar</span>
     <input type="search" placeholder="Buscar cliente" [value]="search()" (input)="search.set(value($event))" />
   </label>
-  <select class="select" aria-label="Número" (change)="channelId.set(value($event))">
-    <option value="">Todos los números</option>
-    @for (channel of workspace.channels(); track channel.id) { <option [value]="channel.id">{{ channel.label }}</option> }
-  </select>
-  <select class="select" aria-label="Responsable" (change)="ownerId.set(value($event))">
-    <option value="">Cualquier responsable</option>
-    @for (member of workspace.activeTeam(); track member.user.id) { <option [value]="member.user.id">{{ member.user.name }}</option> }
-  </select>
+  <app-select-menu class="filter" label="Número" [options]="channelOptions()" [value]="channelId()" (picked)="channelId.set($event)" />
+  <app-select-menu class="filter" label="Responsable" [options]="ownerOptions()" [value]="ownerId()" [searchable]="ownerOptions().length > 8" (picked)="ownerId.set($event)" />
 </header>
 
+@if (loading()) {
+  <div class="board">
+    @for (n of [1, 2, 3, 4]; track n) {
+      <section class="column"><app-skeleton kind="rows" [rows]="3" /></section>
+    }
+  </div>
+} @else {
 <div class="board">
   @for (column of columns(); track column.stage.id) {
     <section class="column" [class.drop]="dropTarget() === column.stage.id" (dragover)="onDragOver(column.stage, $event)"
@@ -29,7 +30,7 @@
         @for (card of column.cards; track card.contact.id) {
           @let contact = card.contact;
           @let channel = workspace.channelById().get(contact.channelAccountId);
-          <article class="card-item" draggable="true" [class.dragging]="dragging() === contact.id" tabindex="0"
+          <article class="card-item" draggable="true" [class.dragging]="dragging() === contact.id" [class.saving]="moving().has(contact.id)" tabindex="0"
             (dragstart)="onDragStart(contact, $event)" (dragend)="dragging.set(null)" (click)="open(contact)" (keydown.enter)="open(contact)">
             <div class="top">
               <app-avatar size="sm" [name]="contact.name" [seed]="contact.id" />
@@ -47,15 +48,14 @@
               @if (card.conversation) {
                 <a class="chat" [routerLink]="['/inbox', card.conversation.id]" (click)="$event.stopPropagation()" aria-label="Abrir conversación"><app-icon name="inbox" /></a>
               }
-              <select class="move" [attr.aria-label]="'Mover a ' + contact.name" (click)="$event.stopPropagation()" (change)="moveFromMenu(contact, $event)">
-                @for (stage of workspace.stages(); track stage.id) {
-                  <option [value]="stage.id" [selected]="stage.id === contact.stageId">{{ stage.name }}</option>
-                }
-              </select>
+              <span class="move" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
+                <app-select-menu [label]="'Mover a ' + contact.name" [options]="stageOptions()" [value]="contact.stageId" [disabled]="moving().has(contact.id)"
+                  (picked)="moveFromMenu(contact, $event)" />
+              </span>
             </div>
           </article>
         } @empty {
-          <p class="empty">Arrastra un cliente aquí</p>
+          <p class="empty-state drop-hint">Arrastra un cliente aquí</p>
         }
       </div>
     </section>
@@ -71,3 +71,4 @@
     </div>
   }
 </div>
+}

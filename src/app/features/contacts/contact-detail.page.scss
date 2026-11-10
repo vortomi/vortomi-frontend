@@ -21,13 +21,14 @@
 }
 
 .box {
-  padding: 18px 20px;
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
   gap: 14px;
 
   h2 {
-    font-size: 15.5px;
+    font-size: 16px;
+    font-weight: 600;
   }
 }
 
@@ -74,10 +75,6 @@
   span {
     flex: 1;
   }
-}
-
-.danger {
-  color: #b42318;
 }
 
 .preview {

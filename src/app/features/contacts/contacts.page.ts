@@ -11,7 +11,10 @@ import { downloadText } from '../../shared/files/download';
 import { Avatar } from '../../shared/ui/avatar';
 import { ChannelBadge } from '../../shared/ui/channel-badge';
 import { Icon } from '../../shared/ui/icon';
+import { Confirm } from '../../shared/ui/confirm';
 import { Pill } from '../../shared/ui/pill';
+import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
 import { type FieldFilter, formatValue, matchesFilter } from '../custom-fields/custom-field-rules';
 import { CustomFields } from '../custom-fields/custom-fields.data';
@@ -24,7 +27,7 @@ import { type ContactFilters, EMPTY_CONTACT_FILTERS, applyContactFilters } from 
 /** Contacts of the company (mockup web-3). */
 @Component({
   selector: 'app-contacts-page',
-  imports: [RouterLink, Avatar, ChannelBadge, Icon, Pill, ContactImportDialog, FieldFilterPicker],
+  imports: [RouterLink, Avatar, ChannelBadge, Icon, Pill, SelectMenu, Skeleton, ContactImportDialog, FieldFilterPicker],
   templateUrl: './contacts.page.html',
   styleUrl: './contacts.page.scss',
 })
@@ -36,11 +39,37 @@ export class ContactsPage {
   private readonly clock = inject(Clock);
   private readonly router = inject(Router);
   private readonly toaster = inject(Toaster);
+  private readonly confirm = inject(Confirm);
   protected readonly customFields = inject(CustomFields);
 
   protected readonly filters = signal<ContactFilters>(EMPTY_CONTACT_FILTERS);
   protected readonly selected = signal<ReadonlySet<Id>>(new Set());
   protected readonly importing = signal(false);
+
+  /** First read of the list: a skeleton, not "no contact matches". */
+  protected readonly loading = computed(() => !this.data.ready() || (this.data.loading() && !this.data.all().length));
+
+  // Filter dropdowns: '' is "any".
+  protected readonly channelOptions = computed<MenuOption[]>(() => [
+    { value: '', label: 'Todos los números' },
+    ...this.workspace.channels().map((c) => ({ value: c.id, label: c.label })),
+  ]);
+  protected readonly stageOptions = computed<MenuOption[]>(() => [
+    { value: '', label: 'Todas las etapas' },
+    ...this.workspace.stages().map((s) => ({ value: s.id, label: s.name })),
+  ]);
+  protected readonly tagOptions = computed<MenuOption[]>(() => [
+    { value: '', label: 'Todas las etiquetas' },
+    ...this.workspace.tags().map((t) => ({ value: t.id, label: t.name })),
+  ]);
+  private readonly memberOptions = computed<MenuOption[]>(() => this.workspace.activeTeam().map((m) => ({ value: m.user.id, label: m.user.name })));
+  protected readonly ownerFilterOptions = computed<MenuOption[]>(() => [
+    { value: '', label: 'Cualquier responsable' },
+    { value: 'none', label: 'Sin responsable' },
+    ...this.memberOptions(),
+  ]);
+  protected readonly bulkOwnerOptions = computed<MenuOption[]>(() => [{ value: 'none', label: 'Sin responsable' }, ...this.memberOptions()]);
+  protected readonly bulkTagOptions = computed<MenuOption[]>(() => this.workspace.tags().map((t) => ({ value: t.id, label: t.name })));
 
   /** Filters by the company's own data ("Vehículo: Corolla 2015"); each one adds its column. */
   protected readonly fieldFilters = signal<FieldFilter[]>([]);
@@ -65,7 +94,10 @@ export class ContactsPage {
   protected readonly allSelected = computed(() => this.rows().length > 0 && this.rows().every((c) => this.selected().has(c.id)));
 
   protected setFilter<K extends keyof ContactFilters>(key: K, event: Event): void {
-    const value = (event.target as HTMLInputElement | HTMLSelectElement).value;
+    this.pickFilter(key, (event.target as HTMLInputElement).value);
+  }
+
+  protected pickFilter<K extends keyof ContactFilters>(key: K, value: string): void {
     this.filters.update((f) => ({ ...f, [key]: key === 'search' ? value : value || null }));
   }
 
@@ -125,21 +157,32 @@ export class ContactsPage {
     this.selected.set(this.allSelected() ? new Set() : new Set(this.rows().map((c) => c.id)));
   }
 
-  protected bulkOwner(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    if (!select.value) return;
-    const ownerUserId = select.value === 'none' ? null : select.value;
-    this.selected().forEach((id) => this.data.update(id, { ownerUserId }));
-    this.toaster.show(`Responsable cambiado en ${this.selected().size} contactos`);
-    select.value = '';
+  /** Changes many contacts at once: asked first, and the dialog waits until every change was saved. */
+  protected async bulkOwner(value: string): Promise<void> {
+    if (!value) return;
+    const ownerUserId = value === 'none' ? null : value;
+    const ids = [...this.selected()];
+    const who = ownerUserId ? this.userName(ownerUserId) : 'nadie';
+    const done = await this.confirm.ask({
+      title: '¿Cambiar el responsable de ' + ids.length + ' contactos?',
+      message: 'Quedarán a cargo de ' + who + '. Reemplaza el responsable que tenga cada uno.',
+      confirmLabel: 'Cambiar responsable',
+      action: () => Promise.all(ids.map((id) => this.data.update(id, { ownerUserId }))),
+    });
+    if (done) this.toaster.show(`Responsable cambiado en ${ids.length} contactos`);
   }
 
-  protected bulkTag(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    if (!select.value) return;
-    this.selected().forEach((id) => this.data.addTag(id, select.value));
-    this.toaster.show(`Etiqueta agregada a ${this.selected().size} contactos`);
-    select.value = '';
+  protected async bulkTag(tagId: string): Promise<void> {
+    if (!tagId) return;
+    const ids = [...this.selected()];
+    const name = this.workspace.tagById().get(tagId)?.name ?? '';
+    const done = await this.confirm.ask({
+      title: '¿Agregar la etiqueta «' + name + '» a ' + ids.length + ' contactos?',
+      message: 'Se agrega a cada contacto seleccionado; los que ya la tienen no cambian.',
+      confirmLabel: 'Agregar etiqueta',
+      action: () => Promise.all(ids.map((id) => this.data.addTag(id, tagId))),
+    });
+    if (done) this.toaster.show(`Etiqueta agregada a ${ids.length} contactos`);
   }
 
   /** Admin only: exporting takes the company's customer list out of the system. */

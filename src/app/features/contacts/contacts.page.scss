@@ -8,10 +8,11 @@
 }
 
 .search {
-  height: 38px;
-  width: 260px;
+  height: 40px;
+  width: 280px;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
+  background: var(--color-input);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -25,7 +26,7 @@
     border: 0;
     outline: 0;
     background: transparent;
-    font-size: 13.5px;
+    font-size: 14px;
     color: var(--color-text);
   }
 }
@@ -34,7 +35,7 @@
 .bulk {
   display: flex;
   gap: 10px;
-  padding: 12px 26px;
+  padding: 12px 28px;
   flex-wrap: wrap;
   align-items: center;
   flex-shrink: 0;
@@ -47,7 +48,7 @@
   padding: 4px 6px 4px 11px;
   border-radius: var(--radius-pill);
   background: var(--color-primary-soft);
-  color: var(--color-primary-strong);
+  color: var(--color-primary-text);
   font-size: 12.5px;
 
   button {
@@ -65,10 +66,15 @@
   background: var(--color-surface);
 }
 
+// The shared dropdowns fill their box: here each filter keeps a fixed width.
+.filter {
+  width: 200px;
+}
+
 .bulk {
   background: var(--color-primary-softer);
-  border-bottom: 1px solid #d5dbfb;
-  color: #26338f;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-primary-text);
 }
 
 .table-card {
@@ -76,13 +82,7 @@
 }
 
 .check {
-  width: 40px;
-
-  input {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--color-primary);
-  }
+  width: 44px;
 }
 
 .who {
@@ -97,6 +97,7 @@
   span {
     font-size: 12px;
     color: var(--color-text-muted);
+    white-space: nowrap;
   }
 }
 
@@ -124,13 +125,9 @@
   gap: 7px;
 }
 
-.empty {
-  padding: 30px;
-  text-align: center;
-}
-
 @include mixins.phone {
-  .search {
+  .search,
+  .filter {
     width: 100%;
   }
 

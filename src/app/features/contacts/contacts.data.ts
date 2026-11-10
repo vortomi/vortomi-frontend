@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, untracked } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { API_CONFIG } from '../../core/api/api-config';
 import { toApiFailure } from '../../core/api/api-error';
 import { Clock } from '../../core/clock';
@@ -37,6 +37,8 @@ export class ContactsData {
   private readonly table = editableTable<Contact>('contacts');
 
   readonly ready = computed(() => allLoaded(this.table));
+  /** 'api' mode: the list is being read from the server (the screens show a skeleton the first time). */
+  readonly loading = signal(false);
   readonly all = computed(() => {
     const tenantId = this.session.tenant()?.id;
     return this.table.rows().filter((c) => c.tenantId === tenantId);
@@ -95,25 +97,28 @@ export class ContactsData {
     return true;
   }
 
-  setStage(id: Id, stageId: Id | null): void {
+  /** Each resolves to whether it was saved, so the screen can wait for it. */
+  setStage(id: Id, stageId: Id | null): Promise<boolean> {
     const quoteCents = this.byId().get(id)?.quoteCents ?? null;
-    if (this.remote) return void this.save(id, { stageId }, (remote, tenantId) => remote.setOpportunity(tenantId, id, stageId, quoteCents));
+    if (this.remote) return this.save(id, { stageId }, (remote, tenantId) => remote.setOpportunity(tenantId, id, stageId, quoteCents));
     this.table.patch(id, { stageId });
+    return Promise.resolve(true);
   }
 
-  addTag(id: Id, tagId: Id): void {
+  addTag(id: Id, tagId: Id): Promise<boolean> {
     const contact = this.byId().get(id);
-    if (contact && !contact.tagIds.includes(tagId)) this.setTags(id, [...contact.tagIds, tagId]);
+    return contact && !contact.tagIds.includes(tagId) ? this.setTags(id, [...contact.tagIds, tagId]) : Promise.resolve(true);
   }
 
-  removeTag(id: Id, tagId: Id): void {
+  removeTag(id: Id, tagId: Id): Promise<boolean> {
     const contact = this.byId().get(id);
-    if (contact) this.setTags(id, contact.tagIds.filter((t) => t !== tagId));
+    return contact ? this.setTags(id, contact.tagIds.filter((t) => t !== tagId)) : Promise.resolve(true);
   }
 
-  private setTags(id: Id, tagIds: Id[]): void {
-    if (this.remote) return void this.save(id, { tagIds }, (remote, tenantId) => remote.setTags(tenantId, id, tagIds));
+  private setTags(id: Id, tagIds: Id[]): Promise<boolean> {
+    if (this.remote) return this.save(id, { tagIds }, (remote, tenantId) => remote.setTags(tenantId, id, tagIds));
     this.table.patch(id, { tagIds });
+    return Promise.resolve(true);
   }
 
   /** 'api' mode: reads the list again (after the server changed many contacts at once). */
@@ -124,6 +129,7 @@ export class ContactsData {
 
   private async load(tenantId: Id): Promise<void> {
     if (!this.remote) return;
+    this.loading.set(true);
     try {
       const full = await this.remote.list(tenantId);
       const ids = new Set(full.map((c) => c.id));
@@ -131,6 +137,8 @@ export class ContactsData {
       this.table.replaceAll([...this.table.rows().filter((c) => !ids.has(c.id)), ...full]);
     } catch (error) {
       this.toaster.show(toApiFailure(error).message, 'info');
+    } finally {
+      this.loading.set(false);
     }
   }
 

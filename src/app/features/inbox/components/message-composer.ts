@@ -1,5 +1,6 @@
-import { Component, computed, effect, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import type { Id, MessageTemplate, QuickReply, Tone } from '../../../shared/api/models';
+import { Confirm } from '../../../shared/ui/confirm';
 import { Icon } from '../../../shared/ui/icon';
 import { Pill } from '../../../shared/ui/pill';
 
@@ -32,6 +33,8 @@ const CATEGORY_LABEL: Record<MessageTemplate['category'], string> = {
   styleUrl: './message-composer.scss',
 })
 export class MessageComposer {
+  private readonly confirm = inject(Confirm);
+
   readonly conversationId = input.required<Id>();
   readonly windowOpen = input.required<boolean>();
   readonly quickReplies = input.required<QuickReply[]>();
@@ -103,7 +106,14 @@ export class MessageComposer {
     this.text.set('');
   }
 
-  protected sendTemplate(template: MessageTemplate): void {
+  /** A template is paid from the first send and reaches the customer at once: asked first. */
+  protected async sendTemplate(template: MessageTemplate): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: '¿Enviar la plantilla «' + template.name + '»?',
+      message: 'Le llega al cliente por WhatsApp ahora mismo. Meta cobra cada plantilla desde el primer envío, aunque la ventana de 24 h esté abierta.',
+      confirmLabel: 'Enviar plantilla',
+    });
+    if (!ok) return;
     this.template.emit(template);
     this.mode.set('reply');
   }
@@ -112,7 +122,14 @@ export class MessageComposer {
     this.productQuery.set((event.target as HTMLInputElement).value);
   }
 
-  protected sendProduct(option: ProductOption): void {
+  /** The product card reaches the customer at once: asked first. */
+  protected async sendProduct(option: ProductOption): Promise<void> {
+    const ok = await this.confirm.ask({
+      title: '¿Enviar la ficha de «' + option.title + '»?',
+      message: 'Le llega al cliente por WhatsApp ahora mismo, con este precio: ' + option.price + '.',
+      confirmLabel: 'Enviar ficha',
+    });
+    if (!ok) return;
     this.product.emit(option);
     this.productQuery.set('');
     this.mode.set('reply');

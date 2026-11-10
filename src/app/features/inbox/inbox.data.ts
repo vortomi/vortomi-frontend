@@ -46,6 +46,8 @@ export class InboxData {
   private lastRefresh = 0;
   /** When the inbox last read the server (ms): what follows the company's changes (the orders count) reads again then. */
   readonly synced = signal(0);
+  /** 'api' mode: the conversation whose messages are being read for the first time (the chat shows a skeleton). */
+  readonly timelineLoading = signal<Id | null>(null);
 
   private readonly conversationTable = editableTable<Conversation>('conversations');
   private readonly messageTable = editableTable<Message>('messages');
@@ -151,8 +153,13 @@ export class InboxData {
   open(conversationId: Id): void {
     if (this.remote) {
       this.openId = conversationId;
+      this.timelineLoading.set(conversationId);
       void this.run(async (remote, tenantId) => {
-        await this.loadTimeline(tenantId, conversationId);
+        try {
+          await this.loadTimeline(tenantId, conversationId);
+        } finally {
+          if (this.timelineLoading() === conversationId) this.timelineLoading.set(null);
+        }
         if (this.findItem(conversationId)?.conversation.unreadCount) {
           this.conversationTable.patch(conversationId, { unreadCount: 0 });
           await remote.markRead(tenantId, conversationId);
@@ -213,22 +220,26 @@ export class InboxData {
   }
 
   /** Admins only: everyone who attends the conversation; empty leaves it unassigned. */
-  assign(conversationId: Id, userIds: Id[]): void {
-    if (this.remote) return void this.run((remote, tenantId) => remote.assign(tenantId, conversationId, userIds), conversationId);
+  assign(conversationId: Id, userIds: Id[]): Promise<void> {
+    if (this.remote) return this.run((remote, tenantId) => remote.assign(tenantId, conversationId, userIds), conversationId);
     this.conversationTable.patch(conversationId, { assigneeIds: userIds });
+    return Promise.resolve();
   }
 
   /** Admins only: the sales agent may answer this conversation again. */
-  resumeAgent(conversationId: Id): void {
-    if (this.remote) return void this.run((remote, tenantId) => remote.resumeAgent(tenantId, conversationId), conversationId);
+  resumeAgent(conversationId: Id): Promise<void> {
+    if (this.remote) return this.run((remote, tenantId) => remote.resumeAgent(tenantId, conversationId), conversationId);
     this.conversationTable.patch(conversationId, { handoffReason: null });
+    return Promise.resolve();
   }
 
-  toggleResolved(conversationId: Id): void {
+  /** Resolves once the server answered (and the list was read again), so the button can wait for it. */
+  toggleResolved(conversationId: Id): Promise<void> {
     const status = this.findItem(conversationId)?.conversation.status === 'resolved' ? 'open' : 'resolved';
-    if (this.remote) return void this.run((remote, tenantId) => remote.setStatus(tenantId, conversationId, status), conversationId);
+    if (this.remote) return this.run((remote, tenantId) => remote.setStatus(tenantId, conversationId, status), conversationId);
     // As the server does: resolving gives the conversation back to the sales agent.
     this.conversationTable.patch(conversationId, status === 'resolved' ? { status, handoffReason: null } : { status });
+    return Promise.resolve();
   }
 
   markRead(conversationId: Id): void {

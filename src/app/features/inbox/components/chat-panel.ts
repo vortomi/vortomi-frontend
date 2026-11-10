@@ -1,4 +1,4 @@
-import { Component, ElementRef, afterRenderEffect, computed, inject, input, viewChild } from '@angular/core';
+import { Component, ElementRef, afterRenderEffect, computed, inject, input, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Clock } from '../../../core/clock';
 import { Session } from '../../../core/session';
@@ -7,7 +7,9 @@ import type { Message, MessageTemplate } from '../../../shared/api/models';
 import { calendarDay, formatDayLabel, formatTime } from '../../../shared/format/date-time';
 import { Avatar } from '../../../shared/ui/avatar';
 import { Icon } from '../../../shared/ui/icon';
+import { Confirm } from '../../../shared/ui/confirm';
 import { MultiSelectMenu } from '../../../shared/ui/multi-select-menu';
+import { Skeleton } from '../../../shared/ui/skeleton';
 import { HANDOFF_LABEL } from '../../agent/agent.models';
 import { ConversationOrders } from '../../orders/conversation-orders';
 import type { MenuOption } from '../../../shared/ui/select-menu';
@@ -31,7 +33,7 @@ interface DayGroup {
 
 @Component({
   selector: 'app-chat-panel',
-  imports: [ConversationOrders, MultiSelectMenu, RouterLink, Avatar, Icon, MessageBubble, MessageComposer],
+  imports: [ConversationOrders, MultiSelectMenu, RouterLink, Avatar, Icon, MessageBubble, MessageComposer, Skeleton],
   templateUrl: './chat-panel.html',
   styleUrl: './chat-panel.scss',
 })
@@ -42,6 +44,7 @@ export class ChatPanel {
   private readonly session = inject(Session);
   protected readonly workspace = inject(Workspace);
   private readonly rates = inject(ExchangeRates);
+  private readonly confirm = inject(Confirm);
 
   readonly item = input.required<InboxItem>();
 
@@ -67,6 +70,11 @@ export class ChatPanel {
       .join(' y ');
   });
   protected readonly timezone = this.session.timezone;
+  /** Waiting for the server after Resolver / Reabrir, or after changing who attends it. */
+  protected readonly resolving = signal(false);
+  protected readonly assigning = signal(false);
+  /** First read of this conversation's messages: a skeleton instead of an empty chat. */
+  protected readonly loadingTimeline = computed(() => this.data.timelineLoading() === this.conversation().id && !this.groups().length);
 
   protected readonly window = computed(() =>
     getServiceWindow(this.conversation().serviceWindowExpiresAt, this.clock.now()),
@@ -148,16 +156,34 @@ export class ChatPanel {
     return entry.kind === 'message' ? entry.message.id : entry.note.id;
   }
 
-  protected onAssign(userIds: string[]): void {
-    this.data.assign(this.conversation().id, userIds);
+  protected async onAssign(userIds: string[]): Promise<void> {
+    this.assigning.set(true);
+    try {
+      await this.data.assign(this.conversation().id, userIds);
+    } finally {
+      this.assigning.set(false);
+    }
   }
 
+  /** The AI answers the customer again from here on: asked first. */
   protected resumeAgent(): void {
-    this.data.resumeAgent(this.conversation().id);
+    const id = this.conversation().id;
+    void this.confirm.ask({
+      title: '¿Devolver la conversación al agente?',
+      message: `El agente de ventas vuelve a responderle a ${this.contact().name} por WhatsApp sin que nadie del equipo revise sus mensajes.`,
+      confirmLabel: 'Devolver al agente',
+      action: () => this.data.resumeAgent(id),
+    });
   }
 
-  protected toggleResolved(): void {
-    this.data.toggleResolved(this.conversation().id);
+  protected async toggleResolved(): Promise<void> {
+    if (this.resolving()) return;
+    this.resolving.set(true);
+    try {
+      await this.data.toggleResolved(this.conversation().id);
+    } finally {
+      this.resolving.set(false);
+    }
   }
 
   protected onReply(body: string): void {

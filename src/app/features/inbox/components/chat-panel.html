@@ -9,18 +9,20 @@
   </div>
   <div class="actions">
     @if (isAdmin() && conversation().handoffReason) {
-      <button type="button" class="btn" (click)="resumeAgent()"><app-icon name="sparkles" />Devolver al agente</button>
+      <button type="button" class="btn" (click)="resumeAgent()"><app-icon name="sparkles" /><span>Devolver al agente</span></button>
     }
     @if (isAdmin()) {
-      <app-multi-select-menu class="assign" label="Quién la atiende" placeholder="Sin asignar" noneLabel="Sin asignar" [searchable]="attendants().length > 6"
-        [options]="attendants()" [values]="conversation().assigneeIds" (changed)="onAssign($event)" />
+      <app-multi-select-menu class="assign" [class.saving]="assigning()" label="Quién la atiende" placeholder="Sin asignar" noneLabel="Sin asignar"
+        [searchable]="attendants().length > 6" [options]="attendants()" [values]="conversation().assigneeIds" (changed)="onAssign($event)" />
     } @else if (conversation().assigneeIds.length > 1) {
       <span class="assigned">La atiendes con {{ partners() }}</span>
     }
     @if (conversation().status === 'open') {
-      <button type="button" class="btn btn--success" (click)="toggleResolved()"><app-icon name="check" />Resolver</button>
+      <button type="button" class="btn btn--success" [disabled]="resolving()" [attr.aria-busy]="resolving()" (click)="toggleResolved()">
+        <app-icon name="check" /><span>Resolver</span>
+      </button>
     } @else {
-      <button type="button" class="btn" (click)="toggleResolved()">Reabrir</button>
+      <button type="button" class="btn" [disabled]="resolving()" [attr.aria-busy]="resolving()" (click)="toggleResolved()"><span>Reabrir</span></button>
     }
   </div>
 </header>
@@ -44,6 +46,10 @@
       Ventana de 24 h cerrada · solo se puede escribir con plantilla
     }
   </div>
+
+  @if (loadingTimeline()) {
+    <app-skeleton kind="chat" [rows]="5" />
+  }
 
   @for (group of groups(); track group.day) {
     <div class="day"><span>{{ group.label }}</span></div>

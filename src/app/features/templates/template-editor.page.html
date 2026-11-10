@@ -3,7 +3,7 @@
   <h1>Nueva plantilla</h1>
   <span class="sub">Meta la revisa antes de poder usarla</span>
   <span class="spacer"></span>
-  <button type="submit" form="template-form" class="btn btn--primary"><app-icon name="send" />Enviar a revisión</button>
+  <button type="submit" form="template-form" class="btn btn--primary" [disabled]="sending()" [attr.aria-busy]="sending()"><app-icon name="send" /><span>Enviar a revisión</span></button>
 </header>
 
 <div class="page-body">
@@ -17,11 +17,7 @@
         </div>
         <div class="field">
           <label for="tpl-category">Categoría</label>
-          <select id="tpl-category" class="input" [formField]="editor.category">
-            @for (category of categories; track category[0]) {
-              <option [value]="category[0]">{{ category[1].text }}</option>
-            }
-          </select>
+          <app-select-menu id="tpl-category" label="Categoría" [options]="categoryOptions" [value]="editor.category().value()" (picked)="pickCategory($event)" />
           @for (category of categories; track category[0]) {
             @if (editor.category().value() === category[0]) {
               <p class="field-hint">{{ category[1].detail }}</p>
