@@ -122,13 +122,27 @@ export class ChatPanel {
     return groups;
   });
 
+  /** The person is at (or near) the latest message; false while they read older ones. */
+  private atBottom = true;
+  private shownConversationId: string | null = null;
+
   constructor() {
-    // Keep the latest message in view when the conversation or its content changes.
+    // The latest message comes into view when another conversation opens, or when something new
+    // arrives while the person was already at the bottom; never while they read the history.
     afterRenderEffect(() => {
       this.groups();
+      const id = this.conversation().id;
       const element = this.scroller()?.nativeElement;
-      if (element) element.scrollTop = element.scrollHeight;
+      if (!element) return;
+      if (id !== this.shownConversationId || this.atBottom) element.scrollTop = element.scrollHeight;
+      // Scrolling to the bottom fires (scroll), which marks atBottom again.
+      this.shownConversationId = id;
     });
+  }
+
+  protected onScroll(): void {
+    const element = this.scroller()?.nativeElement;
+    if (element) this.atBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 80;
   }
 
   protected userName(id: string | null): string {

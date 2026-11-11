@@ -37,7 +37,7 @@
 
 <app-conversation-orders [conversationId]="conversation().id" [version]="conversation().lastMessageAt + (conversation().handoffReason ?? '')" />
 
-<div class="timeline" #scroller>
+<div class="timeline" #scroller (scroll)="onScroll()">
   <div class="window" [class.closed]="!window().isOpen">
     <app-icon name="clock" />
     @if (window().isOpen) {
