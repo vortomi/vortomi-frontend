@@ -193,9 +193,11 @@ type Connected = Extract<ConnectResult, { kind: 'connected' }>;
       color: var(--color-on-whatsapp);
       gap: 8px;
       --icon-size: 18px;
+      // The global .btn hover tints the label; this one stays white, only the green darkens.
       &:hover:not(:disabled) {
         background: var(--color-whatsapp-strong);
         border-color: var(--color-whatsapp-strong);
+        color: var(--color-on-whatsapp);
       }
       &.btn--lg {
         --icon-size: 20px;
