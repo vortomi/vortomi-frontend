@@ -274,7 +274,7 @@ export function toTenant(row: ApiCompany): Tenant {
 }
 
 /** Colours told apart in the panel, given by position until each company can choose its own. */
-const CHANNEL_COLORS = ['#3b4fd8', '#e8743b', '#10a37f', '#7c3aed', '#d9467a'];
+const CHANNEL_COLORS = ['#3d5bff', '#e8743b', '#10a37f', '#7c3aed', '#d9467a'];
 
 export function toChannel(tenantId: Id, row: ApiChannel, index: number): ChannelAccount {
   return {

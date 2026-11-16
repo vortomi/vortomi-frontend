@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 // Colours are derived from the id, so they are stable and never stored in the database.
-const PALETTE = ['#3b4fd8', '#10a37f', '#c2410c', '#6d4dc4', '#0f766e', '#b45309', '#be185d', '#2563eb', '#7c3aed', '#a16207'];
+const PALETTE = ['#3d5bff', '#10a37f', '#c2410c', '#6d4dc4', '#0f766e', '#b45309', '#be185d', '#2563eb', '#7c3aed', '#a16207'];
 
 export function initialsOf(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);

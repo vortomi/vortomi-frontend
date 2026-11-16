@@ -89,7 +89,7 @@ export const profileFrom = (company: CompanyDraft): WhatsAppProfile => ({
   photoDataUrl: null,
 });
 
-const CHANNEL_COLORS = ['#3b4fd8', '#c2410c', '#0f766e', '#7c3aed'];
+const CHANNEL_COLORS = ['#3d5bff', '#c2410c', '#0f766e', '#7c3aed'];
 const INVITATION_TTL_MS = 72 * 3_600_000;
 // Simulated latency so the steps read like the real thing.
 const META_LATENCY_MS = 900;

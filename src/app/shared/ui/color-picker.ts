@@ -2,7 +2,7 @@ import { Component, input, output } from '@angular/core';
 import { Icon } from './icon';
 
 /** Colours offered for stages, numbers and labels: readable on white and on the dark surfaces. */
-export const PALETTE = ['#3b4fd8', '#1c64f2', '#0e9f6e', '#057a55', '#c27803', '#e8743b', '#e02424', '#d61f69', '#7e3af2', '#0694a2', '#6b7280', '#111827'];
+export const PALETTE = ['#3d5bff', '#1c64f2', '#0e9f6e', '#057a55', '#c27803', '#e8743b', '#e02424', '#d61f69', '#7e3af2', '#0694a2', '#6b7280', '#111827'];
 
 /** Our own colour field, in place of <input type="color">: a row of swatches; the chosen one is ticked. */
 @Component({

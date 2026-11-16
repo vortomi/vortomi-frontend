@@ -14,11 +14,12 @@ import { UsageMeter } from './usage-meter';
 import { UserMenu } from './user-menu';
 import { ThemeToggle } from '../shared/ui/theme-toggle';
 import { BRAND } from '../core/brand';
+import { BrandMark } from '../shared/ui/brand-mark';
 
 /** Frame of the company panel (app.<domain>): sidebar on desktop, bottom bar on phones. */
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, ChannelBanner, TenantSwitcher, UsageMeter, UserMenu, ThemeToggle],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, ChannelBanner, TenantSwitcher, UsageMeter, UserMenu, ThemeToggle, BrandMark],
   templateUrl: './app-layout.html',
   styleUrl: './app-layout.scss',
 })

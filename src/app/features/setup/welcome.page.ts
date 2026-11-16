@@ -8,6 +8,7 @@ import { Icon } from '../../shared/ui/icon';
 import { OptionCards } from '../../shared/ui/option-cards';
 import { Toaster } from '../../shared/ui/toaster';
 import { ThemeToggle } from '../../shared/ui/theme-toggle';
+import { BrandMark } from '../../shared/ui/brand-mark';
 import { SetupData } from './setup.data';
 import { planLines } from './setup-plan';
 import { METHOD_OPTIONS, type PlanPart, SELLS_OPTIONS, type SetupAnswers, type SetupPlan } from './setup.models';
@@ -20,7 +21,7 @@ import { METHOD_OPTIONS, type PlanPart, SELLS_OPTIONS, type SetupAnswers, type S
  */
 @Component({
   selector: 'app-welcome-page',
-  imports: [Icon, OptionCards, ThemeToggle],
+  imports: [Icon, OptionCards, ThemeToggle, BrandMark],
   templateUrl: './welcome.page.html',
   styleUrl: './welcome.page.scss',
 })

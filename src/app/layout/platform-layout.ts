@@ -5,6 +5,7 @@ import { PLATFORM_NAV } from './nav';
 import { UserMenu } from './user-menu';
 import { ThemeToggle } from '../shared/ui/theme-toggle';
 import { BRAND } from '../core/brand';
+import { BrandMark } from '../shared/ui/brand-mark';
 
 /**
  * Frame of the platform console (/platform), for our own team only.
@@ -12,11 +13,11 @@ import { BRAND } from '../core/brand';
  */
 @Component({
   selector: 'app-platform-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, UserMenu, ThemeToggle],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, UserMenu, ThemeToggle, BrandMark],
   template: `
     <aside class="side">
       <div class="brand">
-        <div class="logo">{{ brand.initial }}</div>
+        <app-brand-mark class="logo" />
         <div class="brand-text">
           <p>{{ brand.name }}</p>
           <span>Consola de la plataforma</span>

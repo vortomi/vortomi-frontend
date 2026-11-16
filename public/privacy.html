@@ -12,7 +12,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Política de privacidad de Vortomi, servicio de Vortex Autonomy, C.A.">
   <meta name="color-scheme" content="light dark">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/svg+xml" href="/brand/isotipo.svg">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
   <script>
     // Same light/dark choice as the panel (localStorage "vortomi-theme", else the system).
     try {
@@ -25,12 +27,12 @@
   <style>
     :root {
       --canvas: #f9fafb; --surface: #ffffff; --border: #e5e7eb; --border-soft: #f3f4f6;
-      --text: #111827; --muted: #6b7280; --link: #2f3fbd;
+      --text: #111827; --muted: #6b7280; --link: #2f47e0;
       color-scheme: light;
     }
     :root.dark {
       --canvas: #111827; --surface: #1f2937; --border: #374151; --border-soft: #2b3646;
-      --text: #ffffff; --muted: #9ca3af; --link: #a2acf7;
+      --text: #ffffff; --muted: #9ca3af; --link: #9aafff;
       color-scheme: dark;
     }
     * { box-sizing: border-box; margin: 0; }
@@ -38,8 +40,7 @@
       font-family: 'Inter Variable', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; }
     .top { display: flex; align-items: center; gap: 16px; max-width: 820px; margin: 0 auto; padding: 20px 24px; }
     .brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-size: 16px; }
-    .logo { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, #5a64e8, #2f3fbd); color: #fff; font-weight: 700; }
+    .logo { width: 34px; height: 34px; display: block; }
     .doc { max-width: 820px; margin: 0 auto 48px; padding: 36px 40px; background: var(--surface);
       border: 1px solid var(--border); border-radius: 14px; line-height: 1.6; font-size: 15px; }
     h1 { font-size: 28px; line-height: 1.25; }
@@ -61,7 +62,7 @@
 <body>
 <header class="top">
   <a class="brand" href="/login">
-    <span class="logo">V</span>
+    <img class="logo" src="/brand/isotipo.svg" alt="">
     <b>Vortomi</b>
   </a>
 </header>

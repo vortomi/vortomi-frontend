@@ -3,15 +3,16 @@ import { RouterOutlet } from '@angular/router';
 import { Icon } from '../shared/ui/icon';
 import { BRAND } from '../core/brand';
 import { ThemeToggle } from '../shared/ui/theme-toggle';
+import { BrandMark } from '../shared/ui/brand-mark';
 
 /** Split screen for sign-in, password and invitation pages (mockup web-13). */
 @Component({
   selector: 'app-auth-layout',
-  imports: [RouterOutlet, Icon, ThemeToggle],
+  imports: [RouterOutlet, Icon, ThemeToggle, BrandMark],
   template: `
     <aside class="hero">
       <div class="brand">
-        <div class="logo">{{ brand.initial }}</div>
+        <app-brand-mark class="logo" />
         <div>
           <p>{{ brand.name }}</p>
           <span>{{ brand.tagline }}</span>
@@ -27,7 +28,7 @@ import { ThemeToggle } from '../shared/ui/theme-toggle';
     </aside>
     <main class="panel">
       <app-theme-toggle class="theme" align="right" />
-      <div class="mobile-brand"><div class="logo">{{ brand.initial }}</div><b>{{ brand.name }}</b></div>
+      <div class="mobile-brand"><app-brand-mark class="logo" /><b>{{ brand.name }}</b></div>
       <router-outlet />
     </main>
   `,
@@ -35,22 +36,22 @@ import { ThemeToggle } from '../shared/ui/theme-toggle';
     @use 'mixins';
     @use 'sidebar';
     :host { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: 100dvh; }
-    .hero { background: linear-gradient(150deg, var(--primary-800), var(--primary-900) 60%, #111827); color: #dfe3fb; padding: 44px 56px;
+    .hero { background: radial-gradient(700px 420px at 0% 100%, rgba(0, 240, 255, 0.16), transparent 60%),
+        radial-gradient(700px 480px at 100% 0%, rgba(61, 91, 255, 0.3), transparent 60%), var(--brand-ink);
+      color: #dbe2ef; padding: 44px 56px;
       display: flex; flex-direction: column; gap: 22px; }
     .brand { @include sidebar.brand; padding: 0; }
     .brand p { color: #fff; }
-    .brand span { color: #b8c0f5; }
+    .brand span { color: #9fb0d0; }
     h1 { color: #fff; font-size: 30px; line-height: 1.25; margin-top: 40px; max-width: 520px; }
-    .lead { font-size: 15px; line-height: 1.55; color: #c6cdfb; max-width: 520px; }
+    .lead { font-size: 15px; line-height: 1.55; color: #b9c4da; max-width: 520px; }
     ul { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
     li { display: flex; gap: 10px; align-items: center; font-size: 14px; --icon-size: 19px; }
-    li app-icon { color: #a2acf7; }
+    li app-icon { color: var(--brand-cyan); }
     .panel { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; padding: 32px 20px;
       background: var(--color-canvas); }
     .theme { position: absolute; top: 18px; right: 18px; }
     .mobile-brand { display: none; align-items: center; gap: 10px; font-size: 16px; }
-    .mobile-brand .logo { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
-      color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
     @include mixins.below-tablet {
       :host { grid-template-columns: 1fr; }
       .hero { display: none; }

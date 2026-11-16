@@ -98,7 +98,7 @@ export class StagesSettings {
   }
 
   protected openNew(): void {
-    this.open({ id: null, name: '', color: '#3b4fd8' });
+    this.open({ id: null, name: '', color: '#3d5bff' });
   }
 
   protected openEdit(stage: PipelineStage): void {
