@@ -1,34 +1,94 @@
+<!doctype html>
+<!--
+  Vortomi's privacy policy. A plain static page on purpose: Meta's App Review reads this URL
+  without running JavaScript, so the text must be in the HTML itself. Caddy serves it at /privacy;
+  "#data-deletion" is the app's data deletion instructions URL. Update "Última actualización"
+  with every change of the text.
+-->
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Política de privacidad · Vortomi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Política de privacidad de Vortomi, servicio de Vortex Autonomy, C.A.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <script>
+    // Same light/dark choice as the panel (localStorage "vortomi-theme", else the system).
+    try {
+      var saved = localStorage.getItem('vortomi-theme');
+      if (saved === 'dark' || (saved !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    } catch (e) {}
+  </script>
+  <style>
+    :root {
+      --canvas: #f9fafb; --surface: #ffffff; --border: #e5e7eb; --border-soft: #f3f4f6;
+      --text: #111827; --muted: #6b7280; --link: #2f3fbd;
+      color-scheme: light;
+    }
+    :root.dark {
+      --canvas: #111827; --surface: #1f2937; --border: #374151; --border-soft: #2b3646;
+      --text: #ffffff; --muted: #9ca3af; --link: #a2acf7;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    body { background: var(--canvas); color: var(--text); min-height: 100dvh;
+      font-family: 'Inter Variable', Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif; }
+    .top { display: flex; align-items: center; gap: 16px; max-width: 820px; margin: 0 auto; padding: 20px 24px; }
+    .brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-size: 16px; }
+    .logo { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #5a64e8, #2f3fbd); color: #fff; font-weight: 700; }
+    .doc { max-width: 820px; margin: 0 auto 48px; padding: 36px 40px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 14px; line-height: 1.6; font-size: 15px; }
+    h1 { font-size: 28px; line-height: 1.25; }
+    .updated { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    section { margin-top: 28px; scroll-margin-top: 16px; }
+    h2 { font-size: 18px; margin-bottom: 8px; }
+    h3 { font-size: 15px; margin: 14px 0 4px; }
+    p + p, ul + p, p + ul { margin-top: 8px; }
+    ul { padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+    a { color: var(--link); }
+    .foot { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--border-soft); color: var(--muted); font-size: 13px; }
+    @media (max-width: 640px) {
+      .top { padding: 16px; }
+      .doc { margin: 0 16px 32px; padding: 24px 18px; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
 <header class="top">
-  <a class="brand" routerLink="/login">
-    <span class="logo">{{ brand.initial }}</span>
-    <b>{{ brand.name }}</b>
+  <a class="brand" href="/login">
+    <span class="logo">V</span>
+    <b>Vortomi</b>
   </a>
-  <app-theme-toggle align="right" />
 </header>
 
 <main class="doc">
   <h1>Política de privacidad</h1>
-  <p class="updated">Última actualización: {{ updatedOn }}</p>
+  <p class="updated">Última actualización: 16 de noviembre de 2026</p>
 
   <section>
     <h2>1. Quiénes somos</h2>
     <p>
-      {{ brand.name }} es un servicio de <b>{{ company.name }}</b> (RIF {{ company.taxId }}), {{ company.country }}. Es una plataforma
+      Vortomi es un servicio de <b>Vortex Autonomy, C.A.</b> (RIF J-50826500-9), Venezuela. Es una plataforma
       que permite a las empresas atender en equipo los mensajes de WhatsApp de sus clientes, gestionar pedidos y responder de forma
       automática.
     </p>
     <p>
       Para cualquier consulta sobre esta política o sobre tus datos, escríbenos a
-      <a [href]="'mailto:' + company.email">{{ company.email }}</a>.
+      <a href="mailto:info@vortexautonomy.com">info@vortexautonomy.com</a>.
     </p>
   </section>
 
   <section>
     <h2>2. A quién aplica</h2>
     <ul>
-      <li><b>Empresas</b> que contratan {{ brand.name }} y las personas de su equipo que lo usan.</li>
+      <li><b>Empresas</b> que contratan Vortomi y las personas de su equipo que lo usan.</li>
       <li>
-        <b>Clientes de esas empresas</b>: personas que escriben por WhatsApp a un número conectado a {{ brand.name }}. En ese caso,
+        <b>Clientes de esas empresas</b>: personas que escriben por WhatsApp a un número conectado a Vortomi. En ese caso,
         la empresa a la que escribes decide cómo usar tus datos, y nosotros los tratamos por encargo suyo para prestarle el servicio.
       </li>
     </ul>
@@ -77,7 +137,7 @@
         agente de ventas activo.
       </li>
       <li><b>Supabase</b>: base de datos y autenticación de usuarios.</li>
-      <li><b>Railway</b>: servidores donde funciona {{ brand.name }}.</li>
+      <li><b>Railway</b>: servidores donde funciona Vortomi.</li>
       <li>Los sistemas propios de una empresa (por ejemplo, su catálogo de productos), solo si esa empresa los conecta.</li>
     </ul>
     <p>También podemos entregar datos cuando una autoridad competente lo exija conforme a la ley.</p>
@@ -115,22 +175,22 @@
     <h2>9. Cómo eliminar tus datos</h2>
     <h3>Si eres una empresa</h3>
     <p>
-      Escribe a <a [href]="'mailto:' + company.email + '?subject=' + deletionSubject">{{ company.email }}</a> desde el correo de un
-      administrador de la empresa, con el asunto «{{ deletionSubject }}». Confirmaremos la solicitud y eliminaremos los datos de la
-      empresa, su equipo y sus conversaciones. También puedes retirar el acceso de {{ brand.name }} a tu WhatsApp desde la
+      Escribe a <a href="mailto:info@vortexautonomy.com?subject=Eliminar%20datos%20-%20Vortomi">info@vortexautonomy.com</a> desde el correo de un
+      administrador de la empresa, con el asunto «Eliminar datos - Vortomi». Confirmaremos la solicitud y eliminaremos los datos de la
+      empresa, su equipo y sus conversaciones. También puedes retirar el acceso de Vortomi a tu WhatsApp desde la
       configuración de tu cuenta de Meta.
     </p>
-    <h3>Si escribiste a una empresa que usa {{ brand.name }}</h3>
+    <h3>Si escribiste a una empresa que usa Vortomi</h3>
     <p>
       Pide a esa empresa que elimine tu información, o escríbenos a
-      <a [href]="'mailto:' + company.email + '?subject=' + deletionSubject">{{ company.email }}</a> indicando tu número de teléfono y
+      <a href="mailto:info@vortexautonomy.com?subject=Eliminar%20datos%20-%20Vortomi">info@vortexautonomy.com</a> indicando tu número de teléfono y
       el nombre de la empresa. Coordinaremos con ella la eliminación.
     </p>
   </section>
 
   <section>
     <h2>10. Menores de edad</h2>
-    <p>{{ brand.name }} es un servicio para empresas y no está dirigido a menores de edad.</p>
+    <p>Vortomi es un servicio para empresas y no está dirigido a menores de edad.</p>
   </section>
 
   <section>
@@ -139,6 +199,8 @@
   </section>
 
   <footer class="foot">
-    <p>{{ company.name }} · RIF {{ company.taxId }} · <a [href]="company.website" target="_blank" rel="noopener">vortexautonomy.com</a></p>
+    <p>Vortex Autonomy, C.A. · RIF J-50826500-9 · <a href="https://www.vortexautonomy.com" target="_blank" rel="noopener">vortexautonomy.com</a></p>
   </footer>
 </main>
+</body>
+</html>
