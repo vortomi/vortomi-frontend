@@ -32,6 +32,8 @@ declare global {
 const SDK_URL = 'https://connect.facebook.net/es_LA/sdk.js';
 /** After the login answers, how long the window's account and number may take to arrive. */
 const SESSION_WAIT_MS = 5_000;
+const REUSED_LOGIN =
+  'Meta usó tu conexión anterior y no te dejó elegir el número. Pulsa otra vez y, en la ventana de Meta, elige «Editar configuración» en vez de «Continuar».';
 
 /** Only Meta's own pages may tell us how the window ended. */
 function fromFacebook(origin: string): boolean {
@@ -136,8 +138,9 @@ export class MetaSignup {
           code = response.authResponse?.code ?? null;
           if (!code) return finish(ended ?? { kind: 'cancelled' });
           settle();
-          // The account and number come in a separate message; usually before this answer.
-          timer = setTimeout(() => finish(ended ?? { kind: 'error', message: 'Meta no indicó qué número elegiste. Vuelve a intentarlo.' }), SESSION_WAIT_MS);
+          // The account and number come in a separate message; usually before this answer. A login
+          // without it is Meta reusing an earlier sign-in («Continuar como…») and skipping WhatsApp's steps.
+          timer = setTimeout(() => finish(ended ?? { kind: 'error', message: REUSED_LOGIN }), SESSION_WAIT_MS);
         },
         {
           config_id: config.configId,

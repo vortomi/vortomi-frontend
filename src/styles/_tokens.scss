@@ -29,6 +29,12 @@
   --color-on-primary: #ffffff;
 
   // Tones: strong colour, soft background, text on the soft background.
+  // WhatsApp's own teal, only for «Conectar con WhatsApp» (white text on it passes AA).
+  --color-whatsapp: #008069;
+  --color-whatsapp-strong: #006e5a;
+  --color-whatsapp-soft: #e7f8ef;
+  --color-on-whatsapp: #ffffff;
+  --color-whatsapp-text: #008069;
   --color-success: #057a55;
   --color-success-soft: #def7ec;
   --color-success-text: #03543f;
@@ -116,6 +122,10 @@
   --color-primary-softer: rgba(90, 100, 232, 0.1);
   --color-primary-text: var(--primary-300);
 
+  --color-whatsapp: #008069;
+  --color-whatsapp-strong: #00a884;
+  --color-whatsapp-soft: rgba(0, 168, 132, 0.16);
+  --color-whatsapp-text: #25d366;
   --color-success: #0e9f6e;
   --color-success-soft: #014737;
   --color-success-text: #84e1bc;

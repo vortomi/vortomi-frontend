@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { Session } from '../../core/session';
 import { Icon } from '../../shared/ui/icon';
 import { Toaster } from '../../shared/ui/toaster';
+import { WhatsappLogo } from '../../shared/ui/whatsapp-logo';
 import { ChannelSignupActions, type ConnectResult, metaBillingUrl } from './channel-signup.actions';
 
 type Connected = Extract<ConnectResult, { kind: 'connected' }>;
@@ -13,7 +14,7 @@ type Connected = Extract<ConnectResult, { kind: 'connected' }>;
  */
 @Component({
   selector: 'app-connect-whatsapp',
-  imports: [Icon],
+  imports: [Icon, WhatsappLogo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (connected(); as done) {
@@ -46,15 +47,18 @@ type Connected = Extract<ConnectResult, { kind: 'connected' }>;
         <span>Por ahora lo conectamos nosotros contigo, en unos 30 minutos. Escríbenos a soporte y coordinamos.</span>
       </section>
     } @else if (compact()) {
-      <section class="add">
-        <app-icon name="plus" />
+      <section class="card more">
+        <span class="wa"><app-whatsapp-logo /></span>
         <b>¿Otro número?</b>
-        <span>Conéctalo tú mismo con la ventana de Meta. Si es tu WhatsApp Business, lo sigues usando en tu teléfono.</span>
-        <button type="button" class="btn btn--primary btn--sm" [disabled]="busy()" [attr.aria-busy]="busy()" (click)="connect()"><span>Conectar WhatsApp</span></button>
+        <p>Conéctalo tú mismo. Si es tu WhatsApp Business, lo sigues usando en tu teléfono.</p>
+        <button type="button" class="btn btn--whatsapp" [disabled]="busy()" [attr.aria-busy]="busy()" (click)="connect()">
+          <app-whatsapp-logo /><span>Conectar con WhatsApp</span>
+        </button>
+        <p class="secure"><app-icon name="lock" />Ventana segura de Meta (Facebook)</p>
       </section>
     } @else {
       <section class="card start wide">
-        <span class="wa"><app-icon name="chat" /></span>
+        <span class="wa big"><app-whatsapp-logo /></span>
         <b>Conecta el WhatsApp de tu empresa</b>
         <p>El bot responde a tus clientes y tú sigues viendo todo en tu teléfono.</p>
         <ol>
@@ -62,8 +66,10 @@ type Connected = Extract<ConnectResult, { kind: 'connected' }>;
           <li><i>2</i>Tu teléfono con WhatsApp Business a la mano</li>
           <li><i>3</i>Una tarjeta Visa o Mastercard para pagarle a Meta</li>
         </ol>
-        <button type="button" class="btn btn--primary btn--lg" [disabled]="busy()" [attr.aria-busy]="busy()" (click)="connect()"><span>Conectar WhatsApp</span></button>
-        <p class="hint">Se abre una ventana de Meta. Toma unos 5 minutos.</p>
+        <button type="button" class="btn btn--whatsapp btn--lg" [disabled]="busy()" [attr.aria-busy]="busy()" (click)="connect()">
+          <app-whatsapp-logo /><span>Conectar con WhatsApp</span>
+        </button>
+        <p class="secure"><app-icon name="lock" />Se abre una ventana segura de Meta (Facebook). Toma unos 5 minutos.</p>
       </section>
     }
   `,
@@ -87,7 +93,8 @@ type Connected = Extract<ConnectResult, { kind: 'connected' }>;
       padding: 18px;
       color: var(--color-primary-text);
       --icon-size: 26px;
-      span {
+      // Only its own text: the button's label is a span too, and must keep the button's colour.
+      > span {
         font-size: 12.5px;
         color: var(--color-text-muted);
         max-width: 260px;
@@ -147,16 +154,60 @@ type Connected = Extract<ConnectResult, { kind: 'connected' }>;
       }
     }
     .wa {
-      width: 52px;
-      height: 52px;
-      border-radius: 14px;
-      background: var(--color-success-soft);
-      color: var(--color-success);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--color-whatsapp-soft);
+      color: var(--color-whatsapp-text);
       display: flex;
       align-items: center;
       justify-content: center;
-      --icon-size: 26px;
-      margin-bottom: 4px;
+      --icon-size: 24px;
+      margin-bottom: 2px;
+      &.big {
+        width: 56px;
+        height: 56px;
+        --icon-size: 30px;
+      }
+    }
+    .more {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 6px;
+      padding: 18px;
+      p {
+        font-size: 12.5px;
+        color: var(--color-text-muted);
+        max-width: 260px;
+      }
+      .btn {
+        margin-top: 6px;
+      }
+    }
+    .btn--whatsapp {
+      background: var(--color-whatsapp);
+      border-color: var(--color-whatsapp);
+      color: var(--color-on-whatsapp);
+      gap: 8px;
+      --icon-size: 18px;
+      &:hover:not(:disabled) {
+        background: var(--color-whatsapp-strong);
+        border-color: var(--color-whatsapp-strong);
+      }
+      &.btn--lg {
+        --icon-size: 20px;
+      }
+    }
+    .secure {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--color-text-muted);
+      --icon-size: 13px;
     }
     .pay {
       display: flex;
