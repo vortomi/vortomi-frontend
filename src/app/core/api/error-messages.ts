@@ -97,6 +97,9 @@ const MESSAGES: Record<string, string> = {
   number_not_in_account: 'Ese número no está en esa cuenta de WhatsApp. Búscalo de nuevo.',
   token_required: 'Para esa cuenta hace falta el token de acceso.',
   meta_refused: 'Meta no dejó ver esa cuenta: revisa el identificador de la cuenta y el token.',
+  signup_unavailable: 'La conexión con WhatsApp todavía no está disponible. Escríbenos a soporte y la hacemos contigo.',
+  signup_code_rejected: 'Meta tardó demasiado en confirmar la conexión. Pulsa «Conectar WhatsApp» otra vez.',
+  signup_grant_mismatch: 'Meta no nos dio permiso sobre esa cuenta. Vuelve a conectar y acepta todos los permisos que pide.',
 
   // Generic
   invalid_request: 'Hay datos que no son válidos. Revisa el formulario.',

@@ -13,6 +13,8 @@ import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
 import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
+import { ChannelSignupActions, metaBillingUrl } from './channel-signup.actions';
+import { ConnectWhatsappCard } from './connect-whatsapp.card';
 import { InvitationLinkDialog } from '../../shared/ui/invitation-link.dialog';
 import { InviteDialog } from './invite.dialog';
 import { MemberAccessDialog } from './member-access.dialog';
@@ -26,7 +28,7 @@ import { PLAN_SEATS } from './team.rules';
  */
 @Component({
   selector: 'app-channels-team-page',
-  imports: [Avatar, ColorPicker, Dialog, Icon, Pill, Skeleton, InviteDialog, InvitationLinkDialog, MemberAccessDialog],
+  imports: [Avatar, ColorPicker, ConnectWhatsappCard, Dialog, Icon, Pill, Skeleton, InviteDialog, InvitationLinkDialog, MemberAccessDialog],
   templateUrl: './channels-team.page.html',
   styleUrl: './channels-team.page.scss',
 })
@@ -36,6 +38,7 @@ export class ChannelsTeamPage {
   protected readonly team = inject(TeamActions);
   private readonly confirm = inject(Confirm);
   private readonly toaster = inject(Toaster);
+  protected readonly signup = inject(ChannelSignupActions);
 
   protected readonly labels = { channel: CHANNEL_STATUS, quality: QUALITY, role: ROLE };
   protected readonly inviting = signal(false);
@@ -56,6 +59,28 @@ export class ChannelsTeamPage {
     void this.team.load().then((error) => {
       this.loaded.set(true);
       if (error) this.toaster.show(error, 'info');
+    });
+  }
+
+  protected billingUrl(channel: ChannelAccount): string {
+    return metaBillingUrl(channel.wabaId);
+  }
+
+  /** A connection made with «Conectar WhatsApp» lasts 60 days: warned two weeks ahead, and after. */
+  protected expiry(channel: ChannelAccount): { text: string; soon: boolean } | null {
+    if (!channel.accessExpiresAt) return null;
+    const left = new Date(channel.accessExpiresAt).getTime() - Date.now();
+    const day = formatShortDate(channel.accessExpiresAt, this.session.timezone());
+    if (left <= 0) return { text: 'La conexión con Meta venció: el bot no puede responder. Reconéctala.', soon: true };
+    if (left <= EXPIRY_NOTICE_MS) return { text: `La conexión con Meta vence el ${day}. Reconéctala antes para que el bot siga respondiendo.`, soon: true };
+    return { text: `Conexión con Meta hasta el ${day}`, soon: false };
+  }
+
+  /** Same window as connecting: Meta gives a new connection for the same number, which keeps its place. */
+  protected reconnect(): void {
+    void this.signup.connect(this.session.tenant()?.id ?? '').then((outcome) => {
+      if (outcome.kind === 'connected') this.toaster.show(`Conexión de ${outcome.result.displayNumber} renovada`);
+      else if (outcome.kind === 'error') this.toaster.show(outcome.message, 'info');
     });
   }
 
@@ -145,6 +170,8 @@ export class ChannelsTeamPage {
   }
 
 }
+
+const EXPIRY_NOTICE_MS = 14 * 24 * 3_600_000;
 
 /** The team's actions answer an error sentence or null; a confirmation's action needs a throw to stay open. */
 function failIf(error: string | null): void {

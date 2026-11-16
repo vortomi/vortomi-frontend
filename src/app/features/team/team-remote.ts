@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClient } from '../../core/api/api-client';
-import type { ApiInvitation, ApiList, ApiTeamMember } from '../../shared/api/contract';
+import type { ApiInvitation, ApiList, ApiSignupLaunch, ApiSignupResult, ApiTeamMember } from '../../shared/api/contract';
 import { toTeamMember } from '../../shared/api/mappers';
 import type { Id, Membership, TenantRole, User } from '../../shared/api/models';
 
@@ -52,5 +52,15 @@ export class TeamRemote {
 
   renameChannel(tenantId: Id, channelId: Id, label: string): Promise<unknown> {
     return this.api.put(this.api.company(tenantId, `channels/${encodeURIComponent(channelId)}`), { label });
+  }
+
+  /** Whether «Conectar WhatsApp» is offered, and what Meta's window needs. */
+  signupLaunch(tenantId: Id): Promise<ApiSignupLaunch> {
+    return this.api.get<ApiSignupLaunch>(this.api.company(tenantId, 'channels/signup'));
+  }
+
+  /** Hands the server what Meta's window gave: it exchanges the code and connects the number. */
+  connectSignup(tenantId: Id, body: { code: string; wabaId: string; phoneNumberId: string }): Promise<ApiSignupResult> {
+    return this.api.post<ApiSignupResult>(this.api.company(tenantId, 'channels/signup'), body);
   }
 }

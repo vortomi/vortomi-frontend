@@ -18,7 +18,19 @@
           <dt>Clientes nuevos por día</dt><dd>{{ channel.messagingTier }}</dd>
           <dt>También en la app del teléfono</dt><dd>{{ channel.coexistence ? 'Sí (coexistencia)' : 'No' }}</dd>
           <dt>Plantillas aprobadas</dt><dd>{{ approvedTemplates() }}</dd>
+          @if (session.isTenantAdmin()) {
+            <dt>Pago a Meta</dt><dd><a class="link" [href]="billingUrl(channel)" target="_blank" rel="noopener noreferrer">Revisar en Meta ↗</a></dd>
+          }
         </dl>
+        @if (expiry(channel); as notice) {
+          <div class="form-alert" [class.warn]="notice.soon" [class.info]="!notice.soon">
+            <app-icon name="clock" />
+            <span>{{ notice.text }}</span>
+          </div>
+          @if (notice.soon && session.isTenantAdmin() && signup.state() === 'ready') {
+            <button type="button" class="btn btn--sm" [disabled]="signup.connecting()" [attr.aria-busy]="signup.connecting()" (click)="reconnect()"><span>Reconectar</span></button>
+          }
+        }
         @if (channel.qualityRating !== 'high') {
           <div class="form-alert warn"><app-icon name="alert" />Algunos clientes bloquearon este número. Si sigue bajando, Meta limita los envíos: revisa las plantillas de esta semana.</div>
         }
@@ -27,11 +39,9 @@
         }
       </section>
     }
-    <section class="add">
-      <app-icon name="plus" />
-      <b>¿Otro número?</b>
-      <span>Por ahora lo conectamos nosotros contigo, en unos 30 minutos. Escríbenos a soporte y coordinamos.</span>
-    </section>
+    @if (session.isTenantAdmin()) {
+      <app-connect-whatsapp [compact]="workspace.channels().length > 0" />
+    }
   </div>
 
   <div class="sec-title">

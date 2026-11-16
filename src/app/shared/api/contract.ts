@@ -31,6 +31,23 @@ export interface ApiChannel {
   phoneNumberId: string;
   wabaId: string;
   status: 'connected' | 'disconnected' | 'restricted';
+  /** Also on the owner's WhatsApp Business app (the company's list has it; the console's does not). */
+  coexistence?: boolean;
+  /** When the connection with Meta stops working; null: it does not expire. */
+  tokenExpiresAt?: string | null;
+}
+
+/** What the panel needs to open Meta's «Conectar WhatsApp» window (all public). */
+export type ApiSignupLaunch = { available: false } | { available: true; appId: string; configId: string; graphVersion: string };
+
+/** A number connected from the panel. */
+export interface ApiSignupResult {
+  channelId: string;
+  displayNumber: string;
+  coexistence: boolean;
+  subscribed: boolean;
+  tokenExpiresAt: string | null;
+  syncRequested: ('smb_app_state_sync' | 'history')[];
 }
 
 export interface ApiMember {

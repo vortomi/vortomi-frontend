@@ -289,8 +289,8 @@ export function toChannel(tenantId: Id, row: ApiChannel, index: number): Channel
     // Number health is not on the server yet (doc. 09, B13): neutral values.
     qualityRating: 'high',
     messagingTier: 250,
-    coexistence: false,
-    accessExpiresAt: null,
+    coexistence: row.coexistence ?? false,
+    accessExpiresAt: row.tokenExpiresAt ?? null,
   };
 }
 
