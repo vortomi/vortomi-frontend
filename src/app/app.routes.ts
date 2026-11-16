@@ -22,6 +22,12 @@ export const routes: Routes = [
   // which rendered the auth frame with an empty outlet.
   { path: '', pathMatch: 'full', redirectTo: 'inbox' },
   {
+    // Public, no session: Meta's App Review links to it (and to #data-deletion).
+    path: 'privacy',
+    title: 'Política de privacidad',
+    loadComponent: () => import('./features/legal/privacy.page').then((m) => m.PrivacyPage),
+  },
+  {
     path: '',
     component: AuthLayout,
     children: [

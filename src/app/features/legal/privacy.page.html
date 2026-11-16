@@ -1,0 +1,144 @@
+<header class="top">
+  <a class="brand" routerLink="/login">
+    <span class="logo">{{ brand.initial }}</span>
+    <b>{{ brand.name }}</b>
+  </a>
+  <app-theme-toggle align="right" />
+</header>
+
+<main class="doc">
+  <h1>Política de privacidad</h1>
+  <p class="updated">Última actualización: {{ updatedOn }}</p>
+
+  <section>
+    <h2>1. Quiénes somos</h2>
+    <p>
+      {{ brand.name }} es un servicio de <b>{{ company.name }}</b> (RIF {{ company.taxId }}), {{ company.country }}. Es una plataforma
+      que permite a las empresas atender en equipo los mensajes de WhatsApp de sus clientes, gestionar pedidos y responder de forma
+      automática.
+    </p>
+    <p>
+      Para cualquier consulta sobre esta política o sobre tus datos, escríbenos a
+      <a [href]="'mailto:' + company.email">{{ company.email }}</a>.
+    </p>
+  </section>
+
+  <section>
+    <h2>2. A quién aplica</h2>
+    <ul>
+      <li><b>Empresas</b> que contratan {{ brand.name }} y las personas de su equipo que lo usan.</li>
+      <li>
+        <b>Clientes de esas empresas</b>: personas que escriben por WhatsApp a un número conectado a {{ brand.name }}. En ese caso,
+        la empresa a la que escribes decide cómo usar tus datos, y nosotros los tratamos por encargo suyo para prestarle el servicio.
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. Qué datos tratamos</h2>
+    <h3>Del equipo de cada empresa</h3>
+    <ul>
+      <li>Nombre, correo electrónico y rol dentro de la empresa.</li>
+      <li>La contraseña la gestiona nuestro proveedor de autenticación; nunca la vemos ni la guardamos en texto legible.</li>
+    </ul>
+    <h3>De cada empresa</h3>
+    <ul>
+      <li>Nombre comercial, RIF, dirección fiscal y logotipo.</li>
+      <li>Los números de WhatsApp que conecta y la información de su negocio que configura (productos, precios, métodos de pago y entregas).</li>
+    </ul>
+    <h3>De los clientes que escriben a una empresa</h3>
+    <ul>
+      <li>Número de teléfono y nombre de perfil de WhatsApp.</li>
+      <li>Los mensajes y archivos intercambiados con la empresa.</li>
+      <li>Notas, etiquetas y campos que el equipo de la empresa agrega a la conversación.</li>
+      <li>Pedidos: productos, nombre, dirección de entrega y observaciones.</li>
+      <li>Comprobantes de pago enviados y sus referencias, y los recibos de venta emitidos.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>4. Para qué los usamos</h2>
+    <ul>
+      <li>Recibir y enviar los mensajes de WhatsApp de cada empresa y mostrarlos a su equipo.</li>
+      <li>Registrar pedidos, verificar pagos y emitir recibos.</li>
+      <li>Responder de forma automática con inteligencia artificial, solo si la empresa activa el agente de ventas.</li>
+      <li>Mantener la seguridad del servicio, prevenir abusos y dar soporte.</li>
+    </ul>
+    <p><b>No vendemos datos personales ni los usamos para publicidad.</b></p>
+  </section>
+
+  <section>
+    <h2>5. Con quién los compartimos</h2>
+    <p>Solo con los proveedores necesarios para que el servicio funcione:</p>
+    <ul>
+      <li><b>Meta Platforms</b> (WhatsApp Business Platform): envío y recepción de los mensajes de WhatsApp.</li>
+      <li>
+        <b>Google</b> (Gemini): el texto de la conversación, para redactar las respuestas automáticas cuando la empresa tiene el
+        agente de ventas activo.
+      </li>
+      <li><b>Supabase</b>: base de datos y autenticación de usuarios.</li>
+      <li><b>Railway</b>: servidores donde funciona {{ brand.name }}.</li>
+      <li>Los sistemas propios de una empresa (por ejemplo, su catálogo de productos), solo si esa empresa los conecta.</li>
+    </ul>
+    <p>También podemos entregar datos cuando una autoridad competente lo exija conforme a la ley.</p>
+  </section>
+
+  <section>
+    <h2>6. Acceso a WhatsApp mediante Meta</h2>
+    <p>
+      Cuando una empresa conecta su número, nos autoriza en Meta a enviar y recibir mensajes y a administrar su cuenta de WhatsApp
+      Business (números y plantillas de mensajes). Usamos ese acceso solo para las cuentas que la empresa conecta y solo para
+      prestarle el servicio. La empresa puede retirarlo en cualquier momento desde la configuración de su cuenta de Meta.
+    </p>
+  </section>
+
+  <section>
+    <h2>7. Cómo los protegemos</h2>
+    <ul>
+      <li>Los datos de cada empresa están aislados: ninguna empresa puede ver los de otra.</li>
+      <li>Las conexiones viajan cifradas (HTTPS) y las claves de acceso a WhatsApp se guardan cifradas.</li>
+      <li>Cada persona del equipo ve solo lo que su rol le permite.</li>
+      <li>La consola de administración de la plataforma exige verificación en dos pasos.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>8. Cuánto tiempo los conservamos</h2>
+    <p>
+      Conservamos los datos mientras la empresa mantenga su cuenta activa. Los avisos técnicos que WhatsApp envía al recibir cada
+      mensaje se borran automáticamente a los 30 días. Cuando una empresa cancela el servicio o lo solicita, eliminamos sus datos
+      según se explica en la sección siguiente.
+    </p>
+  </section>
+
+  <section id="data-deletion">
+    <h2>9. Cómo eliminar tus datos</h2>
+    <h3>Si eres una empresa</h3>
+    <p>
+      Escribe a <a [href]="'mailto:' + company.email + '?subject=' + deletionSubject">{{ company.email }}</a> desde el correo de un
+      administrador de la empresa, con el asunto «{{ deletionSubject }}». Confirmaremos la solicitud y eliminaremos los datos de la
+      empresa, su equipo y sus conversaciones. También puedes retirar el acceso de {{ brand.name }} a tu WhatsApp desde la
+      configuración de tu cuenta de Meta.
+    </p>
+    <h3>Si escribiste a una empresa que usa {{ brand.name }}</h3>
+    <p>
+      Pide a esa empresa que elimine tu información, o escríbenos a
+      <a [href]="'mailto:' + company.email + '?subject=' + deletionSubject">{{ company.email }}</a> indicando tu número de teléfono y
+      el nombre de la empresa. Coordinaremos con ella la eliminación.
+    </p>
+  </section>
+
+  <section>
+    <h2>10. Menores de edad</h2>
+    <p>{{ brand.name }} es un servicio para empresas y no está dirigido a menores de edad.</p>
+  </section>
+
+  <section>
+    <h2>11. Cambios a esta política</h2>
+    <p>Publicaremos aquí cualquier cambio, con su fecha de actualización.</p>
+  </section>
+
+  <footer class="foot">
+    <p>{{ company.name }} · RIF {{ company.taxId }} · <a [href]="company.website" target="_blank" rel="noopener">vortexautonomy.com</a></p>
+  </footer>
+</main>
