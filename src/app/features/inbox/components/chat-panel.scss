@@ -10,6 +10,9 @@
 .head {
   display: flex;
   align-items: center;
+  // With every action showing (Devolver al agente, assignees, Resolver) on a narrow panel the
+  // actions wrap below instead of squeezing the customer's name away.
+  flex-wrap: wrap;
   gap: 12px;
   padding: 12px 18px;
   background: var(--color-surface);
@@ -24,7 +27,7 @@
 
 .who {
   flex: 1;
-  min-width: 0;
+  min-width: 160px;
   display: flex;
   flex-direction: column;
 
@@ -36,16 +39,17 @@
   span {
     font-size: 12.5px;
     color: var(--color-text-muted);
+    @include mixins.ellipsis;
   }
 }
 
 .actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 
   .assign {
-    width: 170px;
+    width: 150px;
     transition: opacity 0.15s;
 
     // Saving who attends it: dimmed and not clickable until the server answers.
@@ -183,4 +187,10 @@
   color: var(--color-warning);
   border-bottom: 1px solid var(--color-border);
   --icon-size: 16px;
+}
+
+// The owner is answering from the WhatsApp Business app: WhatsApp's green, not a warning.
+.handoff.owner {
+  background: var(--color-whatsapp-soft);
+  color: var(--color-whatsapp-text);
 }

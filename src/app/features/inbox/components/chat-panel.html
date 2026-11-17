@@ -8,7 +8,7 @@
     }
   </div>
   <div class="actions">
-    @if (isAdmin() && conversation().handoffReason) {
+    @if (isAdmin() && (conversation().handoffReason || ownerPauseUntil())) {
       <button type="button" class="btn" (click)="resumeAgent()"><app-icon name="sparkles" /><span>Devolver al agente</span></button>
     }
     @if (isAdmin()) {
@@ -27,6 +27,9 @@
   </div>
 </header>
 
+@if (ownerPauseUntil(); as until) {
+  <p class="handoff owner" role="status"><app-icon name="phone" />El dueño está respondiendo desde el teléfono · el agente vuelve a las {{ until }}, o antes si lo devuelves.</p>
+}
 @if (conversation().handoffReason; as reason) {
   @if (reason === 'order_placed') {
     <p class="handoff" role="status"><app-icon name="alert" />Pedido en curso: el agente solo le dice al cliente cómo va su pedido; cualquier otra cosa te la pasa. Vuelve a vender cuando completes o canceles el pedido.</p>

@@ -25,12 +25,15 @@ describe('server -> panel mappers', () => {
       contactId: 'k-1',
       assigneeIds: [],
       handoffReason: null,
+      agentPausedUntil: null,
       status: 'open',
       lastMessageAt: '2026-10-19T10:01:00.000Z',
       lastMessagePreview: 'Foto',
       unreadCount: 2,
       serviceWindowExpiresAt: '2026-10-20T10:00:00.000Z',
     });
+    // The owner answering from the phone pauses the agent until a given time.
+    expect(toConversation(TENANT, { ...row, agentPausedUntil: '2026-10-19T10:31:00.000Z' }).agentPausedUntil).toBe('2026-10-19T10:31:00.000Z');
   });
 
   it('previews say what a message was when it has no text', () => {

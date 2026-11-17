@@ -78,6 +78,8 @@ export interface ApiConversation {
   assigneeIds: string[];
   handoffReason: 'customer_asked' | 'purchase' | 'order_placed' | 'agent_unsure' | 'agent_error' | 'limit_reached' | 'catalog_unavailable' | null;
   handoffAt: string | null;
+  /** The owner is answering from the WhatsApp Business app: the agent is quiet here until then. */
+  agentPausedUntil?: string | null;
   lastActivityAt: string;
   channelAccountId: string;
   contact: { id: string; waId: string; name: string | null; displayName: string | null };

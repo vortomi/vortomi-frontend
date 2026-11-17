@@ -56,6 +56,12 @@ export class ChatPanel {
   /** Only admins hand conversations out (the server enforces it too); an agent only sees theirs. */
   protected readonly isAdmin = this.session.isTenantAdmin;
   protected readonly handoffLabel = HANDOFF_LABEL;
+
+  /** The owner is answering from the phone: the hour the agent comes back by itself, or null. */
+  protected readonly ownerPauseUntil = computed(() => {
+    const until = this.conversation().agentPausedUntil;
+    return until && new Date(until).getTime() > this.clock.now().getTime() ? formatTime(until, this.timezone()) : null;
+  });
   /** Anyone active in the company, on any number; several people may attend one conversation. */
   protected readonly attendants = computed<MenuOption[]>(() =>
     this.workspace.activeTeam().map((m) => ({ value: m.user.id, label: m.user.name })),

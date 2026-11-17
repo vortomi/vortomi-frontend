@@ -85,6 +85,7 @@ export function toConversation(tenantId: Id, row: ApiConversation): Conversation
     contactId: row.contact.id,
     assigneeIds: row.assigneeIds,
     handoffReason: row.handoffReason,
+    agentPausedUntil: row.agentPausedUntil ?? null,
     status: row.status,
     lastMessageAt: row.lastMessage?.createdAt ?? row.lastActivityAt,
     lastMessagePreview: row.lastMessage ? previewOf(row.lastMessage.type, row.lastMessage.body) : '',

@@ -133,6 +133,8 @@ export interface Conversation {
   assigneeIds: Id[];
   /** The sales agent passed it to a person, and why; null while the agent may answer. */
   handoffReason?: HandoffReason | null;
+  /** The owner is answering from the WhatsApp Business app: the agent is quiet here until then. */
+  agentPausedUntil?: IsoDate | null;
   status: 'open' | 'resolved';
   lastMessageAt: IsoDate;
   lastMessagePreview: string;
