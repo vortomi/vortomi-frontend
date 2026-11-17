@@ -51,6 +51,12 @@ export class InventoryRemote {
     return toVariant(tenantId, row);
   }
 
+  /** A stock count: the server adjusts each version that differs from the shelf now; answers how many changed and their counts. */
+  async count(tenantId: Id, items: { variantId: Id; counted: number }[], reason: string): Promise<{ changed: number; variants: ProductVariant[] }> {
+    const result = await this.api.post<{ changed: number; variants: ApiVariant[] }>(this.path(tenantId, 'counts'), { items, reason });
+    return { changed: result.changed, variants: result.variants.map((row) => toVariant(tenantId, row)) };
+  }
+
   async history(tenantId: Id, variantId: Id): Promise<StockMovement[]> {
     const list = await this.api.get<ApiList<ApiMovement>>(`${this.variant(tenantId, variantId)}/movements`);
     return list.items.map((row) => toMovement(tenantId, variantId, row));

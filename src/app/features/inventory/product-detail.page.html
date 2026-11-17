@@ -224,14 +224,7 @@
                 </div>
               }
               @if (canEdit()) {
-                <div class="move">
-                  <app-select-menu label="Variante" [options]="variantOptions()" [value]="movement().variantId || null" (picked)="setMovementValue('variantId', $event)" />
-                  <app-select-menu label="Tipo de movimiento" [options]="kindOptions" [value]="movement().kind" (picked)="setMovementValue('kind', $event)" />
-                  <input class="input" appNumeric="quantity" [decimals]="places(p.saleUnit)" [allowNegative]="movement().kind === 'adjustment'" inputmode="decimal" [attr.aria-label]="'Cantidad en ' + unitText[p.saleUnit].many" [value]="movement().quantity" (input)="setMovement('quantity', $event)" />
-                  <input class="input" aria-label="Motivo" placeholder="Motivo (ej.: factura 0012)" [value]="movement().reason" (input)="setMovement('reason', $event)" />
-                  <button type="button" class="btn" [disabled]="recording()" [attr.aria-busy]="recording()" (click)="record()"><span>Registrar</span></button>
-                  <p class="field-hint">Cantidad en {{ unitText[p.saleUnit].many }}. Venta y merma restan; en Ajuste usa negativo para restar. Nadie edita la existencia a mano: todo queda en el historial.</p>
-                </div>
+                <app-stock-move-form [product]="p" [variants]="variants()" />
               }
             </section>
           }

@@ -175,6 +175,31 @@ export class InventoryData {
     return null;
   }
 
+  /**
+   * A stock count (mockup web-23): each line is what is on the shelf; the differences become
+   * adjustments. Resolves to how many changed, or the reason it could not be saved.
+   */
+  async recordCount(items: { variantId: Id; counted: number }[], reason: string): Promise<{ changed: number } | { error: string }> {
+    if (this.remote) {
+      try {
+        const result = await this.remote.count(this.tenantId(), items, reason.trim());
+        for (const variant of result.variants) this.variantTable.upsert(variant);
+        return { changed: result.changed };
+      } catch (failure) {
+        return { error: toApiFailure(failure).message };
+      }
+    }
+    let changed = 0;
+    for (const item of items) {
+      const variant = this.variantById().get(item.variantId);
+      const difference = variant ? Math.round((item.counted - variant.onHand) * 100) / 100 : 0;
+      if (!variant || difference === 0) continue;
+      this.recordLocal(variant, 'adjustment', difference, reason || 'Conteo');
+      changed++;
+    }
+    return { changed };
+  }
+
   private recordLocal(variant: ProductVariant, kind: StockMovementKind, quantity: number, reason: string): void {
     const variantId = variant.id;
     this.movementTable.upsert({

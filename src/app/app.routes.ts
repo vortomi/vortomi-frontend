@@ -147,6 +147,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/inventory/inventory.page').then((m) => m.InventoryPage),
       },
       {
+        // «Contar existencias» (mockup web-23); before inventory/:productId, which would take "count" as an id.
+        path: 'inventory/count',
+        title: 'Contar existencias',
+        canActivate: [tenantAdminGuard, salesModeGuard],
+        canDeactivate: [unsavedChangesGuard],
+        loadComponent: () => import('./features/inventory/stock-count.page').then((m) => m.StockCountPage),
+      },
+      {
         // Before inventory/:productId, which would otherwise take "categories" as a product id.
         path: 'inventory/categories',
         title: 'Categorías',

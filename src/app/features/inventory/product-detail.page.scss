@@ -205,17 +205,11 @@
   }
 }
 
-.move {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+// The movement form keeps its own layout (stock-move-form.ts); here only its separation.
+app-stock-move-form {
+  display: block;
   padding-top: 10px;
   border-top: 1px dashed var(--color-border);
-
-  input[aria-label='Motivo'],
-  .field-hint {
-    grid-column: 1 / -1;
-  }
 }
 
 .history {

@@ -1,14 +1,12 @@
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { ApiFailure } from '../../core/api/api-error';
 import { Directory } from '../../core/directory';
 import { Session } from '../../core/session';
 import { STOCK_STATUS } from '../../shared/api/labels';
-import type { CustomValues, Id, Product, ProductVariant, SaleUnit, StockMode, StockMovementKind } from '../../shared/api/models';
+import type { CustomValues, Id, Product, ProductVariant, SaleUnit, StockMode } from '../../shared/api/models';
 import { formatShortDate } from '../../shared/format/date-time';
 import { formatUsdCents, formatVes } from '../../shared/format/money';
 import { imageFileError, readAsDataUrl } from '../../shared/files/image';
-import { Confirm } from '../../shared/ui/confirm';
 import { FileDrop } from '../../shared/ui/file-drop';
 import { CodeInput } from '../../shared/ui/code-input';
 import { Icon } from '../../shared/ui/icon';
@@ -27,6 +25,7 @@ import { InventoryData, type VariantDraft } from './inventory.data';
 import { MOVEMENT_LABEL, freeUnits, parsePriceCents, skuError, toBolivares, variantStatus } from './inventory.rules';
 import { SaleUnitPicker, type SaleSettings, defaultsFor } from './sale-unit-picker';
 import { Workspace } from '../../core/workspace';
+import { StockMoveForm } from './stock-move-form';
 import { SALE_UNIT, formatNumber, formatQuantity, parseQuantity, perUnit, takesDecimals } from './sale-units';
 import { addValue, dropValue } from './variant-combinations';
 import { VariantTypesData } from './variant-types.data';
@@ -65,10 +64,6 @@ interface ProductForm extends SaleSettings {
 
 const PHOTO_MAX_BYTES = 800_000;
 const MAX_TYPES = 3;
-/** Kinds a person records by hand; "sale" also comes from paid orders later. */
-const MANUAL_KINDS: StockMovementKind[] = ['purchase', 'sale', 'loss', 'return', 'adjustment'];
-/** These always remove: the person types how much, the sign is implied. */
-const REMOVING: StockMovementKind[] = ['sale', 'loss'];
 
 const STOCK_MODE_OPTIONS: MenuOption[] = [
   { value: 'units', label: 'Se cuenta (se compra y se revende)' },
@@ -124,7 +119,7 @@ function formOf(product: Product | null, variants: ProductVariant[], defaults: N
  */
 @Component({
   selector: 'app-product-detail-page',
-  imports: [RouterLink, Icon, Pill, SaleUnitPicker, CustomValuesForm, SelectMenu, Skeleton, FileDrop, NumericInput, CodeInput],
+  imports: [RouterLink, Icon, Pill, SaleUnitPicker, CustomValuesForm, SelectMenu, Skeleton, FileDrop, NumericInput, CodeInput, StockMoveForm],
   templateUrl: './product-detail.page.html',
   styleUrl: './product-detail.page.scss',
 })
@@ -138,7 +133,6 @@ export class ProductDetailPage {
   private readonly directory = inject(Directory);
   private readonly router = inject(Router);
   private readonly toaster = inject(Toaster);
-  private readonly confirm = inject(Confirm);
 
   readonly productId = input<string>();
 
@@ -150,16 +144,12 @@ export class ProductDetailPage {
   protected readonly rate = inject(ExchangeRates).current;
   protected readonly statusLabel = STOCK_STATUS;
   protected readonly kindLabel = MOVEMENT_LABEL;
-  protected readonly manualKinds = MANUAL_KINDS;
   protected readonly unitText = SALE_UNIT;
   protected readonly number = formatNumber;
   protected readonly stockModeOptions = STOCK_MODE_OPTIONS;
-  protected readonly kindOptions: MenuOption[] = MANUAL_KINDS.map((k) => ({ value: k, label: MOVEMENT_LABEL[k] }));
   protected readonly categoryOptions = computed<MenuOption[]>(() => this.categories.list().map((c) => ({ value: c.id, label: c.name })));
-  protected readonly variantOptions = computed<MenuOption[]>(() => this.variants().map((v) => ({ value: v.id, label: v.name })));
   /** 'api' mode: the movement history is on its way. */
   protected readonly movementsLoading = signal(false);
-  protected readonly recording = signal(false);
 
   /** What is saved; the form starts from it and «Cancelar» goes back to it. */
   private readonly saved = computed(() => {
@@ -192,7 +182,6 @@ export class ProductDetailPage {
   /** Values a saved variant uses: they stay picked (a saved variant is never deleted from here). */
   private readonly savedValues = computed(() => new Set(this.variants().flatMap((v) => v.optionIds)));
 
-  protected readonly movement = signal({ variantId: '', kind: 'purchase' as StockMovementKind, quantity: '1', reason: '' });
   /** The form was filled once: from then on, while editing, only the person changes it. */
   private filled = false;
 
@@ -212,7 +201,6 @@ export class ProductDetailPage {
       untracked(() => {
         this.form.set(saved);
         this.errors.set([]);
-        if (!this.movement().variantId) this.movement.update((m) => ({ ...m, variantId: this.variants()[0]?.id ?? '' }));
       });
     });
   }
@@ -425,41 +413,6 @@ export class ProductDetailPage {
       }
     });
     return { problems, drafts };
-  }
-
-  protected setMovement(key: 'variantId' | 'kind' | 'quantity' | 'reason', event: Event): void {
-    this.setMovementValue(key, this.value(event));
-  }
-
-  protected setMovementValue(key: 'variantId' | 'kind' | 'quantity' | 'reason', raw: string): void {
-    this.movement.update((m) => ({ ...m, [key]: raw }));
-  }
-
-  protected async record(): Promise<void> {
-    const { variantId, kind, quantity, reason } = this.movement();
-    const unit = this.product()?.saleUnit ?? 'unit';
-    const negative = quantity.trim().startsWith('-');
-    const amount = parseQuantity(quantity.trim().replace(/^-/, ''), unit);
-    if (!amount) {
-      return this.toaster.show(takesDecimals(unit) ? 'Escribe una cantidad mayor que cero, con hasta 2 decimales.' : 'Escribe una cantidad entera mayor que cero.', 'info');
-    }
-    const signed = REMOVING.includes(kind) ? -amount : kind === 'adjustment' && negative ? -amount : amount;
-    if (this.recording()) return;
-    // A movement is history: it is never edited nor deleted, so the person checks it first.
-    this.recording.set(true);
-    const done = await this.confirm.ask({
-      title: 'Registrar el movimiento',
-      message: `${MOVEMENT_LABEL[kind]} de ${formatNumber(signed)} en «${this.variantName(variantId)}». Queda en el historial y no se puede borrar ni editar.`,
-      confirmLabel: 'Registrar',
-      action: async () => {
-        const error = await this.data.recordMovement(variantId, kind, signed, reason);
-        if (error) throw new ApiFailure(0, 'movement_refused', error);
-      },
-    });
-    this.recording.set(false);
-    if (!done) return;
-    this.movement.update((m) => ({ ...m, quantity: '1', reason: '' }));
-    this.toaster.show('Movimiento registrado');
   }
 
   protected categoryName(id: Id | ''): string {
