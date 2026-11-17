@@ -1,5 +1,27 @@
+@let byOwner = state.connectedBy() === 'owner' && !state.connected();
 <form class="step-body" id="channel-form" (submit)="connect($event)" novalidate>
   <div class="col">
+    @if (!state.connected()) {
+      <section class="card sec">
+        <h2>¿Quién conecta el número de WhatsApp?</h2>
+        <app-option-cards label="Quién conecta el número" [options]="whoConnects" [value]="state.connectedBy()" (picked)="setWho($event)" />
+      </section>
+    }
+
+    @if (byOwner) {
+      <section class="card sec">
+        <h2>Invitamos al dueño y lo conecta desde su panel</h2>
+        <ol class="olist">
+          <li><span>Le llega ahora la invitación a <b>{{ state.company().adminName }}</b> ({{ state.company().adminEmail }}). Crea su contraseña y entra.</span></li>
+          <li><span>En su panel ve una sola pantalla: <b>«Conectar con WhatsApp»</b>. Lo hace con su Facebook y su teléfono, sin pasar ningún dato por nosotros.</span></li>
+          <li><span>Cuando su número queda conectado, <b>la empresa se activa sola</b> y entra a su panel. Aquí la verás activa.</span></li>
+        </ol>
+        <div class="form-alert info mt"><app-icon name="info" /><span>El botón del dueño funciona cuando Meta apruebe nuestra app. Mientras tanto, Meta le dirá que todavía no puede incorporarlo; para empresas que deban empezar ya, elige «Lo conectamos nosotros».</span></div>
+        @if (state.error(); as message) {
+          <div class="form-alert mt" role="alert"><app-icon name="alert" />{{ message }}</div>
+        }
+      </section>
+    } @else {
     <section class="card sec">
       <h2><span class="k">A</span>Lo hace el cliente, en su Meta Business</h2>
       <p class="d">Le comparte su cuenta de WhatsApp a nuestra empresa. Su contraseña de Facebook nunca pasa por nosotros.</p>
@@ -111,8 +133,10 @@
       </div>
       }
     </section>
+    }
   </div>
 
+  @if (!byOwner) {
   <div class="col">
     <section class="card sec">
       <h2>Verificaciones</h2>
@@ -140,6 +164,7 @@
       </section>
     }
   </div>
+  }
 </form>
 
 <footer class="step-foot">
@@ -147,6 +172,10 @@
   <button type="button" class="btn" (click)="state.goTo(0)" [disabled]="connecting()"><span>Atrás</span></button>
   @if (state.connected()) {
     <button type="button" class="btn btn--primary" (click)="state.goTo(2)"><span>Siguiente: probar</span><app-icon name="arrow" /></button>
+  } @else if (byOwner) {
+    <button type="button" class="btn btn--primary" (click)="inviteOwner()" [disabled]="inviting()" [attr.aria-busy]="inviting()">
+      <span>Invitar al dueño</span><app-icon name="arrow" />
+    </button>
   } @else {
     <button type="submit" form="channel-form" class="btn btn--primary" [disabled]="connecting() || !selected() || allTaken()" [attr.aria-busy]="connecting()">
       <span>Conectar y verificar</span>

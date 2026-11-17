@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormField, email, form, maxLength, pattern, readonly, required, submit } from '@angular/forms/signals';
 import { FieldError } from '../../../shared/ui/field-error';
 import { Icon } from '../../../shared/ui/icon';
+import { type OptionCard, OptionCards } from '../../../shared/ui/option-cards';
 import { Pill } from '../../../shared/ui/pill';
 import { Confirm } from '../../../shared/ui/confirm';
 import { Toaster } from '../../../shared/ui/toaster';
@@ -24,6 +25,12 @@ const NAME_STATUS: Record<DisplayNameStatus, string> = {
   declined: 'rechazado por Meta',
 };
 
+/** Step 2 starts by choosing who connects the number (mockup web-21, screen 1). */
+const WHO_CONNECTS: OptionCard[] = [
+  { value: 'owner', label: 'El dueño, desde su panel', icon: 'phone', hint: 'Recomendado. Lo hace con su Facebook y sigue usando WhatsApp Business en su teléfono' },
+  { value: 'us', label: 'Lo conectamos nosotros', icon: 'wrench', hint: 'Identificador de la cuenta, token y prueba de ida y vuelta' },
+];
+
 /** Our Meta business id the customer adds as a partner. Prototype value. */
 const OUR_BUSINESS_ID = '4815 1623 4200';
 
@@ -40,7 +47,7 @@ interface ConnectModel {
 /** Step 2 (mockup web-10). */
 @Component({
   selector: 'app-step-channel',
-  imports: [PasswordField, FormField, FieldError, Icon, Pill, WhatsAppProfileFields],
+  imports: [PasswordField, FormField, FieldError, Icon, Pill, WhatsAppProfileFields, OptionCards],
   templateUrl: './step-channel.html',
   styleUrl: './steps.scss',
   styles: `
@@ -77,6 +84,8 @@ export class StepChannel {
   protected readonly lookup = signal<WabaLookup | null>(null);
   protected readonly searching = signal(false);
   protected readonly connecting = signal(false);
+  protected readonly whoConnects = WHO_CONNECTS;
+  protected readonly inviting = signal(false);
 
   private readonly model = signal<ConnectModel>({
     wabaId: '',
@@ -146,8 +155,22 @@ export class StepChannel {
     this.toaster.show('Identificador copiado');
   }
 
+  protected setWho(value: string): void {
+    this.state.connectedBy.set(value === 'us' ? 'us' : 'owner');
+    this.state.error.set(null);
+  }
+
+  /** «El dueño, desde su panel»: the invitation goes now; the company waits for them. */
+  protected async inviteOwner(): Promise<void> {
+    if (this.inviting()) return;
+    this.inviting.set(true);
+    await this.state.inviteOwner();
+    this.inviting.set(false);
+  }
+
   protected async connect(event: Event): Promise<void> {
     event.preventDefault();
+    if (this.state.connectedBy() === 'owner' && !this.state.connected()) return;
     await submit(this.connectForm, async () => {
       const number = this.selected();
       const lookup = this.lookup();

@@ -109,6 +109,11 @@ export class PlatformRemote {
     return this.api.post(this.path(tenantId, 'invitations'), { name, email });
   }
 
+  /** The owner connects the first number from their panel: their admin invitation, and the company waits for them. */
+  inviteOwner(tenantId: Id, name: string, email: string): Promise<ApiInvitation> {
+    return this.api.post(this.path(tenantId, 'owner-invitation'), { name, email });
+  }
+
   renewInvitation(tenantId: Id, invitationId: Id): Promise<ApiInvitation> {
     return this.api.post(this.path(tenantId, `invitations/${encodeURIComponent(invitationId)}/renew`));
   }

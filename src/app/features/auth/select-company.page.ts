@@ -22,11 +22,16 @@ import { Icon } from '../../shared/ui/icon';
           </button>
         }
         @for (tenant of session.myTenants(); track tenant.id) {
-          <button type="button" class="option" [disabled]="tenant.status !== 'active'" (click)="enter(tenant)">
+          @let joining = isJoining(tenant);
+          <button type="button" class="option" [disabled]="tenant.status !== 'active' && !joining" (click)="enter(tenant)">
             <app-avatar [name]="tenant.name" [seed]="tenant.id" size="md" class="logo" />
             <span class="text">
               <b>{{ tenant.name }}</b>
-              <small>{{ tenant.status === 'active' ? roleOf(tenant) : 'Suspendida: habla con nuestro equipo' }}</small>
+              @if (joining) {
+                <small class="joining">Falta conectar tu WhatsApp · Entrar</small>
+              } @else {
+                <small>{{ tenant.status === 'active' ? roleOf(tenant) : 'Suspendida: habla con nuestro equipo' }}</small>
+              }
             </span>
           </button>
         } @empty {
@@ -48,6 +53,7 @@ import { Icon } from '../../shared/ui/icon';
     .text { display: flex; flex-direction: column; gap: 2px; }
     .text b { font-size: 14.5px; }
     .text small { font-size: 12.5px; color: var(--color-text-muted); }
+    .text small.joining { color: var(--color-whatsapp-text); font-weight: 600; }
     .console { background: var(--color-console-badge-bg); border-color: var(--color-console-badge-border); }
     .console small { color: var(--color-console-badge-text); }
     .ico { width: 40px; height: 40px; border-radius: 10px; background: var(--color-warning-soft); color: var(--color-console-badge-text); display: flex;
@@ -67,8 +73,21 @@ export class SelectCompanyPage {
     return role === 'admin' ? 'Administración' : 'Agente';
   }
 
+  constructor() {
+    // An owner whose only company waits for its first number goes straight to connecting it.
+    const [only] = this.session.joiningTenants();
+    if (only && this.session.joiningTenants().length === 1 && !this.session.enterableTenantIds().length && !this.session.isSuperAdmin()) {
+      void this.router.navigate(['/connect-whatsapp', only.id]);
+    }
+  }
+
+  protected isJoining(tenant: Tenant): boolean {
+    return this.session.joiningTenants().some((t) => t.id === tenant.id);
+  }
+
   protected enter(tenant: Tenant): void {
-    if (this.session.switchTenant(tenant.id)) void this.router.navigateByUrl('/inbox');
+    if (this.isJoining(tenant)) void this.router.navigate(['/connect-whatsapp', tenant.id]);
+    else if (this.session.switchTenant(tenant.id)) void this.router.navigateByUrl('/inbox');
   }
 
   protected openConsole(): void {

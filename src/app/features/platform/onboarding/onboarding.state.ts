@@ -127,6 +127,10 @@ export class OnboardingState {
   readonly testEvents = signal<TestEvent[]>([]);
   readonly testStatus = signal<'idle' | 'running' | 'passed'>('idle');
   readonly invitationToken = signal<string | null>(null);
+  /** Step 2: who connects the number. 'owner': the owner from their own panel (mockup web-21); 'us': this console. */
+  readonly connectedBy = signal<'owner' | 'us'>('owner');
+  /** The owner was invited to connect it: the company waits for them and goes live by itself. */
+  readonly ownerInvited = signal(false);
   /** Reading a company left half way from the server: the steps wait instead of showing empty. */
   readonly resuming = signal(false);
 
@@ -335,6 +339,42 @@ export class OnboardingState {
     this.invitationToken.set(token);
   }
 
+  /**
+   * Step 2, «El dueño, desde su panel»: invites the admin of step 1 now; the company waits for them
+   * (no number, no test here) and goes live by itself once they connect it.
+   */
+  async inviteOwner(): Promise<void> {
+    const tenantId = this.tenantId();
+    const draft = this.company();
+    if (!tenantId) return;
+    this.error.set(null);
+    if (this.remote) {
+      const result = await this.remote.inviteOwner(tenantId, draft.adminName, draft.adminEmail);
+      if ('error' in result) return this.error.set(result.error);
+      this.invitationToken.set(result.ok);
+    } else {
+      const token = `demo-${newId('tok').slice(4)}`;
+      this.directory.addInvitation({
+        id: newId('inv'),
+        tenantId,
+        email: draft.adminEmail.trim().toLowerCase(),
+        name: draft.adminName.trim(),
+        role: 'admin',
+        invitedByUserId: this.session.user()?.id ?? 'system',
+        demoToken: token,
+        expiresAt: new Date(this.clock.now().getTime() + INVITATION_TTL_MS).toISOString(),
+        acceptedAt: null,
+        createdAt: this.now(),
+      });
+      this.directory.updateTenant(tenantId, { status: 'awaiting_owner' });
+      this.platform.audit(tenantId, 'invitation.sent', `El dueño conectará su número: invitación a ${draft.adminEmail.trim()}`);
+      this.invitationToken.set(token);
+    }
+    this.drafts.delete(tenantId);
+    this.ownerInvited.set(true);
+    this.step.set(3);
+  }
+
   goTo(step: number): void {
     // Leaving the test stops its wait for the customer's message.
     if (step !== 2) this.testRun++;
@@ -417,6 +457,8 @@ export class OnboardingState {
     this.testEvents.set([]);
     this.testStatus.set('idle');
     this.invitationToken.set(null);
+    this.connectedBy.set('owner');
+    this.ownerInvited.set(false);
   }
 
   private setCheck(index: number, status: CheckStatus): void {

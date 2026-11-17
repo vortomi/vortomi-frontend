@@ -5,13 +5,20 @@
   <div class="step-body">
     <section class="card done">
       <span class="big"><app-icon name="check" [stroke]="3" /></span>
-      <h2>{{ company.name }} está activa</h2>
+      @if (state.ownerInvited()) {
+        <h2>Invitación lista para {{ company.adminName }}</h2>
+        <p class="owner-note">{{ company.name }} queda <b>esperando al dueño</b>: cuando conecte su número desde su panel, la empresa se activa sola. Si pasan 3 días sin que lo haga, aparece en Alertas.</p>
+      } @else {
+        <h2>{{ company.name }} está activa</h2>
+      }
       @if (state.real) {
         <p>Envíale este enlace a <b>{{ company.adminName }}</b> ({{ company.adminEmail }}) por WhatsApp o por correo. Con él crea su contraseña y entra a su panel. Sirve una sola vez y vence en 72 horas.</p>
         <div class="copy">
           <input class="input mono" aria-label="Enlace de invitación" readonly [value]="token" (focus)="select($event)" />
           <button type="button" class="btn btn--primary" (click)="copy(token)"><app-icon name="copy" /><span>Copiar</span></button>
         </div>
+      } @else if (state.ownerInvited()) {
+        <p>Enviamos la invitación a {{ company.adminEmail }}.</p>
       } @else {
         <p>Enviamos la invitación a {{ company.adminEmail }}. Lo que escriban sus clientes al {{ channel?.number?.displayNumber }} ya entra en su bandeja.</p>
       }

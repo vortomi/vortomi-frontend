@@ -132,6 +132,8 @@ export class SupabaseAuth extends Auth {
   }
 
   private async openCompany(tenantId: Id): Promise<void> {
+    // A company waiting for its owner has nothing to load yet: only «Conectar con WhatsApp» opens.
+    if (this.directory.tenantById().get(tenantId)?.status === 'awaiting_owner') return;
     try {
       await this.remote.loadCompany(tenantId);
     } catch (error) {

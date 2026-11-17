@@ -25,13 +25,18 @@ export function platformAlerts(tenants: Tenant[], channels: ChannelAccount[], no
     if (tenant.status === 'cancelled') continue;
     const base = { tenantId: tenant.id, tenantName: tenant.name };
 
-    if ((tenant.status === 'draft' || tenant.status === 'awaiting_channel') && -daysUntil(tenant.createdAt, now) >= STALLED_ONBOARDING_DAYS) {
+    const unfinished = tenant.status === 'draft' || tenant.status === 'awaiting_channel' || tenant.status === 'awaiting_owner';
+    if (unfinished && -daysUntil(tenant.createdAt, now) >= STALLED_ONBOARDING_DAYS) {
+      const days = -daysUntil(tenant.createdAt, now);
       alerts.push({
         ...base,
         id: `${tenant.id}:onboarding`,
         severity: 'warning',
         kind: 'onboarding_stalled',
-        text: `El alta quedó a medias hace ${-daysUntil(tenant.createdAt, now)} días. Retomarla con el cliente.`,
+        text:
+          tenant.status === 'awaiting_owner'
+            ? `El dueño todavía no conecta su número (alta de hace ${days} días). Llamarlo y hacerlo con él.`
+            : `El alta quedó a medias hace ${days} días. Retomarla con el cliente.`,
       });
     }
 

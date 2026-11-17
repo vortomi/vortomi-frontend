@@ -1,6 +1,7 @@
 import type { Routes } from '@angular/router';
 import {
   guestGuard,
+  joiningGuard,
   mfaPendingGuard,
   signedInGuard,
   superAdminGuard,
@@ -65,6 +66,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/auth/select-company.page').then((m) => m.SelectCompanyPage),
       },
     ],
+  },
+  {
+    // A company waiting for its owner: «Conecta tu WhatsApp», full screen, nothing else (mockup web-21).
+    path: 'connect-whatsapp/:tenantId',
+    title: 'Conecta tu WhatsApp',
+    canActivate: [signedInGuard, joiningGuard],
+    loadComponent: () => import('./features/setup/connect-first-number.page').then((m) => m.ConnectFirstNumberPage),
   },
   {
     // The welcome (block C): full screen, before the panel, for the company's admins.

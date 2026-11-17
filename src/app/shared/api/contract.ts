@@ -18,7 +18,7 @@ export interface ApiCompany {
   tenantId: string;
   name: string;
   slug: string;
-  tenantStatus: 'draft' | 'awaiting_channel' | 'active' | 'suspended' | 'cancelled';
+  tenantStatus: 'draft' | 'awaiting_channel' | 'awaiting_owner' | 'active' | 'suspended' | 'cancelled';
   plan: 'internal' | 'basic' | 'team';
   timezone: string;
   role: 'admin' | 'agent';
@@ -50,6 +50,8 @@ export interface ApiSignupResult {
   subscribed: boolean;
   tokenExpiresAt: string | null;
   syncRequested: ('smb_app_state_sync' | 'history')[];
+  /** The company was waiting for its owner and is live from now on. */
+  activated?: boolean;
 }
 
 export interface ApiMember {
@@ -304,7 +306,7 @@ export interface ApiPlatformTenant {
   id: string;
   name: string;
   slug: string;
-  status: 'draft' | 'awaiting_channel' | 'active' | 'suspended' | 'cancelled';
+  status: 'draft' | 'awaiting_channel' | 'awaiting_owner' | 'active' | 'suspended' | 'cancelled';
   plan: 'internal' | 'basic' | 'team';
   businessType: string | null;
   businessTypeOther: string;

@@ -34,6 +34,14 @@ export class Session {
       .map((t) => t.id),
   );
 
+  /** Companies waiting for me, their admin, to connect their first number: only that screen opens for them. */
+  readonly joiningTenants = computed(() => {
+    const userId = this.user()?.id;
+    return this.myTenants().filter(
+      (t) => t.status === 'awaiting_owner' && this.memberships().some((m) => m.tenantId === t.id && m.userId === userId && m.role === 'admin'),
+    );
+  });
+
   readonly tenant = computed(() => {
     const id = this.activeTenantId();
     return id && this.enterableTenantIds().includes(id) ? (this.directory.tenantById().get(id) ?? null) : null;

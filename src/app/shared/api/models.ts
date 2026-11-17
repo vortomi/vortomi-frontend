@@ -21,7 +21,7 @@ export interface BusinessType {
 export type Sells = 'products' | 'services' | 'both' | 'none';
 export type SellMethod = 'unit' | 'weight' | 'measure' | 'time' | 'mixed';
 
-export type TenantStatus = 'draft' | 'awaiting_channel' | 'active' | 'suspended' | 'cancelled';
+export type TenantStatus = 'draft' | 'awaiting_channel' | 'awaiting_owner' | 'active' | 'suspended' | 'cancelled';
 export type TenantPlan = 'internal' | 'basic' | 'team';
 
 export interface Tenant {

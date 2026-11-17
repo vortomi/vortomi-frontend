@@ -19,6 +19,7 @@ export interface Label {
 export const TENANT_STATUS: Record<TenantStatus, Label> = {
   draft: { text: 'Borrador', tone: 'blue' },
   awaiting_channel: { text: 'Esperando canal', tone: 'amber' },
+  awaiting_owner: { text: 'El dueño debe conectar su número', tone: 'blue' },
   active: { text: 'Activa', tone: 'green' },
   suspended: { text: 'Suspendida', tone: 'red' },
   cancelled: { text: 'Dada de baja', tone: 'neutral' },

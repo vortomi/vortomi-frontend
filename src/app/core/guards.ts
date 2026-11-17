@@ -44,7 +44,21 @@ export const tenantGuard: CanActivateFn = async () => {
     session.switchTenant(only);
     return true;
   }
+  // An owner whose only company still waits for its number (just after accepting the invitation, say).
+  const [joining] = session.joiningTenants();
+  if (!session.enterableTenantIds().length && session.joiningTenants().length === 1 && joining && !session.isSuperAdmin()) {
+    return router.createUrlTree(['/connect-whatsapp', joining.id]);
+  }
   return router.parseUrl('/select-company');
+};
+
+/** «Conecta tu WhatsApp»: only for an admin of a company waiting for them to connect its first number. */
+export const joiningGuard: CanActivateFn = async (route) => {
+  const router = inject(Router);
+  const session = inject(Session);
+  await inject(Directory).loaded;
+  const tenantId = route.paramMap.get('tenantId');
+  return session.joiningTenants().some((t) => t.id === tenantId) ? true : router.parseUrl('/select-company');
 };
 
 /** Company settings and team management: company admins only. */

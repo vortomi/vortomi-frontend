@@ -68,6 +68,12 @@ describe('platformAlerts', () => {
     expect(alert?.kind).toBe('onboarding_stalled');
   });
 
+  it('asks us to call an owner who has not connected their number after days', () => {
+    const [alert] = platformAlerts([tenant({ status: 'awaiting_owner', createdAt: '2026-10-04T09:00:00-04:00' })], [], NOW);
+    expect(alert?.kind).toBe('onboarding_stalled');
+    expect(alert?.text).toContain('El dueño todavía no conecta su número');
+  });
+
   it('ignores cancelled companies', () => {
     expect(platformAlerts([tenant({ status: 'cancelled' })], [channel({ status: 'disconnected' })], NOW)).toEqual([]);
   });

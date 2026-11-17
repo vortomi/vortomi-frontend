@@ -117,6 +117,15 @@ export class OnboardingRemote {
     });
   }
 
+  /** Invites the owner, who connects the first number themselves; the company goes live then. Resolves to the invitation link. */
+  async inviteOwner(tenantId: Id, adminName: string, adminEmail: string): Promise<Outcome<string>> {
+    return this.run(async () => {
+      const invitation = await this.api.inviteOwner(tenantId, adminName.trim(), adminEmail.trim().toLowerCase());
+      writeStored(draftKey(tenantId), null);
+      return invitationLink(invitation.token ?? '');
+    });
+  }
+
   private async run<T>(work: () => Promise<T>): Promise<Outcome<T>> {
     try {
       return { ok: await work() };
