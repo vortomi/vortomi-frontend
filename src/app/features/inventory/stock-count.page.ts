@@ -10,6 +10,7 @@ import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
 import { InventoryData } from './inventory.data';
+import { plainQuantity } from './stock-set-form';
 import { formatNumber, parseQuantity, roundQuantity, takesDecimals } from './sale-units';
 
 interface CountLine {
@@ -23,7 +24,7 @@ interface CountLine {
 }
 
 /**
- * «Contar existencias» (mockup web-23): the shelf of every counted product at once. The person
+ * «Actualizar existencias» (mockup web-23): the shelf of every counted product at once. The person
  * writes what is there; only what differs is saved, each as an adjustment (the server takes the
  * difference against the shelf when saving, so a sale made meanwhile stays).
  */
@@ -32,9 +33,10 @@ interface CountLine {
   imports: [RouterLink, Icon, NumericInput, Skeleton],
   template: `
     <header class="page-top">
-      <a class="back" routerLink="/inventory" aria-label="Volver al inventario"><app-icon name="back" /></a>
-      <h1>Contar existencias</h1>
-      <span class="sub">Escribe lo que hay en el estante. Deja igual lo que no contaste.</span>
+      <h1>Actualizar existencias</h1>
+      <span class="sub">Escribe cuántas hay de cada producto. Deja igual lo que no cambió.</span>
+      <span class="spacer"></span>
+      <a class="btn" routerLink="/inventory"><span>Salir sin guardar</span></a>
     </header>
 
     <div class="page-body">
@@ -45,15 +47,15 @@ interface CountLine {
       } @else {
         <div class="card table-card">
           <table class="data-table">
-            <thead><tr><th>Producto</th><th>Según Vortomi</th><th>Contaste</th><th>Diferencia</th></tr></thead>
+            <thead><tr><th>Producto</th><th>Según Vortomi</th><th>Hay ahora</th><th>Diferencia</th></tr></thead>
             <tbody>
               @for (line of lines(); track line.variantId) {
                 <tr [class.changed]="line.difference !== 0">
                   <td><b>{{ line.name }}</b></td>
                   <td>{{ number(line.onHand) }}</td>
                   <td>
-                    <input class="input count" appNumeric="quantity" [decimals]="line.places" inputmode="decimal" [attr.aria-label]="'Contaste de ' + line.name"
-                      [value]="typed().get(line.variantId) ?? number(line.onHand)" (input)="type(line.variantId, $event)" />
+                    <input class="input count" [class.same]="line.counted !== null && line.difference === 0" appNumeric="quantity" [decimals]="line.places" inputmode="decimal" [attr.aria-label]="'Hay ahora de ' + line.name"
+                      [value]="typed().get(line.variantId) ?? plain(line.onHand)" (input)="type(line.variantId, $event)" />
                   </td>
                   <td>
                     @if (line.counted === null) {
@@ -71,12 +73,12 @@ interface CountLine {
         </div>
 
         <div class="card bar">
+          <app-icon name="check" class="ok" />
           <span><b>{{ changes().length }} {{ changes().length === 1 ? 'producto cambia' : 'productos cambian' }}</b> · los otros quedan igual</span>
           <span class="spacer"></span>
-          <input class="input reason" aria-label="Motivo" [value]="reason()" (input)="reason.set(value($event))" />
-          <a class="btn" routerLink="/inventory"><span>Salir</span></a>
+          <label class="reason-label">Motivo: <input class="input reason" aria-label="Motivo" [value]="reason()" (input)="reason.set(value($event))" /></label>
           <button type="button" class="btn btn--primary" [disabled]="!changes().length || invalid() || saving()" [attr.aria-busy]="saving()" (click)="save()">
-            <span>Guardar conteo</span>
+            <span>Guardar</span>
           </button>
         </div>
       }
@@ -84,14 +86,17 @@ interface CountLine {
   `,
   styleUrl: './inventory.page.scss',
   styles: `
-    .back { display: inline-flex; color: var(--color-text-muted); --icon-size: 20px; }
-    .count { width: 110px; }
-    tr.changed { background: var(--color-warning-soft); }
+    .count { width: 96px; border: 2px solid var(--color-primary); background: var(--color-surface); }
+    .count.same { border: 1px solid var(--color-border); background: var(--color-input); color: var(--color-text-muted); }
+    tr.changed td { background: color-mix(in srgb, var(--color-primary) 7%, transparent); }
     .up { color: var(--color-success); }
     .down { color: var(--color-danger); }
     .bad { color: var(--color-danger); font-size: 12.5px; }
     .muted { color: var(--color-text-muted); }
-    .bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; margin-top: 12px; font-size: 13.5px; }
+    .bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; margin-top: 12px; font-size: 13.5px;
+      background: var(--color-primary-soft); border-color: var(--color-primary-soft); }
+    .ok { color: var(--color-primary); --icon-size: 16px; }
+    .reason-label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-text-muted); }
     .spacer { flex: 1; }
     .reason { width: 220px; }
   `,
@@ -103,9 +108,10 @@ export class StockCountPage {
   private readonly router = inject(Router);
 
   protected readonly number = formatNumber;
+  protected readonly plain = plainQuantity;
   /** What the person typed per version; a version not typed keeps its shelf count. */
   protected readonly typed = signal<ReadonlyMap<Id, string>>(new Map());
-  protected readonly reason = signal(`Conteo del ${formatShortDate(new Date().toISOString(), 'America/Caracas')}`);
+  protected readonly reason = signal(`Actualización del ${formatShortDate(new Date().toISOString(), 'America/Caracas')}`);
   protected readonly saving = signal(false);
 
   protected readonly lines = computed<CountLine[]>(() =>
@@ -157,7 +163,7 @@ export class StockCountPage {
     const summary = changes.map((l) => `${l.name} ${this.signed(l.difference)} → ${formatNumber(l.counted!)}`).join(' · ');
     let changed = 0;
     const done = await this.confirm.ask({
-      title: '¿Guardar el conteo?',
+      title: '¿Actualizar las existencias?',
       message: `Se ${changes.length === 1 ? 'registra 1 ajuste' : `registran ${changes.length} ajustes`}: ${summary}. Queda en el historial de cada producto, con tu nombre.`,
       confirmLabel: 'Guardar',
       action: async () => {
@@ -173,7 +179,7 @@ export class StockCountPage {
     if (!done) return;
     // Saved: nothing is pending any more, so leaving does not ask.
     this.typed.set(new Map());
-    this.toaster.show(changed === 1 ? 'Conteo guardado: 1 producto ajustado' : `Conteo guardado: ${changed} productos ajustados`);
+    this.toaster.show(changed === 1 ? 'Existencias actualizadas: 1 producto' : `Existencias actualizadas: ${changed} productos`);
     void this.router.navigateByUrl('/inventory');
   }
 }

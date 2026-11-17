@@ -144,30 +144,3 @@ tr.inactive td {
     margin-left: 0;
   }
 }
-
-// A counted product's stock opens its movement box (mockup web-23).
-.stock-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
-  padding: 5px 9px;
-  font: inherit;
-  cursor: pointer;
-
-  .pm {
-    color: var(--color-primary);
-    font-weight: 700;
-  }
-
-  &:hover {
-    border-color: var(--color-primary);
-  }
-}
-
-.move-dialog {
-  --dialog-width: 440px;
-}

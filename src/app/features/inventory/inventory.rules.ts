@@ -1,6 +1,6 @@
 // Pure inventory rules (documentations/05-inventario.md).
 import type { Product, ProductVariant, SaleUnit, StockMovementKind } from '../../shared/api/models';
-import { formatQuantity, parseQuantity, roundQuantity, takesDecimals } from './sale-units';
+import { formatQuantity, roundQuantity, takesDecimals } from './sale-units';
 export { parsePriceCents } from '../../shared/format/money';
 
 export type StockStatus = 'available' | 'low' | 'out' | 'unavailable' | 'inactive';
@@ -40,21 +40,6 @@ export function productStatus(product: Product, variants: ProductVariant[]): Sto
  * A movement never leaves fewer units than those already set aside: that would sell what was
  * promised to someone else. The backend repeats it with a CHECK (on_hand >= reserved).
  */
-/** Sale and loss always remove: the person types how much, the sign is implied. */
-const REMOVING: StockMovementKind[] = ['sale', 'loss'];
-
-/**
- * The movement as stored, from what the person typed: sale and loss subtract, an adjustment takes
- * the sign typed («-3»), the rest add. Null when the amount is not valid for the product's unit.
- */
-export function signedMovement(kind: StockMovementKind, typed: string, unit: SaleUnit): number | null {
-  const text = typed.trim();
-  const amount = parseQuantity(text.replace(/^-/, ''), unit);
-  if (!amount) return null;
-  if (REMOVING.includes(kind)) return -amount;
-  return kind === 'adjustment' && text.startsWith('-') ? -amount : amount;
-}
-
 export function movementError(variant: ProductVariant, quantity: number, unit: SaleUnit): string | null {
   if (quantity === 0 || !Number.isFinite(quantity)) return 'Escribe una cantidad distinta de cero.';
   if (!takesDecimals(unit) && !Number.isInteger(quantity)) return 'Este producto se cuenta entero: escribe una cantidad sin decimales.';

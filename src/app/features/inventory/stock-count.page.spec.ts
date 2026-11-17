@@ -4,7 +4,6 @@ import { Router, provideRouter } from '@angular/router';
 import type { Product, ProductVariant } from '../../shared/api/models';
 import { Confirm } from '../../shared/ui/confirm';
 import { InventoryData, type InventoryItem } from './inventory.data';
-import { signedMovement } from './inventory.rules';
 import { StockCountPage } from './stock-count.page';
 
 const product = (id: string, name: string, saleUnit: Product['saleUnit'] = 'unit', stockMode: Product['stockMode'] = 'units') =>
@@ -29,20 +28,20 @@ async function setup() {
   await fixture.whenStable();
   const host = fixture.nativeElement as HTMLElement;
   const count = async (name: string, text: string) => {
-    const input = host.querySelector<HTMLInputElement>(`input[aria-label="Contaste de ${name}"]`)!;
+    const input = host.querySelector<HTMLInputElement>(`input[aria-label="Hay ahora de ${name}"]`)!;
     input.value = text;
     input.dispatchEvent(new Event('input'));
     await fixture.whenStable();
   };
-  const saveButton = () => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Guardar conteo'))!;
+  const saveButton = () => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Guardar'))!;
   return { fixture, host, data, count, saveButton, navigate };
 }
 
 describe('StockCountPage', () => {
   it('lists only counted products, each starting at what Vortomi has', async () => {
     const { host } = await setup();
-    expect(host.querySelector('input[aria-label="Contaste de Golfeado"]')).not.toBeNull();
-    expect(host.querySelector('input[aria-label="Contaste de Torta por encargo"]')).toBeNull();
+    expect(host.querySelector('input[aria-label="Hay ahora de Golfeado"]')).not.toBeNull();
+    expect(host.querySelector('input[aria-label="Hay ahora de Torta por encargo"]')).toBeNull();
   });
 
   it('saves only what differs, with its difference shown', async () => {
@@ -53,18 +52,7 @@ describe('StockCountPage', () => {
     expect(saveButton().disabled).toBe(false);
     saveButton().click();
     await fixture.whenStable();
-    expect(data.recordCount).toHaveBeenCalledWith([{ variantId: 'v1', counted: 26 }], expect.stringContaining('Conteo del'));
+    expect(data.recordCount).toHaveBeenCalledWith([{ variantId: 'v1', counted: 26 }], expect.stringContaining('Actualización del'));
     expect(navigate).toHaveBeenCalledWith('/inventory');
-  });
-});
-
-describe('signedMovement', () => {
-  it('sale and loss subtract; an adjustment keeps the sign typed; the rest add', () => {
-    expect(signedMovement('sale', '2', 'unit')).toBe(-2);
-    expect(signedMovement('loss', '1,5', 'kg')).toBe(-1.5);
-    expect(signedMovement('adjustment', '-3', 'unit')).toBe(-3);
-    expect(signedMovement('purchase', '24', 'unit')).toBe(24);
-    expect(signedMovement('purchase', '1,5', 'unit')).toBeNull();
-    expect(signedMovement('purchase', '0', 'unit')).toBeNull();
   });
 });

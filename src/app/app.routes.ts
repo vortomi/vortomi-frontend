@@ -147,9 +147,9 @@ export const routes: Routes = [
         loadComponent: () => import('./features/inventory/inventory.page').then((m) => m.InventoryPage),
       },
       {
-        // «Contar existencias» (mockup web-23); before inventory/:productId, which would take "count" as an id.
+        // «Actualizar existencias» (mockup web-23); before inventory/:productId, which would take "count" as an id.
         path: 'inventory/count',
-        title: 'Contar existencias',
+        title: 'Actualizar existencias',
         canActivate: [tenantAdminGuard, salesModeGuard],
         canDeactivate: [unsavedChangesGuard],
         loadComponent: () => import('./features/inventory/stock-count.page').then((m) => m.StockCountPage),

@@ -10,7 +10,7 @@
     @if (!data.onServer) {
       <button type="button" class="btn" (click)="importing.set(true)"><app-icon name="upload" /><span>Importar</span></button>
     }
-    <a class="btn" routerLink="/inventory/count"><app-icon name="swap" /><span>Contar existencias</span></a>
+    <a class="btn" routerLink="/inventory/count"><app-icon name="swap" /><span>Actualizar existencias</span></a>
     <button type="button" class="btn" [disabled]="!data.ready()" (click)="exportCsv()"><app-icon name="down" /><span>Exportar</span></button>
     <a class="btn" routerLink="/inventory/categories"><app-icon name="filter" /><span>Categorías</span></a>
     <a class="btn" routerLink="/inventory/variant-types"><app-icon name="swap" /><span>Variantes</span></a>
@@ -70,10 +70,6 @@
                       {{ v.available ? 'Disponible hoy' : 'No hoy' }}
                     </span>
                   }
-                } @else if (session.isTenantAdmin()) {
-                  <button type="button" class="stock-btn" [attr.aria-label]="'Mover existencia de ' + item.product.name" (click)="moving.set(item)">
-                    {{ stock(item) }} <span class="pm" aria-hidden="true">±</span>
-                  </button>
                 } @else {
                   {{ stock(item) }}
                 }
@@ -106,10 +102,3 @@
 </div>
 
 <app-product-import-dialog [open]="importing()" (closed)="importing.set(false)" />
-
-<!-- One movement from the list (mockup web-23): the same form as the product page. -->
-<app-dialog class="move-dialog" [title]="movingTitle()" [open]="!!moving()" (closed)="moving.set(null)">
-  @if (moving(); as m) {
-    <app-stock-move-form [product]="m.product" [variants]="m.variants" (recorded)="moving.set(null)" />
-  }
-</app-dialog>

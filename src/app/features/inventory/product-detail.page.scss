@@ -205,8 +205,8 @@
   }
 }
 
-// The movement form keeps its own layout (stock-move-form.ts); here only its separation.
-app-stock-move-form {
+// The stock form keeps its own layout (stock-set-form.ts); here only its separation.
+app-stock-set-form {
   display: block;
   padding-top: 10px;
   border-top: 1px dashed var(--color-border);

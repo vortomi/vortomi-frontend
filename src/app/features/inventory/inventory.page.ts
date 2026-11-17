@@ -6,7 +6,6 @@ import { STOCK_STATUS } from '../../shared/api/labels';
 import { formatUsdCents, formatVes } from '../../shared/format/money';
 import { toCsv } from '../../shared/files/csv';
 import { downloadText } from '../../shared/files/download';
-import { Dialog } from '../../shared/ui/dialog';
 import { Icon } from '../../shared/ui/icon';
 import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
 import { Skeleton } from '../../shared/ui/skeleton';
@@ -17,7 +16,6 @@ import { ExchangeRates } from '../exchange-rates/exchange-rates.data';
 import { type InventoryItem, InventoryData } from './inventory.data';
 import { type StockStatus, toBolivares } from './inventory.rules';
 import { ProductImportDialog } from './product-import.dialog';
-import { StockMoveForm } from './stock-move-form';
 import { SALE_UNIT, formatNumber, formatQuantity, perUnit } from './sale-units';
 
 const STATUS_OPTIONS: MenuOption[] = [
@@ -34,7 +32,7 @@ const normalize = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}
 /** Products and stock of the company (documentations/05-inventario.md). */
 @Component({
   selector: 'app-inventory-page',
-  imports: [RouterLink, Dialog, Icon, Pill, Switch, ProductImportDialog, SelectMenu, Skeleton, StockMoveForm],
+  imports: [RouterLink, Icon, Pill, Switch, ProductImportDialog, SelectMenu, Skeleton],
   templateUrl: './inventory.page.html',
   styleUrl: './inventory.page.scss',
 })
@@ -50,12 +48,6 @@ export class InventoryPage {
   protected readonly category = signal('');
   protected readonly status = signal<StockStatus | ''>('');
   protected readonly importing = signal(false);
-  /** The product whose stock is being moved from the list. */
-  protected readonly moving = signal<InventoryItem | null>(null);
-  protected readonly movingTitle = computed(() => {
-    const item = this.moving();
-    return item ? `${item.product.name} · ${this.stock(item)}` : '';
-  });
   protected readonly statusOptions = STATUS_OPTIONS;
   protected readonly categoryOptions = computed<MenuOption[]>(() => [
     { value: '', label: 'Todas las categorías' },

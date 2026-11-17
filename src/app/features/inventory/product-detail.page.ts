@@ -25,7 +25,7 @@ import { InventoryData, type VariantDraft } from './inventory.data';
 import { MOVEMENT_LABEL, freeUnits, parsePriceCents, skuError, toBolivares, variantStatus } from './inventory.rules';
 import { SaleUnitPicker, type SaleSettings, defaultsFor } from './sale-unit-picker';
 import { Workspace } from '../../core/workspace';
-import { StockMoveForm } from './stock-move-form';
+import { StockSetForm } from './stock-set-form';
 import { SALE_UNIT, formatNumber, formatQuantity, parseQuantity, perUnit, takesDecimals } from './sale-units';
 import { addValue, dropValue } from './variant-combinations';
 import { VariantTypesData } from './variant-types.data';
@@ -119,7 +119,7 @@ function formOf(product: Product | null, variants: ProductVariant[], defaults: N
  */
 @Component({
   selector: 'app-product-detail-page',
-  imports: [RouterLink, Icon, Pill, SaleUnitPicker, CustomValuesForm, SelectMenu, Skeleton, FileDrop, NumericInput, CodeInput, StockMoveForm],
+  imports: [RouterLink, Icon, Pill, SaleUnitPicker, CustomValuesForm, SelectMenu, Skeleton, FileDrop, NumericInput, CodeInput, StockSetForm],
   templateUrl: './product-detail.page.html',
   styleUrl: './product-detail.page.scss',
 })
