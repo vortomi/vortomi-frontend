@@ -62,6 +62,9 @@ describe('server -> panel mappers', () => {
       type: 'text',
       body: 'Audio',
     });
+    // Written by the owner on the WhatsApp Business app (coexistence), not by someone of the team.
+    expect(toMessage(TENANT, 'c-1', { ...base, author: 'owner_app', authorUserId: null })).toMatchObject({ fromOwnerApp: true, automatic: false });
+    expect(toMessage(TENANT, 'c-1', base)).toMatchObject({ fromOwnerApp: false });
   });
 
   it('a template that never reached Meta shows why', () => {

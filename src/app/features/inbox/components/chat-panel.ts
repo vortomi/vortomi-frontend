@@ -159,6 +159,7 @@ export class ChatPanel {
       return name ? `Plantilla · ${name}` : 'Plantilla';
     }
     if (message.automatic) return 'Respuesta automática';
+    if (message.fromOwnerApp) return 'Desde el teléfono';
     return this.firstName(message.authorUserId);
   }
 

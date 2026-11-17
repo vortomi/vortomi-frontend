@@ -126,6 +126,7 @@ export function toMessage(tenantId: Id, conversationId: Id, row: ApiMessage): Me
     body: shown === 'text' && row.type !== 'text' ? previewOf(row.type, row.body) : (row.body ?? ''),
     authorUserId: row.authorUserId,
     automatic: row.author === 'bot',
+    fromOwnerApp: row.author === 'owner_app',
     templateId: row.templateId,
     status: row.status,
     createdAt: row.createdAt,

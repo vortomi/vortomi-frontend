@@ -156,6 +156,8 @@ export interface Message {
   authorUserId: Id | null;
   /** Written by the system itself (the sales agent or the away message), not by a person. */
   automatic?: boolean;
+  /** Written by the owner from the WhatsApp Business app (a number that also lives on the phone). */
+  fromOwnerApp?: boolean;
   templateId: Id | null;
   /** Product card sent from the inventory. */
   productVariantId?: Id | null;
