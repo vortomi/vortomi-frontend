@@ -2,7 +2,6 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ApiFailure } from '../../core/api/api-error';
 import type { Id } from '../../shared/api/models';
-import { formatShortDate } from '../../shared/format/date-time';
 import { Confirm } from '../../shared/ui/confirm';
 import { Icon } from '../../shared/ui/icon';
 import { NumericInput } from '../../shared/ui/numeric-input';
@@ -10,7 +9,7 @@ import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
 import { InventoryData } from './inventory.data';
-import { plainQuantity } from './stock-set-form';
+import { plainQuantity, today } from './stock-set-form';
 import { formatNumber, parseQuantity, roundQuantity, takesDecimals } from './sale-units';
 
 interface CountLine {
@@ -74,9 +73,8 @@ interface CountLine {
 
         <div class="card bar">
           <app-icon name="check" class="ok" />
-          <span><b>{{ changes().length }} {{ changes().length === 1 ? 'producto cambia' : 'productos cambian' }}</b> · los otros quedan igual</span>
-          <span class="spacer"></span>
-          <label class="reason-label">Motivo: <input class="input reason" aria-label="Motivo" [value]="reason()" (input)="reason.set(value($event))" /></label>
+          <span class="summary"><b>{{ changes().length }} {{ changes().length === 1 ? 'producto cambia' : 'productos cambian' }}</b> · los otros quedan igual</span>
+          <label class="reason-label">Motivo <input class="input reason" aria-label="Motivo" placeholder="Motivo (opcional)" [value]="shownReason()" (input)="ownReason.set(value($event))" /></label>
           <button type="button" class="btn btn--primary" [disabled]="!changes().length || invalid() || saving()" [attr.aria-busy]="saving()" (click)="save()">
             <span>Guardar</span>
           </button>
@@ -96,9 +94,10 @@ interface CountLine {
     .bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; margin-top: 12px; font-size: 13.5px;
       background: var(--color-primary-soft); border-color: var(--color-primary-soft); }
     .ok { color: var(--color-primary); --icon-size: 16px; }
-    .reason-label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-text-muted); }
-    .spacer { flex: 1; }
-    .reason { width: 220px; }
+    .summary { white-space: nowrap; }
+    /* The reason takes the room left, so it is read whole; on a phone it goes to its own line. */
+    .reason-label { flex: 1 1 280px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-text-muted); min-width: 0; }
+    .reason { flex: 1; min-width: 0; }
   `,
 })
 export class StockCountPage {
@@ -111,7 +110,8 @@ export class StockCountPage {
   protected readonly plain = plainQuantity;
   /** What the person typed per version; a version not typed keeps its shelf count. */
   protected readonly typed = signal<ReadonlyMap<Id, string>>(new Map());
-  protected readonly reason = signal(`Actualización del ${formatShortDate(new Date().toISOString(), 'America/Caracas')}`);
+  /** What the person wrote as reason; null while they leave the one Vortomi suggests. */
+  protected readonly ownReason = signal<string | null>(null);
   protected readonly saving = signal(false);
 
   protected readonly lines = computed<CountLine[]>(() =>
@@ -138,6 +138,12 @@ export class StockCountPage {
   protected readonly changes = computed(() => this.lines().filter((l) => l.counted !== null && l.difference !== 0));
   protected readonly invalid = computed(() => this.lines().some((l) => l.counted === null));
   private readonly dirty = computed(() => this.changes().length > 0);
+  /** The suggested reason, following what changes: «Actualización de 2 productos · 17 nov 2026». */
+  private readonly autoReason = computed(() => {
+    const count = this.changes().length;
+    return count ? `Actualización de ${count} ${count === 1 ? 'producto' : 'productos'} · ${today()}` : '';
+  });
+  protected readonly shownReason = computed(() => this.ownReason() ?? this.autoReason());
 
   constructor() {
     inject(UnsavedChanges).track(this.dirty);
@@ -169,7 +175,7 @@ export class StockCountPage {
       action: async () => {
         const result = await this.data.recordCount(
           changes.map((l) => ({ variantId: l.variantId, counted: l.counted! })),
-          this.reason(),
+          this.shownReason().trim() || this.autoReason(),
         );
         if ('error' in result) throw new ApiFailure(0, 'count_refused', result.error);
         changed = result.changed;
@@ -179,6 +185,7 @@ export class StockCountPage {
     if (!done) return;
     // Saved: nothing is pending any more, so leaving does not ask.
     this.typed.set(new Map());
+    this.ownReason.set(null);
     this.toaster.show(changed === 1 ? 'Existencias actualizadas: 1 producto' : `Existencias actualizadas: ${changed} productos`);
     void this.router.navigateByUrl('/inventory');
   }

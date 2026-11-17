@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import type { Product, ProductVariant } from '../../shared/api/models';
 import { InventoryData } from './inventory.data';
-import { StockSetForm, plainQuantity } from './stock-set-form';
+import { StockSetForm, plainQuantity, today } from './stock-set-form';
 
 const PRODUCT = { id: 'p1', name: 'Café con leche', saleUnit: 'unit', stockMode: 'units' } as Product;
 const VARIANT = { id: 'v1', productId: 'p1', name: 'Única', onHand: 100, reserved: 0 } as ProductVariant;
@@ -30,7 +30,8 @@ describe('StockSetForm (the inventory list box)', () => {
     expect(host.textContent).toContain('−50');
     [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Guardar'))!.click();
     await fixture.whenStable();
-    expect(data.recordCount).toHaveBeenCalledWith([{ variantId: 'v1', counted: 50 }], 'Actualizado desde la lista');
+    // The reason follows the change until the person writes their own.
+    expect(data.recordCount).toHaveBeenCalledWith([{ variantId: 'v1', counted: 50 }], 'De 100 a 50 · ' + today());
     expect(saved).toHaveBeenCalled();
   });
 

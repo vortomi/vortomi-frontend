@@ -206,9 +206,9 @@
 }
 
 // The stock form keeps its own layout (stock-set-form.ts); here only its separation.
+// Only its separation: its own layout (a column with gaps) stays the component's.
 app-stock-set-form {
-  display: block;
-  padding-top: 10px;
+  padding-top: 12px;
   border-top: 1px dashed var(--color-border);
 }
 

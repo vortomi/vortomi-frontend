@@ -5,6 +5,7 @@ import type { Product, ProductVariant } from '../../shared/api/models';
 import { Confirm } from '../../shared/ui/confirm';
 import { InventoryData, type InventoryItem } from './inventory.data';
 import { StockCountPage } from './stock-count.page';
+import { today } from './stock-set-form';
 
 const product = (id: string, name: string, saleUnit: Product['saleUnit'] = 'unit', stockMode: Product['stockMode'] = 'units') =>
   ({ id, name, saleUnit, stockMode }) as Product;
@@ -52,7 +53,7 @@ describe('StockCountPage', () => {
     expect(saveButton().disabled).toBe(false);
     saveButton().click();
     await fixture.whenStable();
-    expect(data.recordCount).toHaveBeenCalledWith([{ variantId: 'v1', counted: 26 }], expect.stringContaining('Actualización del'));
+    expect(data.recordCount).toHaveBeenCalledWith([{ variantId: 'v1', counted: 26 }], 'Actualización de 1 producto · ' + today());
     expect(navigate).toHaveBeenCalledWith('/inventory');
   });
 });
