@@ -52,6 +52,11 @@ describe('platformAlerts', () => {
     expect(alerts[0]?.severity).toBe('critical');
   });
 
+  it('says why a number stopped: the owner disconnected it from the phone', () => {
+    const [alert] = platformAlerts([tenant()], [channel({ status: 'disconnected', statusReason: 'owner_disconnected' })], NOW);
+    expect(alert?.text).toContain('El dueño desconectó el número Ventas desde su teléfono');
+  });
+
   it('warns a week before Meta access expires', () => {
     const [alert] = platformAlerts([tenant()], [channel({ accessExpiresAt: '2026-10-14T00:00:00-04:00' })], NOW);
     expect(alert?.kind).toBe('access_expiring');

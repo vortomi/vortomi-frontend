@@ -42,7 +42,7 @@ export function platformAlerts(tenants: Tenant[], channels: ChannelAccount[], no
           id: `${channel.id}:disconnected`,
           severity: 'critical',
           kind: 'channel_disconnected',
-          text: `Quitó nuestro acceso al número ${channel.label}. Sus mensajes no están entrando: hay que volver a conectarlo.`,
+          text: disconnectedText(channel),
         });
         continue;
       }
@@ -73,4 +73,23 @@ export function platformAlerts(tenants: Tenant[], channels: ChannelAccount[], no
     }
   }
   return alerts.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'critical' ? -1 : 1));
+}
+
+/** What our team reads about a number that stopped working, by why Meta said it did. */
+function disconnectedText(channel: ChannelAccount): string {
+  const name = channel.label;
+  switch (channel.statusReason) {
+    case 'owner_disconnected':
+      return `El dueño desconectó el número ${name} desde su teléfono. Sus mensajes no están entrando: llamarlo para reconectarlo.`;
+    case 'number_changed':
+      return `El número ${name} se registró de nuevo o cambió de teléfono y se desconectó. Hay que reconectarlo.`;
+    case 'inactive':
+      return `El número ${name} se desconectó porque no abrieron WhatsApp Business en el teléfono. Hay que reconectarlo.`;
+    case 'banned':
+      return `Meta bloqueó el número ${name}. Revisar el motivo con el cliente.`;
+    case 'account_deleted':
+      return `Se eliminó la cuenta de WhatsApp del número ${name}.`;
+    default:
+      return `Quitó nuestro acceso al número ${name}. Sus mensajes no están entrando: hay que volver a conectarlo.`;
+  }
 }

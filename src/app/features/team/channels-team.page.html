@@ -22,6 +22,9 @@
             <dt>Pago a Meta</dt><dd><a class="link" [href]="billingUrl(channel)" target="_blank" rel="noopener noreferrer">Revisar en Meta ↗</a></dd>
           }
         </dl>
+        @if (channel.status === 'disconnected' && session.isTenantAdmin() && signup.state() === 'ready' && channel.statusReason !== 'banned' && channel.statusReason !== 'account_deleted') {
+          <button type="button" class="btn btn--sm" [disabled]="signup.connecting()" [attr.aria-busy]="signup.connecting()" (click)="reconnect()"><span>Reconectar con WhatsApp</span></button>
+        }
         @if (expiry(channel); as notice) {
           <div class="form-alert" [class.warn]="notice.soon" [class.info]="!notice.soon">
             <app-icon name="clock" />

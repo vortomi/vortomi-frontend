@@ -75,6 +75,15 @@ export interface Membership {
 }
 
 export type ChannelStatus = 'connected' | 'disconnected' | 'restricted';
+export type ChannelStatusReason =
+  | 'owner_disconnected'
+  | 'number_changed'
+  | 'inactive'
+  | 'access_removed'
+  | 'banned'
+  | 'ban_scheduled'
+  | 'restricted'
+  | 'account_deleted';
 export type QualityRating = 'high' | 'medium' | 'low';
 
 export interface ChannelAccount {
@@ -85,6 +94,8 @@ export interface ChannelAccount {
   phoneNumberId: string;
   wabaId: string;
   status: ChannelStatus;
+  /** Why it is disconnected or restricted (Meta's account_update); null while connected. */
+  statusReason?: ChannelStatusReason | null;
   qualityRating: QualityRating;
   /** New customers per day Meta allows this number to contact. */
   messagingTier: number;

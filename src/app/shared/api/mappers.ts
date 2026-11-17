@@ -288,6 +288,7 @@ export function toChannel(tenantId: Id, row: ApiChannel, index: number): Channel
     phoneNumberId: row.phoneNumberId,
     wabaId: row.wabaId,
     status: row.status,
+    statusReason: row.statusReason ?? null,
     color: CHANNEL_COLORS[index % CHANNEL_COLORS.length]!,
     // Number health is not on the server yet (doc. 09, B13): neutral values.
     qualityRating: 'high',

@@ -31,6 +31,8 @@ export interface ApiChannel {
   phoneNumberId: string;
   wabaId: string;
   status: 'connected' | 'disconnected' | 'restricted';
+  /** Why it is not connected (Meta's account_update); null while connected. */
+  statusReason?: 'owner_disconnected' | 'number_changed' | 'inactive' | 'access_removed' | 'banned' | 'ban_scheduled' | 'restricted' | 'account_deleted' | null;
   /** Also on the owner's WhatsApp Business app (the company's list has it; the console's does not). */
   coexistence?: boolean;
   /** When the connection with Meta stops working; null: it does not expire. */
