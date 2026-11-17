@@ -20,4 +20,6 @@ export const HANDOFF_LABEL: Record<HandoffReason, string> = {
   agent_unsure: 'El agente no supo responder',
   agent_error: 'El agente no pudo responder',
   limit_reached: 'Se llegó al tope del mes',
+  // The company's own product system could not be read: the customer was told «enseguida te confirmamos».
+  catalog_unavailable: 'No se pudo leer el catálogo',
 };

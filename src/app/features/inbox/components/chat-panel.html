@@ -30,6 +30,8 @@
 @if (conversation().handoffReason; as reason) {
   @if (reason === 'order_placed') {
     <p class="handoff" role="status"><app-icon name="alert" />Pedido en curso: el agente solo le dice al cliente cómo va su pedido; cualquier otra cosa te la pasa. Vuelve a vender cuando completes o canceles el pedido.</p>
+  } @else if (reason === 'catalog_unavailable') {
+    <p class="handoff" role="status"><app-icon name="alert" />No se pudo leer el catálogo de la empresa, así que el agente no dio precios. Al cliente solo se le dijo «¡Enseguida te confirmamos, danos un momento!»: respóndele tú. El agente no vuelve a responder aquí hasta que resuelvas la conversación o la devuelvas al agente.</p>
   } @else {
     <p class="handoff" role="status"><app-icon name="alert" />El agente pasó esta conversación a tu equipo: {{ handoffLabel[reason].toLowerCase() }}. Ya no responde aquí hasta que resuelvas la conversación, cierres su pedido o la devuelvas al agente.</p>
   }

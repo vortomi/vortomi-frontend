@@ -76,7 +76,7 @@ export interface ApiConversation {
   id: string;
   status: 'open' | 'resolved';
   assigneeIds: string[];
-  handoffReason: 'customer_asked' | 'purchase' | 'order_placed' | 'agent_unsure' | 'agent_error' | 'limit_reached' | null;
+  handoffReason: 'customer_asked' | 'purchase' | 'order_placed' | 'agent_unsure' | 'agent_error' | 'limit_reached' | 'catalog_unavailable' | null;
   handoffAt: string | null;
   lastActivityAt: string;
   channelAccountId: string;

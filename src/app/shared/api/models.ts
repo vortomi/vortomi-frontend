@@ -472,7 +472,7 @@ export interface AuditEntry {
 }
 
 /** Why the sales agent passed a conversation to a person (same codes as the server). */
-export type HandoffReason = 'customer_asked' | 'purchase' | 'order_placed' | 'agent_unsure' | 'agent_error' | 'limit_reached';
+export type HandoffReason = 'customer_asked' | 'purchase' | 'order_placed' | 'agent_unsure' | 'agent_error' | 'limit_reached' | 'catalog_unavailable';
 export type AgentTone = 'friendly' | 'formal' | 'brief';
 export type AgentSchedule = 'always' | 'after_hours';
 
