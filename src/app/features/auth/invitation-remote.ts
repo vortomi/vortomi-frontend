@@ -5,6 +5,12 @@ import { SUPABASE } from '../../core/api/supabase';
 import { Auth } from '../../core/auth';
 import type { ApiInvitationPreview } from '../../shared/api/contract';
 
+/** A company invitation, or one to our own console (/platform-invitation/:token). */
+export type InvitationKind = 'company' | 'platform';
+
+/** What a console invitation looks like on the same page: our console instead of a company. */
+export const CONSOLE_NAME = 'Consola de Vortomi';
+
 export type InvitationLookup = { status: 'valid'; preview: ApiInvitationPreview } | { status: 'expired' | 'missing' };
 
 /**
@@ -18,9 +24,12 @@ export class InvitationRemote {
   private readonly supabase = inject(SUPABASE);
   private readonly auth = inject(Auth);
 
-  async lookup(token: string): Promise<InvitationLookup> {
+  async lookup(token: string, kind: InvitationKind = 'company'): Promise<InvitationLookup> {
     try {
-      const preview = await this.api.get<ApiInvitationPreview>(`public/invitations/${encodeURIComponent(token)}`);
+      const preview =
+        kind === 'platform'
+          ? { ...(await this.api.get<Omit<ApiInvitationPreview, 'companyName' | 'role'>>(`public/platform-invitations/${encodeURIComponent(token)}`)), companyName: CONSOLE_NAME, role: 'admin' as const }
+          : await this.api.get<ApiInvitationPreview>(`public/invitations/${encodeURIComponent(token)}`);
       if (new Date(preview.expiresAt).getTime() < Date.now()) return { status: 'expired' };
       return { status: 'valid', preview };
     } catch (error) {
@@ -32,7 +41,7 @@ export class InvitationRemote {
    * Creates the account (or signs in, when the email already has one), accepts and opens the
    * company. Resolves to what to tell the person when something stops it, or null when inside.
    */
-  async accept(token: string, preview: ApiInvitationPreview, password: string, name: string): Promise<string | null> {
+  async accept(token: string, preview: ApiInvitationPreview, password: string, name: string, kind: InvitationKind = 'company'): Promise<string | null> {
     const email = preview.email;
     if (preview.hasAccount) {
       const { error } = await this.supabase.auth.signInWithPassword({ email, password });
@@ -44,7 +53,11 @@ export class InvitationRemote {
       if (!data.session) return 'Te enviamos un correo para confirmar tu cuenta. Confírmala y vuelve a abrir este enlace.';
     }
     try {
-      const { tenantId } = await this.api.post<{ tenantId: string }>(`invitations/${encodeURIComponent(token)}/accept`, { name });
+      // A console invitation opens no company: the console then asks for the person's own code.
+      const tenantId =
+        kind === 'platform'
+          ? (await this.api.post(`platform-invitations/${encodeURIComponent(token)}/accept`, { name }), null)
+          : (await this.api.post<{ tenantId: string }>(`invitations/${encodeURIComponent(token)}/accept`, { name })).tenantId;
       const { data } = await this.supabase.auth.getUser();
       await this.auth.startSession(data.user?.id ?? '', tenantId);
       return null;

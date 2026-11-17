@@ -28,6 +28,11 @@ export const PLATFORM_ROUTES: Routes = [
     loadComponent: () => import('./usage.page').then((m) => m.UsagePage),
   },
   {
+    path: 'team',
+    title: 'Equipo · Consola',
+    loadComponent: () => import('./platform-team.page').then((m) => m.PlatformTeamPage),
+  },
+  {
     path: 'subscriptions',
     loadComponent: () => import('../../shared/ui/coming-soon').then((m) => m.ComingSoon),
     data: { title: 'Suscripciones', mockup: 'web-7-plataforma' },

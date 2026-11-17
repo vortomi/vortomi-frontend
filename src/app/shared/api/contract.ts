@@ -292,6 +292,29 @@ export interface ApiInvitation {
 }
 
 /** What the invitation page shows before the person signs in (/public/invitations/:token). */
+/** GET /platform/team: who enters our console, their open invitations and the team's history. */
+export interface ApiPlatformTeam {
+  admins: { userId: string; name: string; email: string; createdAt: string; hasCode: boolean; isYou: boolean }[];
+  invitations: { id: string; name: string; email: string; expiresAt: string }[];
+  events: { action: PlatformTeamAction; actorName: string; subjectEmail: string; createdAt: string }[];
+}
+
+export type PlatformTeamAction =
+  | 'admin.invited'
+  | 'admin.invitation_renewed'
+  | 'admin.invitation_revoked'
+  | 'admin.joined'
+  | 'admin.code_reset'
+  | 'admin.removed';
+
+/** GET /public/platform-invitations/:token */
+export interface ApiPlatformInvitationPreview {
+  email: string;
+  name: string;
+  expiresAt: string;
+  hasAccount: boolean;
+}
+
 export interface ApiInvitationPreview {
   companyName: string;
   email: string;

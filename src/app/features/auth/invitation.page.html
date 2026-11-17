@@ -8,9 +8,9 @@
       @if (view(); as v) {
         <h2>{{ v.hasAccount ? 'Entra para aceptar' : 'Crea tu contraseña' }}</h2>
         <p class="lead">
-          {{ v.inviter ?? 'Tu empresa' }} te invitó a entrar como <b>{{ roleLabel() }}</b>.
+          {{ v.inviter ?? (kind() === 'platform' ? 'El equipo de Vortomi' : 'Tu empresa') }} te invitó a entrar como <b>{{ roleLabel() }}</b>.
           @if (v.hasAccount) {
-            Ya tienes una cuenta en {{ brand.name }}: escribe tu contraseña y la empresa se agrega a las tuyas.
+            Ya tienes una cuenta en {{ brand.name }}: escribe tu contraseña y {{ kind() === 'platform' ? 'la consola se agrega a tu cuenta' : 'la empresa se agrega a las tuyas' }}.
           } @else {
             Solo tú conocerás tu contraseña; nadie de {{ brand.name }} puede verla.
           }

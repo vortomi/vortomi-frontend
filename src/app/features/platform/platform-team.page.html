@@ -1,0 +1,105 @@
+<header class="page-top">
+  <h1>Equipo de la plataforma</h1>
+  <span class="sub">Personas de Vortex que entran a esta consola</span>
+  <span class="spacer"></span>
+  @if (remote) {
+    <button type="button" class="btn btn--primary" (click)="openInvite()"><app-icon name="plus" /><span>Invitar administrador</span></button>
+  }
+</header>
+
+<div class="page-body">
+  @if (!remote) {
+    <div class="card box"><p class="muted">El equipo de la consola solo se maneja con el servidor real.</p></div>
+  } @else if (loadError(); as message) {
+    <div class="card box">
+      <p class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</p>
+      <button type="button" class="btn" (click)="load()"><span>Reintentar</span></button>
+    </div>
+  } @else if (team(); as t) {
+    <div class="card table-card">
+      <table class="data-table">
+        <thead>
+          <tr><th>Persona</th><th>Código de seguridad</th><th>Desde</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (admin of t.admins; track admin.userId) {
+            <tr>
+              <td>
+                <div class="person">
+                  <app-avatar [name]="admin.name" [seed]="admin.userId" />
+                  <div><b>{{ admin.name }}{{ admin.isYou ? ' (tú)' : '' }}</b><small>{{ admin.email }}</small></div>
+                </div>
+              </td>
+              <td>
+                @if (admin.hasCode) {
+                  <app-pill tone="green" [dot]="true">Activado</app-pill>
+                } @else {
+                  <app-pill tone="amber" [dot]="true">Lo configura al entrar</app-pill>
+                }
+              </td>
+              <td class="muted">{{ date(admin.createdAt) }}</td>
+              <td class="actions">
+                @if (!admin.isYou) {
+                  <button type="button" class="btn btn--sm" [disabled]="busy()" (click)="resetCode(admin)"><span>Reiniciar código</span></button>
+                  <button type="button" class="btn btn--sm btn--danger" [disabled]="busy()" (click)="remove(admin)"><span>Quitar acceso</span></button>
+                }
+              </td>
+            </tr>
+          }
+          @for (invitation of t.invitations; track invitation.id) {
+            <tr>
+              <td>
+                <div class="person">
+                  <app-avatar [name]="invitation.name" [seed]="invitation.id" />
+                  <div><b>{{ invitation.name }}</b><small>{{ invitation.email }}</small></div>
+                </div>
+              </td>
+              <td><app-pill tone="blue" [dot]="true">Invitación enviada</app-pill></td>
+              <td class="muted">Vence el {{ date(invitation.expiresAt) }}</td>
+              <td class="actions">
+                <button type="button" class="btn btn--sm" [disabled]="busy()" (click)="renew(invitation)"><span>Nuevo enlace</span></button>
+                <button type="button" class="btn btn--sm btn--danger" [disabled]="busy()" (click)="revoke(invitation)"><span>Anular</span></button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <p class="form-alert info"><app-icon name="lock" /><span>Nadie de esta lista puede leer conversaciones de las empresas. Para entrar a la consola, cada uno usa su contraseña <b>y</b> el código de 6 números de su propio teléfono.</span></p>
+
+    @if (t.events.length) {
+      <section class="card box">
+        <h2>Historial</h2>
+        <ul class="history">
+          @for (event of t.events; track $index) {
+            <li><span class="muted">{{ when(event.createdAt) }}</span><span><b>{{ event.actorName }}</b> {{ actionText(event) }}</span></li>
+          }
+        </ul>
+      </section>
+    }
+  } @else {
+    <div class="card table-card"><app-skeleton kind="table" [rows]="3" [cols]="4" /></div>
+  }
+</div>
+
+<app-dialog title="Invitar administrador de la consola" [open]="inviting()" (closed)="inviting.set(false)">
+  <p class="lead">Verá <b>todas las empresas</b> de Vortomi y podrá crearlas, suspenderlas y conectar sus números. No verá conversaciones.</p>
+  <div class="field">
+    <label for="team-name">Nombre</label>
+    <input id="team-name" class="input" autocomplete="off" [value]="draft().name" (input)="setDraft('name', $event)" />
+  </div>
+  <div class="field">
+    <label for="team-email">Correo</label>
+    <input id="team-email" class="input" type="email" autocomplete="off" [value]="draft().email" (input)="setDraft('email', $event)" />
+  </div>
+  @if (inviteError(); as message) {
+    <p class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</p>
+  }
+  <div dialog-actions>
+    <button type="button" class="btn" (click)="inviting.set(false)"><span>Cancelar</span></button>
+    <button type="button" class="btn btn--primary" [disabled]="busy()" [attr.aria-busy]="busy()" (click)="invite()"><span>Crear invitación</span></button>
+  </div>
+</app-dialog>
+
+<app-invitation-link-dialog [link]="link()?.link ?? null" [name]="link()?.name ?? ''" (closed)="link.set(null)" />

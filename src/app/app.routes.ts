@@ -60,6 +60,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/auth/invitation.page').then((m) => m.InvitationPage),
       },
       {
+        // An invitation to our own console: same page, the console instead of a company.
+        path: 'platform-invitation/:token',
+        title: 'Invitación a la consola',
+        data: { kind: 'platform' },
+        loadComponent: () => import('./features/auth/invitation.page').then((m) => m.InvitationPage),
+      },
+      {
         path: 'select-company',
         title: 'Elegir empresa',
         canActivate: [signedInGuard],

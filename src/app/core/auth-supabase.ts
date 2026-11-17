@@ -120,11 +120,11 @@ export class SupabaseAuth extends Auth {
   }
 
   /** After accepting an invitation: Supabase already holds the new session; open that company. */
-  override async startSession(_userId: Id, tenantId: Id): Promise<void> {
+  override async startSession(_userId: Id, tenantId: Id | null): Promise<void> {
     const me = await this.remote.loadMe();
     this.signedIn.set(me.user.id);
     this.activeTenant.set(tenantId);
-    await this.openCompany(tenantId);
+    if (tenantId) await this.openCompany(tenantId);
   }
 
   override signOut(): void {

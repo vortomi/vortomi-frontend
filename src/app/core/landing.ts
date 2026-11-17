@@ -26,7 +26,7 @@ export function resolveLanding({ isSuperAdmin, enterableTenantIds, returnUrl }: 
   return { path: '/select-company', selectTenantId: null };
 }
 
-const AUTH_PAGES = ['/login', '/forgot-password', '/reset-password', '/invitation', '/select-company'];
+const AUTH_PAGES = ['/login', '/forgot-password', '/reset-password', '/invitation', '/platform-invitation', '/select-company'];
 
 /**
  * Accepts only paths inside this app. Rejects absolute URLs, protocol-relative ones ("//evil.com")

@@ -96,6 +96,10 @@ const MESSAGES: Record<string, string> = {
   phone_number_taken: 'Ese número ya está conectado a una empresa de la plataforma.',
   number_not_in_account: 'Ese número no está en esa cuenta de WhatsApp. Búscalo de nuevo.',
   token_required: 'Para esa cuenta hace falta el token de acceso.',
+  already_platform_admin: 'Esa persona ya entra a la consola.',
+  platform_admin_not_found: 'Esa persona ya no es administradora de la consola.',
+  not_on_yourself: 'Eso no se puede hacer sobre tu propia cuenta. Pídeselo a otro administrador de la consola.',
+  not_a_draft: 'Solo se puede pedir al dueño que conecte el número en un alta sin número todavía.',
   not_discardable: 'Solo se puede descartar un alta a medias que todavía no tiene número, personas ni invitaciones. Para lo demás usa «Dar de baja».',
   meta_refused:
     'Meta no deja ver esa cuenta con ese token. Revisa el identificador y que en Meta Business el usuario del sistema tenga asignadas la cuenta de WhatsApp y también su «cuenta de mensajes».',

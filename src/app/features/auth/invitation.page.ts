@@ -16,7 +16,7 @@ import { PasswordMeter } from '../../shared/ui/password-meter';
 import { Skeleton } from '../../shared/ui/skeleton';
 import { PasswordField } from '../../shared/ui/password-field';
 import { InvitationAcceptance } from './invitation-acceptance';
-import { InvitationRemote } from './invitation-remote';
+import { type InvitationKind, InvitationRemote } from './invitation-remote';
 import { invitationStatus } from './invitation-status';
 
 interface AcceptModel {
@@ -67,6 +67,8 @@ export class InvitationPage {
 
   /** From the route: /invitation/:token */
   readonly token = input<string>();
+  /** From the route data: 'platform' for /platform-invitation/:token (our console). */
+  readonly kind = input<InvitationKind>('company');
 
   private readonly remoteState = signal<PageState>({ status: 'loading' });
   private readonly mockInvitation = computed(() => this.directory.invitations().find((i) => i.demoToken === this.token()) ?? null);
@@ -96,7 +98,9 @@ export class InvitationPage {
     const state = this.state();
     return state.status === 'valid' ? state.view : null;
   });
-  protected readonly roleLabel = computed(() => (this.view()?.role === 'admin' ? 'administración' : 'agente'));
+  protected readonly roleLabel = computed(() =>
+    this.kind() === 'platform' ? 'administración de la consola' : this.view()?.role === 'admin' ? 'administración' : 'agente',
+  );
   protected readonly expiresLabel = computed(() => {
     const view = this.view();
     if (!view) return '';
@@ -128,7 +132,7 @@ export class InvitationPage {
       if (!remote || !token) return;
       untracked(() => {
         this.remoteState.set({ status: 'loading' });
-        void remote.lookup(token).then((found) => this.remoteState.set(found.status === 'valid' ? { status: 'valid', view: fromPreview(found.preview, token) } : found));
+        void remote.lookup(token, untracked(this.kind)).then((found) => this.remoteState.set(found.status === 'valid' ? { status: 'valid', view: fromPreview(found.preview, token) } : found));
       });
     });
     // Prefill the name the inviter typed; the person can correct it.
@@ -149,7 +153,8 @@ export class InvitationPage {
         this.error.set(problem);
         return undefined;
       }
-      await this.router.navigateByUrl('/inbox');
+      // The console then asks for the person's own authenticator code (superAdminGuard).
+      await this.router.navigateByUrl(this.kind() === 'platform' ? '/platform' : '/inbox');
       return undefined;
     };
     // Two forms, one action: an existing account only types its password.
@@ -162,7 +167,7 @@ export class InvitationPage {
     if (this.remote) {
       const state = this.remoteState();
       if (state.status !== 'valid') return 'Esta invitación ya no es válida.';
-      return this.remote.accept(token, { companyName: view.companyName, email: view.email, name: view.name, role: view.role, expiresAt: view.expiresAt, hasAccount: view.hasAccount }, password, name);
+      return this.remote.accept(token, { companyName: view.companyName, email: view.email, name: view.name, role: view.role, expiresAt: view.expiresAt, hasAccount: view.hasAccount }, password, name, this.kind());
     }
     const invitation = this.mockInvitation();
     if (!invitation) return 'Esta invitación ya no es válida.';
