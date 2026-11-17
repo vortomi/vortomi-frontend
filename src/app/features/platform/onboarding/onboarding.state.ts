@@ -165,7 +165,7 @@ export class OnboardingState {
       this.channel.set({
         wabaId: channel.wabaId,
         number: { phoneNumberId: channel.phoneNumberId, displayNumber: channel.displayNumber, verifiedName: tenant.name, nameStatus: 'approved', takenBy: null },
-        account: { businessVerified: false, hasPaymentMethod: false },
+        account: { businessVerified: null, hasPaymentMethod: null },
         label: channel.label,
         profile: profileFrom(this.company()),
       });
@@ -396,7 +396,7 @@ export class OnboardingState {
       this.channel.set({
         wabaId: channel.wabaId,
         number: { phoneNumberId: channel.phoneNumberId, displayNumber: channel.displayNumber, verifiedName: detail.name, nameStatus: 'approved', takenBy: null },
-        account: { businessVerified: false, hasPaymentMethod: false },
+        account: { businessVerified: null, hasPaymentMethod: null },
         label: channel.label,
         profile: profileFrom(this.company()),
       });

@@ -327,5 +327,7 @@ export interface ApiPlatformTenantDetail extends Omit<ApiPlatformTenant, 'channe
 
 export interface ApiWabaLookup {
   wabaTakenBy: string | null;
+  /** Meta's business verification of the account's owner; null when Meta did not say. */
+  businessVerified: boolean | null;
   numbers: { phoneNumberId: string; displayNumber: string; verifiedName: string; nameStatus: string; takenBy: string | null; alreadyHere: boolean }[];
 }

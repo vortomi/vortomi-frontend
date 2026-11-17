@@ -73,4 +73,9 @@ describe('connectionChecks', () => {
       'Falta el método de pago en Meta',
     ]);
   });
+
+  it('says nothing, good or bad, about what was not checked', () => {
+    const titles = connectionChecks({ businessVerified: null, hasPaymentMethod: null }, number).map((c) => c.title);
+    expect(titles.filter((t) => /verificado|pago/i.test(t))).toEqual([]);
+  });
 });

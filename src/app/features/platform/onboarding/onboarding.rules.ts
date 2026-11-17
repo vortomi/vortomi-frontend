@@ -18,13 +18,14 @@ export interface WabaNumber {
   takenBy: string | null;
 }
 
-/** What Meta reports about the customer's account, besides its numbers. */
+/** What Meta reports about the customer's account, besides its numbers. null: not checked, and never shown as if it were. */
 export interface WabaAccount {
-  businessVerified: boolean;
-  hasPaymentMethod: boolean;
+  businessVerified: boolean | null;
+  hasPaymentMethod: boolean | null;
 }
 
-export type WabaLookup = { status: 'found'; account: WabaAccount; numbers: WabaNumber[] } | { status: 'not_found' };
+/** `message`: why the server could not read the account (Meta's refusal, the session...), when it said. */
+export type WabaLookup = { status: 'found'; account: WabaAccount; numbers: WabaNumber[] } | { status: 'not_found'; message?: string };
 
 /**
  * Simulates asking Meta for the numbers of a WhatsApp account and checks them against the
@@ -125,17 +126,26 @@ export function connectionChecks(account: WabaAccount, number: WabaNumber): Chec
       : number.nameStatus === 'pending_review'
         ? warn(`Nombre visible ${name} en revisión de Meta`, 'Cuando lo apruebe, Meta nos avisa y lo aplicamos sin hacer nada más.')
         : warn(`Meta rechazó el nombre ${name}`, 'Hay que proponer otro en su WhatsApp Manager, parecido al nombre del negocio.'),
-    account.businessVerified
-      ? ok('Negocio verificado en Meta', 'Puede subir de límite de mensajes según su uso')
-      : warn(
-          'Su negocio no está verificado en Meta',
-          `Puede escribir primero a ${UNVERIFIED_MESSAGING_LIMIT} clientes por día entre todos sus números. Verificarlo con su RIF es la vía para subir. Se puede seguir.`,
-        ),
-    account.hasPaymentMethod
-      ? ok('Método de pago en Meta', 'Las plantillas y las respuestas que pasen de las gratis se cobran ahí')
-      : warn(
-          'Falta el método de pago en Meta',
-          'Puede recibir y responder dentro de las 1.000 respuestas gratis del mes por número; las plantillas no salen. Se puede seguir y pedírselo después.',
-        ),
+    // What was not checked is left out: the list only says what is known.
+    ...(account.businessVerified === null
+      ? []
+      : [
+          account.businessVerified
+            ? ok('Negocio verificado en Meta', 'Puede subir de límite de mensajes según su uso')
+            : warn(
+                'Su negocio no está verificado en Meta',
+                `Puede escribir primero a ${UNVERIFIED_MESSAGING_LIMIT} clientes por día entre todos sus números. Verificarlo con su RIF es la vía para subir. Se puede seguir.`,
+              ),
+        ]),
+    ...(account.hasPaymentMethod === null
+      ? []
+      : [
+          account.hasPaymentMethod
+            ? ok('Método de pago en Meta', 'Las plantillas y las respuestas que pasen de las gratis se cobran ahí')
+            : warn(
+                'Falta el método de pago en Meta',
+                'Puede recibir y responder dentro de las 1.000 respuestas gratis del mes por número; las plantillas no salen. Se puede seguir y pedírselo después.',
+              ),
+        ]),
   ];
 }

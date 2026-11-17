@@ -47,10 +47,12 @@
         </button>
       </div>
 
-      @if (lookup()?.status === 'not_found') {
-        <div class="form-alert mt" role="alert">
-          <app-icon name="alert" />No encontramos esa cuenta o todavía no nos dio acceso. Revisa el identificador con el cliente.
-        </div>
+      @if (lookup(); as result) {
+        @if (result.status === 'not_found') {
+          <div class="form-alert mt" role="alert">
+            <app-icon name="alert" />{{ result.message ?? 'No encontramos esa cuenta o todavía no nos dio acceso. Revisa el identificador con el cliente.' }}
+          </div>
+        }
       }
 
       @if (numbers().length) {

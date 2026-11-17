@@ -58,8 +58,8 @@ export class OnboardingRemote {
       const found = await this.api.lookup(tenantId, wabaId.replace(/\D/g, ''), accessToken.trim());
       return {
         status: 'found',
-        // Meta does not tell us these without more permissions; the checks after connecting say what is known.
-        account: { businessVerified: true, hasPaymentMethod: true },
+        // Verification comes from Meta; Meta has no clear field for the payment method, so it stays unchecked.
+        account: { businessVerified: found.businessVerified, hasPaymentMethod: null },
         numbers: found.numbers.map((n) => ({
           phoneNumberId: n.phoneNumberId,
           displayNumber: n.displayNumber,
@@ -68,8 +68,9 @@ export class OnboardingRemote {
           takenBy: found.wabaTakenBy ?? n.takenBy,
         })),
       };
-    } catch {
-      return { status: 'not_found' };
+    } catch (error) {
+      // Why it failed, as the server said (Meta's refusal, an expired session...): never a guess.
+      return { status: 'not_found', message: toApiFailure(error).message };
     }
   }
 

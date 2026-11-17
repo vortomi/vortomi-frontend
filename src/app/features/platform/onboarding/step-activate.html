@@ -61,15 +61,21 @@
           <tr>
             <td>Verificación del negocio</td>
             <td>
-              @if (channel?.account?.businessVerified) { <app-pill tone="green" [dot]="true">Verificado</app-pill> }
-              @else { <app-pill tone="amber" [dot]="true">Sin verificar</app-pill><span class="x">Puede activarse. Escribe primero a hasta {{ unverifiedLimit }} clientes por día entre todos sus números hasta que verifique su negocio con el RIF.</span> }
+              @switch (channel?.account?.businessVerified) {
+                @case (true) { <app-pill tone="green" [dot]="true">Verificado</app-pill><span class="x">Según Meta.</span> }
+                @case (false) { <app-pill tone="amber" [dot]="true">Sin verificar</app-pill><span class="x">Según Meta. Puede activarse. Escribe primero a hasta {{ unverifiedLimit }} clientes por día entre todos sus números hasta que verifique su negocio con el RIF.</span> }
+                @default { <app-pill [dot]="true">Sin comprobar</app-pill><span class="x">Meta no lo informó. Revísalo en la configuración del negocio en Meta.</span> }
+              }
             </td>
           </tr>
           <tr>
             <td>Método de pago en Meta</td>
             <td>
-              @if (channel?.account?.hasPaymentMethod) { <app-pill tone="green" [dot]="true">Listo</app-pill> }
-              @else { <app-pill tone="amber" [dot]="true">Falta</app-pill><span class="x">Puede activarse igual. Se le recordará en su panel hasta que lo agregue.</span> }
+              @switch (channel?.account?.hasPaymentMethod) {
+                @case (true) { <app-pill tone="green" [dot]="true">Listo</app-pill> }
+                @case (false) { <app-pill tone="amber" [dot]="true">Falta</app-pill><span class="x">Puede activarse igual. Se le recordará en su panel hasta que lo agregue.</span> }
+                @default { <app-pill [dot]="true">Sin comprobar</app-pill><span class="x">Meta no lo informa por aquí. Revísalo en el Administrador de WhatsApp de la empresa. Puede activarse igual.</span> }
+              }
             </td>
           </tr>
         </table>
