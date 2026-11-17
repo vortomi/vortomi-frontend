@@ -193,6 +193,22 @@ export class PlatformData {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
+  /** Deletes a sign-up left half way and still empty. Resolves to an error message, or null once it is gone. */
+  async discardDraft(tenantId: Id): Promise<string | null> {
+    const remote = this.remote;
+    if (remote) {
+      try {
+        await remote.discard(tenantId);
+        await this.load();
+        return null;
+      } catch (error) {
+        return toApiFailure(error).message;
+      }
+    }
+    this.directory.removeTenant(tenantId);
+    return null;
+  }
+
   /** Resolves to an error message, or null once the status changed. */
   async setStatus(tenantId: Id, status: Extract<TenantStatus, 'active' | 'suspended' | 'cancelled'>): Promise<string | null> {
     const remote = this.remote;

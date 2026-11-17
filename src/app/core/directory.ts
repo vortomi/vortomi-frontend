@@ -84,6 +84,10 @@ export class Directory {
     this.tenants.update((rows) => [...rows, tenant]);
   }
 
+  removeTenant(id: Id): void {
+    this.tenants.update((rows) => rows.filter((t) => t.id !== id));
+  }
+
   updateTenant(id: Id, patch: Partial<Tenant>): void {
     this.tenants.update((rows) => replaceWhere(rows, (t) => t.id === id, patch));
   }

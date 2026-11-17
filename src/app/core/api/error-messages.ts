@@ -96,6 +96,7 @@ const MESSAGES: Record<string, string> = {
   phone_number_taken: 'Ese número ya está conectado a una empresa de la plataforma.',
   number_not_in_account: 'Ese número no está en esa cuenta de WhatsApp. Búscalo de nuevo.',
   token_required: 'Para esa cuenta hace falta el token de acceso.',
+  not_discardable: 'Solo se puede descartar un alta a medias que todavía no tiene número, personas ni invitaciones. Para lo demás usa «Dar de baja».',
   meta_refused:
     'Meta no deja ver esa cuenta con ese token. Revisa el identificador y que en Meta Business el usuario del sistema tenga asignadas la cuenta de WhatsApp y también su «cuenta de mensajes».',
   meta_token_invalid: 'Meta rechazó el token: está mal copiado, venció o fue revocado. Genera uno nuevo y pégalo otra vez.',

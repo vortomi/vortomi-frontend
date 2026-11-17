@@ -67,6 +67,11 @@ export class PlatformRemote {
     return this.api.put(this.path(tenantId), fields);
   }
 
+  /** Deletes a sign-up left half way; the server refuses anything that already has data. */
+  discard(tenantId: Id): Promise<void> {
+    return this.api.delete(this.path(tenantId));
+  }
+
   setStatus(tenantId: Id, status: 'active' | 'suspended' | 'cancelled'): Promise<void> {
     return this.api.put(this.path(tenantId, 'status'), { status });
   }
