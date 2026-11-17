@@ -112,7 +112,7 @@ const toDraft = (s: DeliverySettings): Draft => ({
       @if (error(); as message) { <p class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</p> }
       <div class="actions">
         @if (dirty()) { <button type="button" class="btn btn--ghost" [disabled]="saving()" (click)="reset()"><span>Descartar</span></button> }
-        <button type="button" class="btn btn--primary" [disabled]="saving() || !dirty()" [attr.aria-busy]="saving()" (click)="save()">
+        <button type="button" class="btn btn--primary" [disabled]="saving() || !canSave()" [attr.aria-busy]="saving()" (click)="save()">
           <app-icon name="check" /><span>Guardar</span>
         </button>
       </div>
@@ -157,11 +157,14 @@ export class DeliverySettingsPage {
   protected readonly error = signal<string | null>(null);
   /** The settings could not be read: said with a retry instead of loading forever. */
   protected readonly loadError = signal<string | null>(null);
+  /** Something was really changed: only this warns before leaving the page. */
   protected readonly dirty = computed(() => {
     const saved = this.saved();
     const draft = this.draft();
-    return !!saved && !!draft && (!saved.configured || JSON.stringify(draft) !== JSON.stringify(toDraft(saved)));
+    return !!saved && !!draft && JSON.stringify(draft) !== JSON.stringify(toDraft(saved));
   });
+  /** A company that never saved its delivery can save the card as it is (its first choice), without being trapped by it. */
+  protected readonly canSave = computed(() => this.dirty() || (!!this.draft() && this.saved()?.configured === false));
 
   constructor() {
     inject(UnsavedChanges).track(this.dirty);
