@@ -135,6 +135,8 @@ export interface Conversation {
   handoffReason?: HandoffReason | null;
   /** The owner is answering from the WhatsApp Business app: the agent is quiet here until then. */
   agentPausedUntil?: IsoDate | null;
+  /** Who is answering: a member of the team, or null for the owner on the phone. */
+  agentPausedByUserId?: Id | null;
   status: 'open' | 'resolved';
   lastMessageAt: IsoDate;
   lastMessagePreview: string;
@@ -485,6 +487,8 @@ export interface AgentSettings {
   tone: AgentTone;
   schedule: AgentSchedule;
   businessInfo: string;
+  /** Minutes the agent waits after someone of the company writes in a conversation (5 to 60). */
+  humanPauseMinutes: number;
   /** False when the platform has no model: the agent cannot answer anywhere. */
   modelReady: boolean;
   usage: { replies: number; cap: number };

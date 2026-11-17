@@ -57,10 +57,14 @@ export class ChatPanel {
   protected readonly isAdmin = this.session.isTenantAdmin;
   protected readonly handoffLabel = HANDOFF_LABEL;
 
-  /** The owner is answering from the phone: the hour the agent comes back by itself, or null. */
-  protected readonly ownerPauseUntil = computed(() => {
-    const until = this.conversation().agentPausedUntil;
-    return until && new Date(until).getTime() > this.clock.now().getTime() ? formatTime(until, this.timezone()) : null;
+  /**
+   * Someone of the company is answering: who (the owner on the phone, or a member of the team) and
+   * the hour the agent comes back by itself; null when the agent may answer.
+   */
+  protected readonly pause = computed(() => {
+    const { agentPausedUntil: until, agentPausedByUserId: by } = this.conversation();
+    if (!until || new Date(until).getTime() <= this.clock.now().getTime()) return null;
+    return { until: formatTime(until, this.timezone()), who: by ? this.firstName(by) : null };
   });
   /** Anyone active in the company, on any number; several people may attend one conversation. */
   protected readonly attendants = computed<MenuOption[]>(() =>

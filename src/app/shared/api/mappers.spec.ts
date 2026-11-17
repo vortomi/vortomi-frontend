@@ -26,6 +26,7 @@ describe('server -> panel mappers', () => {
       assigneeIds: [],
       handoffReason: null,
       agentPausedUntil: null,
+      agentPausedByUserId: null,
       status: 'open',
       lastMessageAt: '2026-10-19T10:01:00.000Z',
       lastMessagePreview: 'Foto',

@@ -11,7 +11,7 @@ import { Switch } from '../../shared/ui/switch';
 import { Toaster } from '../../shared/ui/toaster';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
 import { type AgentSettingsInput, AgentRemote } from './agent-remote';
-import { SCHEDULE_OPTIONS, TONE_OPTIONS } from './agent.models';
+import { PAUSE_OPTIONS, SCHEDULE_OPTIONS, TONE_OPTIONS } from './agent.models';
 
 const MAX_INFO = 4000;
 
@@ -59,6 +59,11 @@ const MAX_INFO = 4000;
         <div class="field">
           <span class="label">Cuándo responde</span>
           <app-option-cards label="Cuándo responde" [options]="schedules" [value]="d.schedule" (picked)="setSchedule($event)" />
+        </div>
+        <div class="field">
+          <span class="label">Si alguien de tu empresa responde, el agente espera</span>
+          <app-option-cards label="Cuánto espera el agente" [options]="pauses" [value]="'' + d.humanPauseMinutes" (picked)="setPause($event)" />
+          <p class="field-hint">Cuando tú o alguien de tu equipo le escribe al cliente, desde Vortomi o desde el WhatsApp de tu teléfono, el agente deja de responder en esa conversación. Vuelve solo cuando pasa este tiempo sin que nadie de la empresa escriba, o antes si pulsas «Devolver al agente».</p>
         </div>
         <div class="field">
           <label for="agent-info">Lo que puede contarle a tus clientes</label>
@@ -115,6 +120,7 @@ export class AgentSettingsPage {
 
   protected readonly tones = TONE_OPTIONS;
   protected readonly schedules = SCHEDULE_OPTIONS;
+  protected readonly pauses = PAUSE_OPTIONS;
   protected readonly maxInfo = MAX_INFO;
 
   protected readonly saved = signal<AgentSettings | null>(null);
@@ -148,6 +154,10 @@ export class AgentSettingsPage {
 
   protected setSchedule(value: string): void {
     this.patch({ schedule: value as AgentSchedule });
+  }
+
+  protected setPause(value: string): void {
+    this.patch({ humanPauseMinutes: Number(value) });
   }
 
   protected reset(): void {
@@ -205,4 +215,11 @@ export class AgentSettingsPage {
   }
 }
 
-const pick = ({ enabled, assistantName, tone, schedule, businessInfo }: AgentSettings): AgentSettingsInput => ({ enabled, assistantName, tone, schedule, businessInfo });
+const pick = ({ enabled, assistantName, tone, schedule, businessInfo, humanPauseMinutes }: AgentSettings): AgentSettingsInput => ({
+  enabled,
+  assistantName,
+  tone,
+  schedule,
+  businessInfo,
+  humanPauseMinutes,
+});

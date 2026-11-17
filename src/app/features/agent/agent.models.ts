@@ -12,6 +12,15 @@ export const SCHEDULE_OPTIONS: (OptionCard & { value: AgentSchedule })[] = [
   { value: 'after_hours', label: 'Solo fuera de horario', icon: 'lock', hint: 'Cuando la empresa está cerrada' },
 ];
 
+/** How long the agent waits after someone of the company writes in a conversation (1 hour at most). */
+export const PAUSE_OPTIONS: OptionCard[] = [
+  { value: '5', label: '5 minutos', icon: 'bolt', hint: 'Respondes rápido y sueltas la conversación' },
+  { value: '10', label: '10 minutos', icon: 'clock', hint: 'Una consulta corta' },
+  { value: '15', label: '15 minutos', icon: 'clock', hint: 'Unas cuantas preguntas' },
+  { value: '30', label: '30 minutos', icon: 'clock', hint: 'Recomendado: da tiempo de terminar' },
+  { value: '60', label: '1 hora', icon: 'clock', hint: 'Conversaciones largas o ventas grandes' },
+];
+
 /** Why the agent passed a conversation to a person, as the inbox says it. */
 export const HANDOFF_LABEL: Record<HandoffReason, string> = {
   purchase: 'Quiere comprar',

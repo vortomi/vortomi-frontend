@@ -194,3 +194,9 @@
   background: var(--color-whatsapp-soft);
   color: var(--color-whatsapp-text);
 }
+
+// A member of the team is answering from the panel: the brand's blue.
+.handoff.team {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+}

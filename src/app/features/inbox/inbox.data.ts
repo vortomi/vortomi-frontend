@@ -229,7 +229,7 @@ export class InboxData {
   /** Admins only: the sales agent may answer this conversation again. */
   resumeAgent(conversationId: Id): Promise<void> {
     if (this.remote) return this.run((remote, tenantId) => remote.resumeAgent(tenantId, conversationId), conversationId);
-    this.conversationTable.patch(conversationId, { handoffReason: null, agentPausedUntil: null });
+    this.conversationTable.patch(conversationId, { handoffReason: null, agentPausedUntil: null, agentPausedByUserId: null });
     return Promise.resolve();
   }
 
