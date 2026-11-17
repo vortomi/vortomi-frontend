@@ -1,6 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { SUPABASE } from './api/supabase';
 
+/** How the code is named in the authenticator app (only our team's console uses it). */
+const TOTP_ISSUER = 'Vortomi';
+
 /** Where the person stands with the authenticator-app code. */
 export type SecondFactorState = 'verified' | 'needs_code' | 'not_enrolled';
 
@@ -33,7 +36,12 @@ export class SecondFactor {
     for (const factor of factors?.all ?? []) {
       if (factor.status === 'unverified') await this.supabase.auth.mfa.unenroll({ factorId: factor.id });
     }
-    const { data, error } = await this.supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: `Vortomi ${new Date().toISOString().slice(0, 10)}` });
+    // The issuer is the name the authenticator app shows; without it Supabase uses the project's Site URL.
+    const { data, error } = await this.supabase.auth.mfa.enroll({
+      factorType: 'totp',
+      issuer: TOTP_ISSUER,
+      friendlyName: `Vortomi ${new Date().toISOString().slice(0, 10)}`,
+    });
     if (error || !data) throw error ?? new Error('Could not start the enrolment');
     return { factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret };
   }
