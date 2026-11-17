@@ -10,7 +10,9 @@ import { formatUsdCents, formatVes } from '../../shared/format/money';
 import { imageFileError, readAsDataUrl } from '../../shared/files/image';
 import { Confirm } from '../../shared/ui/confirm';
 import { FileDrop } from '../../shared/ui/file-drop';
+import { CodeInput } from '../../shared/ui/code-input';
 import { Icon } from '../../shared/ui/icon';
+import { NumericInput } from '../../shared/ui/numeric-input';
 import { Pill } from '../../shared/ui/pill';
 import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
 import { Skeleton } from '../../shared/ui/skeleton';
@@ -122,7 +124,7 @@ function formOf(product: Product | null, variants: ProductVariant[], defaults: N
  */
 @Component({
   selector: 'app-product-detail-page',
-  imports: [RouterLink, Icon, Pill, SaleUnitPicker, CustomValuesForm, SelectMenu, Skeleton, FileDrop],
+  imports: [RouterLink, Icon, Pill, SaleUnitPicker, CustomValuesForm, SelectMenu, Skeleton, FileDrop, NumericInput, CodeInput],
   templateUrl: './product-detail.page.html',
   styleUrl: './product-detail.page.scss',
 })
@@ -494,6 +496,11 @@ export class ProductDetailPage {
   }
 
   /** "$4,50 el kilo · 3.992,86 Bs" */
+  /** Decimals a quantity of this product takes: none when it is counted whole. */
+  protected places(unit: SaleUnit): number {
+    return takesDecimals(unit) ? 2 : 0;
+  }
+
   protected money(cents: number): string {
     const rate = this.rate();
     const per = perUnit(this.unit());

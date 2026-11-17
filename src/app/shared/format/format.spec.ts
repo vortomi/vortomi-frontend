@@ -33,8 +33,9 @@ describe('date-time', () => {
 
 describe('money', () => {
   it('shows whole dollars without decimals and cents with two', () => {
-    expect(formatUsdCents(12600)).toBe('126 $');
-    expect(formatUsdCents(184000)).toBe('1.840 $');
+    expect(formatUsdCents(12600)).toBe('126,00 $');
+    expect(formatUsdCents(184000)).toBe('1.840,00 $');
+    expect(formatUsdCents(200)).toBe('2,00 $');
     expect(formatUsdCents(4550)).toBe('45,50 $');
   });
 

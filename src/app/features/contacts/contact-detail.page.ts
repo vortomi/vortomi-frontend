@@ -11,6 +11,7 @@ import { toWaId } from '../../shared/format/phone';
 import { Avatar } from '../../shared/ui/avatar';
 import { FieldError } from '../../shared/ui/field-error';
 import { Icon } from '../../shared/ui/icon';
+import { NumericInput } from '../../shared/ui/numeric-input';
 import { Pill } from '../../shared/ui/pill';
 import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
 import { Skeleton } from '../../shared/ui/skeleton';
@@ -34,7 +35,7 @@ interface ContactModel {
 /** Create (/contacts/new) or edit (/contacts/:contactId) one contact. */
 @Component({
   selector: 'app-contact-detail-page',
-  imports: [FormField, RouterLink, Avatar, FieldError, Icon, Pill, SelectMenu, Skeleton, CustomValuesForm],
+  imports: [FormField, RouterLink, Avatar, FieldError, Icon, NumericInput, Pill, SelectMenu, Skeleton, CustomValuesForm],
   templateUrl: './contact-detail.page.html',
   styleUrl: './contact-detail.page.scss',
 })

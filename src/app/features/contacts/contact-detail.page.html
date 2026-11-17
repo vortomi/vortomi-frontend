@@ -60,7 +60,7 @@
           </div>
           <div class="field">
             <label for="quote">Monto de la oportunidad (USD)</label>
-            <input id="quote" class="input" inputmode="decimal" placeholder="0,00" [formField]="contactForm.quote" />
+            <input id="quote" class="input" appNumeric="money" inputmode="decimal" placeholder="0,00" [formField]="contactForm.quote" />
             <app-field-error [state]="contactForm.quote()" />
           </div>
           }

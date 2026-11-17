@@ -5,6 +5,7 @@ import { Session } from '../../core/session';
 import type { DeliveryCharge, DeliveryMode, DeliverySettings } from '../../shared/api/models';
 import { parsePriceCents } from '../../shared/format/money';
 import { Icon } from '../../shared/ui/icon';
+import { NumericInput } from '../../shared/ui/numeric-input';
 import { type OptionCard, OptionCards } from '../../shared/ui/option-cards';
 import { Skeleton } from '../../shared/ui/skeleton';
 import { Switch } from '../../shared/ui/switch';
@@ -50,7 +51,7 @@ const toDraft = (s: DeliverySettings): Draft => ({
  */
 @Component({
   selector: 'app-delivery-settings',
-  imports: [Icon, OptionCards, Skeleton, Switch],
+  imports: [Icon, NumericInput, OptionCards, Skeleton, Switch],
   template: `
     @if (!remote) {
       <section class="card box"><p class="empty-state"><app-icon name="package" />El delivery se configura con el servidor.</p></section>
@@ -82,7 +83,7 @@ const toDraft = (s: DeliverySettings): Draft => ({
           @if (d.mode === 'flat') {
             <div class="field">
               <label for="flat-price">{{ d.charge === 'per_piece' ? 'Precio del delivery por producto (USD)' : 'Precio del delivery (USD)' }}</label>
-              <input id="flat-price" class="input price" inputmode="decimal" placeholder="0,00" [value]="d.flatPrice" (input)="patch({ flatPrice: value($event) })" />
+              <input id="flat-price" class="input price" appNumeric="money" inputmode="decimal" placeholder="0,00" [value]="d.flatPrice" (input)="patch({ flatPrice: value($event) })" />
               <p class="field-hint">{{ d.charge === 'per_piece' ? 'Se suma por cada producto del pedido' : 'Se suma al pedido' }}, a cualquier dirección. 0 si es gratis.</p>
             </div>
           } @else {
@@ -94,7 +95,7 @@ const toDraft = (s: DeliverySettings): Draft => ({
                   @for (zone of d.zones; track $index; let i = $index) {
                     <div class="zone">
                       <input class="input" maxlength="40" placeholder="Centro" [attr.aria-label]="'Nombre de la zona ' + (i + 1)" [value]="zone.name" (input)="setZone(i, { name: value($event) })" />
-                      <input class="input price" inputmode="decimal" placeholder="0,00" [attr.aria-label]="'Precio de la zona ' + (i + 1)" [value]="zone.price" (input)="setZone(i, { price: value($event) })" />
+                      <input class="input price" appNumeric="money" inputmode="decimal" placeholder="0,00" [attr.aria-label]="'Precio de la zona ' + (i + 1)" [value]="zone.price" (input)="setZone(i, { price: value($event) })" />
                       <button type="button" class="icon-btn danger" [attr.aria-label]="'Quitar la zona ' + (zone.name || i + 1)" (click)="removeZone(i)"><app-icon name="x" /></button>
                     </div>
                   }

@@ -1,12 +1,9 @@
-// Money travels as integer cents (same rule as the backend) and is shown the Venezuelan way: "1.840 $".
+// Money travels as integer cents (same rule as the backend) and is shown the Venezuelan way, always
+// with its 2 decimals (decided 17 Nov 2026): "1.840,00 $", "2,00 $".
 const LOCALE = 'es-VE';
 
 export function formatUsdCents(cents: number): string {
-  const hasDecimals = cents % 100 !== 0;
-  const amount = new Intl.NumberFormat(LOCALE, {
-    minimumFractionDigits: hasDecimals ? 2 : 0,
-    maximumFractionDigits: 2,
-  }).format(cents / 100);
+  const amount = new Intl.NumberFormat(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
   return `${amount} $`;
 }
 
