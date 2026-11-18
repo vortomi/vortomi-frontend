@@ -80,7 +80,7 @@ export interface ApiConversation {
   id: string;
   status: 'open' | 'resolved';
   assigneeIds: string[];
-  handoffReason: 'customer_asked' | 'purchase' | 'order_placed' | 'agent_unsure' | 'agent_error' | 'limit_reached' | 'catalog_unavailable' | null;
+  handoffReason: 'customer_asked' | 'purchase' | 'order_placed' | 'agent_unsure' | 'agent_error' | 'limit_reached' | 'catalog_unavailable' | 'media_received' | null;
   handoffAt: string | null;
   /** The owner is answering from the WhatsApp Business app: the agent is quiet here until then. */
   agentPausedUntil?: string | null;
