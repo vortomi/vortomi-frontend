@@ -1,17 +1,18 @@
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Icon } from '../../shared/ui/icon';
+import { alertCopy } from './alert-texts';
 import type { PlatformAlert } from './platform-alerts';
 
-/** Alert rows linking to the company. Used by the dashboard card and the alerts page. */
+/** The short list of alerts on the console's home: who, and what is happening. The page has the rest. */
 @Component({
   selector: 'app-alert-list',
   imports: [RouterLink, Icon],
   template: `
     @for (alert of alerts(); track alert.id) {
-      <a class="alert" [routerLink]="['/platform/tenants', alert.tenantId]" [class]="alert.severity">
-        <span class="mark"><app-icon [name]="alert.kind === 'access_expiring' ? 'clock' : 'alert'" /></span>
-        <span><b>{{ alert.tenantName }}</b>{{ alert.text }}</span>
+      <a class="alert" [routerLink]="alert.tenantId ? ['/platform/tenants', alert.tenantId] : ['/platform/alerts']" [class]="alert.severity">
+        <span class="mark"><app-icon [name]="alert.severity === 'critical' ? 'alert' : 'clock'" /></span>
+        <span><b>{{ alert.tenantName ?? 'Plataforma' }}</b>{{ title(alert) }}</span>
       </a>
     } @empty {
       <p class="empty"><span class="mark"><app-icon name="check" /></span>Todo en orden: ninguna empresa necesita atención.</p>
@@ -32,4 +33,8 @@ import type { PlatformAlert } from './platform-alerts';
 })
 export class AlertList {
   readonly alerts = input.required<PlatformAlert[]>();
+
+  protected title(alert: PlatformAlert): string {
+    return alertCopy(alert).title;
+  }
 }

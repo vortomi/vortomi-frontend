@@ -179,6 +179,24 @@ export interface Message {
   /** Derived from message_events on the backend; null for inbound messages. */
   status: MessageStatus | null;
   createdAt: IsoDate;
+  /** The file it brought (mockup web-24); body is then its caption. Absent: no file. */
+  media?: ChatMedia | null;
+}
+
+export type ChatMediaKind = 'image' | 'audio' | 'sticker' | 'document' | 'video';
+
+/**
+ * How a file of the chat can be shown:
+ * ready (in Vortomi), loading (being copied), waiting (not copied after a while: open it on the
+ * phone), too_large (a document over 5 MB), gone (Meta no longer has it), not_kept (videos).
+ */
+export type ChatMediaState = 'ready' | 'loading' | 'waiting' | 'too_large' | 'gone' | 'not_kept';
+
+export interface ChatMedia {
+  kind: ChatMediaKind;
+  state: ChatMediaState;
+  fileName: string | null;
+  sizeBytes: number | null;
 }
 
 export interface Note {

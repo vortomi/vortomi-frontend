@@ -1,0 +1,107 @@
+<header class="page-top">
+  <h1>Alertas</h1>
+  <span class="sub">Lo que hay que resolver antes de que afecte la atención de una empresa</span>
+  <span class="spacer"></span>
+  @if (data.ready()) {
+    <span class="checked">{{ checkedText() }}</span>
+  }
+  @if (live) {
+    <button type="button" class="btn btn--sm" [disabled]="checking()" [attr.aria-busy]="checking()" (click)="checkNow()">
+      <app-icon name="swap" /><span>Revisar ahora</span>
+    </button>
+  }
+</header>
+
+<div class="page-body">
+  @if (data.ready() && data.alertReport()) {
+    <div class="kpis">
+      <div class="card kpi"><span class="ic red"><app-icon name="alert" /></span><div><p>Críticas · clientes sin atender</p><b [class.bad]="summary().critical > 0">{{ summary().critical }}</b></div></div>
+      <div class="card kpi"><span class="ic amber"><app-icon name="clock" /></span><div><p>Avisos · resolver esta semana</p><b>{{ summary().warning }}</b></div></div>
+      <div class="card kpi"><span class="ic blue"><app-icon name="building" /></span><div><p>Empresas con algo pendiente</p><b>{{ summary().affected }} de {{ summary().total }}</b></div></div>
+      <div class="card kpi"><span class="ic green"><app-icon name="check" /></span><div><p>Empresas sin problemas</p><b>{{ summary().fine }}</b></div></div>
+    </div>
+
+    @if (count('all') === 0) {
+      <div class="card all-clear">
+        <div class="head">
+          <span class="ok"><app-icon name="check" /></span>
+          <div>
+            <b>Todo en orden: ninguna empresa necesita atención</b>
+            <span>{{ checkedText() }} en {{ summary().total }} {{ summary().total === 1 ? 'empresa' : 'empresas' }} y {{ data.alertReport()!.checked.numbers }} {{ data.alertReport()!.checked.numbers === 1 ? 'número' : 'números' }}.</span>
+          </div>
+        </div>
+        <ul class="checks">
+          @for (check of checks(); track check) {
+            <li><app-icon name="check" />{{ check }}</li>
+          }
+        </ul>
+      </div>
+    } @else {
+      <div class="filters">
+        <div class="segmented" role="tablist" aria-label="Gravedad">
+          @for (option of severities; track option.id) {
+            <button type="button" role="tab" [class.on]="severity() === option.id" [attr.aria-selected]="severity() === option.id" (click)="severity.set(option.id)">
+              {{ option.label }} · {{ count(option.id) }}
+            </button>
+          }
+        </div>
+        <div class="chips" role="group" aria-label="Tipo de alerta">
+          @for (option of categories; track option.id) {
+            <button type="button" class="chip" [class.on]="category() === option.id" [attr.aria-pressed]="category() === option.id" (click)="category.set(option.id)">{{ option.label }}</button>
+          }
+        </div>
+      </div>
+
+      @if (platform().length) {
+        <h2 class="group-title"><app-icon name="server" />Plataforma <small>· afecta a todas las empresas</small></h2>
+        <div class="card">
+          @for (alert of platform(); track alert.id) {
+            <ng-container *ngTemplateOutlet="row; context: { $implicit: alert }" />
+          }
+        </div>
+      }
+
+      @if (companies().length) {
+        <h2 class="group-title"><app-icon name="building" />Por empresa</h2>
+        @for (company of companies(); track company.tenantId) {
+          <div class="card co-card">
+            <div class="co-head">
+              <app-avatar [name]="company.tenantName" [seed]="company.tenantId" size="base" />
+              <div><b>{{ company.tenantName }}</b><small>{{ companyLine(company.tenantId) }}</small></div>
+              <a class="open" [routerLink]="['/platform/tenants', company.tenantId]">Abrir empresa →</a>
+            </div>
+            @for (alert of company.alerts; track alert.id) {
+              <ng-container *ngTemplateOutlet="row; context: { $implicit: alert }" />
+            }
+          </div>
+        }
+      }
+
+      @if (!platform().length && !companies().length) {
+        <p class="card none">Ninguna alerta con este filtro.</p>
+      }
+    }
+  } @else {
+    <div class="card"><app-skeleton class="pad" kind="list" [rows]="4" /></div>
+  }
+</div>
+
+<ng-template #row let-alert>
+  @let text = copy(alert);
+  <div class="alert" [class]="alert.severity">
+    <span class="mark"><app-icon [name]="alert.severity === 'critical' ? 'alert' : 'clock'" /></span>
+    <div class="txt">
+      <p class="title"><span class="sev">{{ alert.severity === 'critical' ? 'Crítica' : 'Aviso' }}</span>{{ text.title }}</p>
+      <p class="what">{{ text.text }}</p>
+      <p class="todo"><b>Qué hacer:</b> {{ text.todo }}</p>
+    </div>
+    <div class="act">
+      @if (since(alert); as since) {
+        <span class="since">{{ since }}</span>
+      }
+      @if (text.action; as action) {
+        <a class="btn btn--sm" [routerLink]="action.link">{{ action.label }}</a>
+      }
+    </div>
+  </div>
+</ng-template>

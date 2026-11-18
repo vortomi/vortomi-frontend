@@ -1,91 +1,165 @@
 <header class="page-top">
   <h1>Empresas</h1>
-  <span class="sub">Cada empresa con sus números, sus usuarios y sus datos aislados</span>
+  <span class="sub">Cada empresa con sus números, su gente y sus datos aislados</span>
   <span class="spacer"></span>
   <label class="search">
     <app-icon name="search" />
     <span class="visually-hidden">Buscar empresa</span>
-    <input type="search" placeholder="Buscar empresa" [value]="search()" (input)="onSearch($event)" />
+    <input type="search" placeholder="Buscar por nombre, RIF o número" [value]="search()" (input)="onSearch($event)" />
   </label>
   <a class="btn btn--primary" routerLink="/platform/tenants/new"><app-icon name="plus" /><span>Nueva empresa</span></a>
 </header>
 
 <div class="page-body">
   <app-unclassified-types (changed)="data.load()" />
+
   @if (data.ready()) {
+    @let f = figures();
     <div class="kpis">
-      <div class="card kpi"><span class="ic blue"><app-icon name="building" /></span><div><p>Empresas activas</p><b>{{ data.kpis().activeTenants }}</b></div></div>
-      <div class="card kpi"><span class="ic green"><app-icon name="phone" /></span><div><p>Números conectados</p><b>{{ data.kpis().connectedNumbers }}</b></div></div>
-      <div class="card kpi"><span class="ic violet"><app-icon name="chat" /></span><div><p>Mensajes este mes</p><b>{{ count(data.kpis().monthMessages) }}</b></div></div>
-      <div class="card kpi"><span class="ic amber"><app-icon name="alert" /></span><div><p>Alertas abiertas</p><b [class.warn]="data.kpis().openAlerts > 0">{{ data.kpis().openAlerts }}</b></div></div>
+      <div class="card kpi">
+        <p>Empresas activas</p>
+        <b>{{ f.active }}</b>
+        <small>{{ f.onboarding }} en alta · {{ f.suspended }} {{ f.suspended === 1 ? 'suspendida' : 'suspendidas' }}</small>
+      </div>
+      <div class="card kpi">
+        <p>Números conectados</p>
+        <b>{{ f.connected }} <span class="of">de {{ f.numbers }}</span></b>
+        @if (f.disconnected) {
+          <small class="down">{{ f.disconnected }} {{ f.disconnected === 1 ? 'desconectado' : 'desconectados' }}</small>
+        } @else {
+          <small>Todos funcionando</small>
+        }
+      </div>
+      <div class="card kpi">
+        <p>Mensajes este mes</p>
+        <b>{{ count(f.monthMessages) }}</b>
+        @if (f.change !== null) {
+          <small><span [class.up]="f.change >= 0" [class.down]="f.change < 0">{{ f.change >= 0 ? '▲' : '▼' }} {{ f.change >= 0 ? f.change : -f.change }} %</span> frente a los mismos días del mes pasado</small>
+        } @else {
+          <small>De todas las empresas</small>
+        }
+      </div>
+      <div class="card kpi">
+        <p>Respuestas del agente</p>
+        @if (f.agentReplies !== null) {
+          <b>{{ count(f.agentReplies) }}</b>
+          <small>en {{ f.agents }} {{ f.agents === 1 ? 'empresa' : 'empresas' }} con el agente encendido</small>
+        } @else {
+          <b class="muted">—</b><small>No se pudieron leer</small>
+        }
+      </div>
+      <div class="card kpi">
+        <p>Alertas abiertas</p>
+        <b [class.down]="f.alerts > 0">{{ f.alerts }}</b>
+        <small>{{ f.critical ? f.critical + (f.critical === 1 ? ' urgente' : ' urgentes') : 'Ninguna urgente' }}</small>
+      </div>
     </div>
+
+    @if (f.alerts) {
+      <a class="alertbar" [class.calm]="!f.critical" routerLink="/platform/alerts">
+        <app-icon name="alert" />
+        <span><b>{{ f.alerts }} {{ f.alerts === 1 ? 'alerta abierta' : 'alertas abiertas' }}</b>@if (alertNames().length) { · {{ alertNames().join(', ') }} }</span>
+        <span class="spacer"></span>
+        <span class="go">Ver alertas <app-icon name="chev-right" /></span>
+      </a>
+    }
   } @else {
     <div class="kpis">
-      @for (k of [1, 2, 3, 4]; track k) {
-        <div class="card kpi"><span class="sk round ic"></span><div class="sk-lines"><span class="sk" style="width: 70%"></span><span class="sk" style="width: 40%; height: 20px"></span></div></div>
+      @for (k of [1, 2, 3, 4, 5]; track k) {
+        <div class="card kpi"><span class="sk" style="width: 60%"></span><span class="sk" style="width: 40%; height: 22px"></span></div>
       }
     </div>
   }
 
-  <div class="split">
-    <div class="card table-card">
-      @if (!data.ready()) {
-        <app-skeleton kind="table" [rows]="6" [cols]="6" />
-      } @else {
-      <table class="data-table">
-        <thead>
-          <tr><th>Empresa</th><th>Plan</th><th>Números</th><th>Usuarios</th><th>Mensajes del mes</th><th>Canal</th><th>Calidad</th></tr>
-        </thead>
-        <tbody>
-          @for (row of rows(); track row.tenant.id) {
-            <tr class="clickable" tabindex="0" (click)="open(row)" (keydown.enter)="open(row)">
-              <td>
-                <div class="company">
-                  <app-avatar class="logo" [name]="row.tenant.name" [seed]="row.tenant.id" />
-                  <div>
-                    <p>{{ row.tenant.name }}</p>
-                    <span>{{ typeOf(row.tenant) }}{{ typeOf(row.tenant) && row.tenant.city ? ' · ' : '' }}{{ row.tenant.city }}</span>
-                  </div>
-                  @if (row.tenant.status !== 'active') {
-                    <app-pill [tone]="labels.status[row.tenant.status].tone" [dot]="true">{{ labels.status[row.tenant.status].text }}</app-pill>
-                  }
-                </div>
-              </td>
-              <td>{{ labels.plan[row.tenant.plan].text }}</td>
-              <td>{{ row.channels.length }}</td>
-              <td>{{ row.memberCount }}</td>
-              <td>{{ count(row.usage?.totalMessages ?? 0) }}</td>
-              <td>
-                @if (row.channelStatus; as status) {
-                  <app-pill [tone]="labels.channel[status].tone" [dot]="true">{{ labels.channel[status].text }}</app-pill>
-                } @else {
-                  <span class="muted">Sin número</span>
-                }
-              </td>
-              <td>
-                @if (row.channelStatus === 'disconnected' || !row.worstQuality) {
-                  <span class="muted">—</span>
-                } @else {
-                  <app-pill [tone]="labels.quality[row.worstQuality].tone" [dot]="true">{{ labels.quality[row.worstQuality].text }}</app-pill>
-                }
-              </td>
-            </tr>
-          } @empty {
-            <tr><td colspan="7"><p class="empty-state">{{ search().trim() ? 'Ninguna empresa coincide con la búsqueda.' : 'Todavía no hay empresas.' }}</p></td></tr>
-          }
-        </tbody>
-      </table>
+  <div class="filters">
+    <div class="tabs" role="tablist" aria-label="Filtrar por estado">
+      @for (t of tabs; track t.key) {
+        <button type="button" role="tab" [attr.aria-selected]="tab() === t.key" [class.on]="tab() === t.key" (click)="tab.set(t.key)">
+          {{ t.label }}<span class="n">{{ tabCounts().get(t.key) }}</span>
+        </button>
       }
     </div>
-
-    <aside class="card alerts">
-      <h3>Alertas</h3>
-      @if (data.ready()) {
-        <app-alert-list [alerts]="data.alerts()" />
-      } @else {
-        <app-skeleton class="pad" kind="rows" [rows]="3" />
-      }
-      <p class="rule"><app-icon name="shield" />Cada número pertenece a una sola empresa. Un mensaje nunca se entrega a otra.</p>
-    </aside>
+    <span class="spacer"></span>
+    <app-select-menu class="menu" size="sm" label="Plan" [options]="planOptions" [value]="plan()" (picked)="plan.set($event)" />
+    <app-select-menu class="menu" size="sm" label="Ordenar" [options]="sortOptions" [value]="sort()" (picked)="pickSort($event)" />
   </div>
+
+  <div class="card table-card">
+    @if (!data.ready()) {
+      <app-skeleton kind="table" [rows]="6" [cols]="8" />
+    } @else {
+      <div class="scroll">
+        <table class="data-table">
+          <thead>
+            <tr><th>Empresa</th><th>Estado</th><th>Números</th><th>Equipo</th><th>Mensajes · 14 d</th><th>Agente</th><th>Puesta en marcha</th><th>Actividad</th><th class="chev-cell"></th></tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.tenant.id) {
+              @let i = insight(row);
+              <tr class="clickable" tabindex="0" (click)="open(row)" (keydown.enter)="open(row)">
+                <td>
+                  <div class="company">
+                    <app-avatar class="logo" [name]="row.tenant.name" [seed]="row.tenant.id" />
+                    <div>
+                      <p>{{ row.tenant.name }}</p>
+                      <span>
+                        {{ typeOf(row.tenant) }}{{ typeOf(row.tenant) && row.tenant.city ? ' · ' : '' }}{{ row.tenant.city }}
+                        <span class="plan" [class.team]="row.tenant.plan === 'team'">{{ labels.plan[row.tenant.plan].text }}</span>
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                <td><app-pill [tone]="labels.status[row.tenant.status].tone" [dot]="true">{{ labels.status[row.tenant.status].text }}</app-pill></td>
+                <td>
+                  @if (numbers(row); as n) {
+                    <span class="numbers"><b>{{ row.channels.length }}</b>
+                      @if (n.tone === 'green') { <span class="muted">· {{ n.text }}</span> } @else { <app-pill [tone]="n.tone" [dot]="true">{{ n.text }}</app-pill> }
+                    </span>
+                  } @else {
+                    <span class="muted">Sin número</span>
+                  }
+                </td>
+                <td>{{ row.memberCount }}@if (i?.pendingInvitations) { <span class="muted"> +{{ i!.pendingInvitations }}</span> }</td>
+                <td>
+                  @if (i && sum(i.daily)) {
+                    <b>{{ count(sum(i.daily)) }}</b>
+                    <app-mini-bars [values]="i.daily" />
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
+                <td>
+                  @if (i?.agentEnabled) {
+                    <app-pill tone="violet" [dot]="true">Encendido</app-pill>
+                    <small class="under" [class.warn]="nearCap(i!.agentReplies)">{{ count(i!.agentReplies) }} de {{ count(insights.list()!.agentCap) }}</small>
+                  } @else if (i) {
+                    <app-pill tone="neutral" [dot]="true">Apagado</app-pill>
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
+                <td>
+                  @if (i) {
+                    <span class="setup"><span class="bar"><i [style.width.%]="setupPercent(i.setupDone)"></i></span>{{ i.setupDone }} de {{ insights.list()!.setupTotal }}</span>
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
+                <td [class.quiet]="quiet(row)">
+                  @if (i?.lastActivityAt) { {{ ago(i!.lastActivityAt!) }} } @else { <span class="muted">Sin mensajes</span> }
+                </td>
+                <td class="chev-cell"><app-icon name="chev-right" /></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="9"><p class="empty-state">{{ search().trim() || tab() !== 'all' || plan() !== 'all' ? 'Ninguna empresa coincide con los filtros.' : 'Todavía no hay empresas.' }}</p></td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+  @if (insights.error()) {
+    <p class="field-hint">No se pudieron leer la actividad y el agente de las empresas: se muestran sus datos básicos.</p>
+  }
+  <p class="rule"><app-icon name="shield" />Cada número pertenece a una sola empresa. Un mensaje nunca se entrega a otra. Desde aquí se ven cifras, nunca conversaciones.</p>
 </div>

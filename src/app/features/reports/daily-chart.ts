@@ -14,7 +14,21 @@ export function niceScale(peak: number): { max: number; step: number } {
 
 const MAX_LABELS = 10;
 
-/** Conversations received per day next to the ones answered within 15 minutes (mockup web-5). */
+/** What the two bars of a day are called (the light one first). */
+export interface PairSeries {
+  caption: string;
+  first: string;
+  second: string;
+}
+
+/** The company's reports: conversations received and the ones answered in time. */
+export const CONVERSATION_SERIES: PairSeries = { caption: 'Conversaciones por día', first: 'recibidas', second: 'a tiempo' };
+
+/**
+ * Two figures per day side by side, light and strong blue: in the company's reports, conversations
+ * received and answered within 15 minutes (mockup web-5); in the console, customers' messages and
+ * answers (mockup web-26). `bars` keeps the reports' field names: conversations is the light bar.
+ */
 @Component({
   selector: 'app-daily-chart',
   template: `
@@ -36,8 +50,8 @@ const MAX_LABELS = 10;
       }
     </div>
     <table class="visually-hidden">
-      <caption>Conversaciones por día</caption>
-      <thead><tr><th>Día</th><th>Recibidas</th><th>Respondidas en menos de 15 min</th></tr></thead>
+      <caption>{{ series().caption }}</caption>
+      <thead><tr><th>Día</th><th>{{ series().first }}</th><th>{{ series().second }}</th></tr></thead>
       <tbody>
         @for (bar of bars(); track bar.date) {
           <tr><td>{{ bar.date }}</td><td>{{ bar.conversations }}</td><td>{{ bar.onTime }}</td></tr>
@@ -70,8 +84,9 @@ const MAX_LABELS = 10;
 })
 export class DailyChart {
   readonly bars = input.required<DayBar[]>();
+  readonly series = input<PairSeries>(CONVERSATION_SERIES);
 
-  protected readonly scale = computed(() => niceScale(Math.max(0, ...this.bars().map((b) => b.conversations))));
+  protected readonly scale = computed(() => niceScale(Math.max(0, ...this.bars().map((b) => Math.max(b.conversations, b.onTime)))));
 
   protected readonly ticks = computed(() => {
     const { max, step } = this.scale();
@@ -87,13 +102,13 @@ export class DailyChart {
       date: bar.date,
       received: (bar.conversations / max) * 100,
       onTime: (bar.onTime / max) * 100,
-      label: i % every === 0 ? formatWeekdayDay(bar.date) : '',
-      title: `${formatWeekdayDay(bar.date)}: ${bar.conversations} recibidas, ${bar.onTime} a tiempo`,
+      label: bar.label ?? (i % every === 0 ? formatWeekdayDay(bar.date) : ''),
+      title: `${bar.title ?? formatWeekdayDay(bar.date)}: ${bar.conversations} ${this.series().first}, ${bar.onTime} ${this.series().second}`,
     }));
   });
 
   protected readonly summary = computed(() => {
     const total = this.bars().reduce((sum, b) => sum + b.conversations, 0);
-    return `Conversaciones por día: ${total} en ${this.bars().length} días`;
+    return `${this.series().caption}: ${total} en ${this.bars().length} días`;
   });
 }

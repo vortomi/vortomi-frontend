@@ -104,6 +104,14 @@ export interface ApiMessage {
   createdAt: string;
   clientMessageId: string | null;
   status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed' | null;
+  /** Our copy of its file, when it brought one Vortomi keeps (photo, voice note, sticker, document). */
+  media?: ApiMessageMedia | null;
+}
+
+export interface ApiMessageMedia {
+  status: 'pending' | 'stored' | 'too_large' | 'unavailable';
+  fileName: string | null;
+  sizeBytes: number | null;
 }
 
 export interface ApiMessagePage {
@@ -348,6 +356,30 @@ export interface ApiPlatformTenantDetail extends Omit<ApiPlatformTenant, 'channe
   channels: (ApiChannel & { hasToken: boolean })[];
   members: { userId: string; name: string; email: string; role: 'admin' | 'agent'; status: 'invited' | 'active' | 'disabled' }[];
   invitations: ApiInvitation[];
+}
+
+/** GET /platform/alerts (mockup web-25): facts only, the console writes the sentences. */
+export type ApiAlertKind =
+  | 'webhooks_failed' | 'unroutable_number' | 'bcv_unread' | 'channel_disconnected' | 'access_expired' | 'access_expiring'
+  | 'number_silent' | 'agent_cap_reached' | 'agent_cap_near' | 'catalog_unavailable' | 'free_replies_exceeded' | 'onboarding_stalled';
+
+export interface ApiPlatformAlert {
+  id: string;
+  kind: ApiAlertKind;
+  severity: 'critical' | 'warning';
+  category: 'platform' | 'connection' | 'agent' | 'usage' | 'onboarding';
+  tenantId: string | null;
+  tenantName: string | null;
+  channelId: string | null;
+  channelLabel: string | null;
+  since: string | null;
+  facts: Record<string, string | number | null>;
+}
+
+export interface ApiPlatformAlertReport {
+  checkedAt: string;
+  checked: { companies: number; numbers: number; connected: number };
+  alerts: ApiPlatformAlert[];
 }
 
 export interface ApiWabaLookup {

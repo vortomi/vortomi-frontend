@@ -2,13 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { META_RATES_USD, type MetaSpend } from '../../shared/billing/meta-pricing';
 import { formatCount, formatUnitPrice, formatUsdCents } from '../../shared/format/money';
 
-/** What Meta will charge the company this month, by kind of message (mockup web-5). */
+/** What Meta will charge the company this month, by kind of message (mockup web-5); in the console, every company together (web-26). */
 @Component({
   selector: 'app-meta-spend-card',
   template: `
     <header>
       <h2>Gasto en WhatsApp · {{ month() }}</h2>
-      <span class="muted">lo cobra Meta a la empresa</span>
+      <span class="muted">{{ allCompanies() ? 'lo cobra Meta a cada empresa' : 'lo cobra Meta a la empresa' }}</span>
     </header>
     @for (row of rows(); track row.title) {
       <div class="row">
@@ -17,7 +17,7 @@ import { formatCount, formatUnitPrice, formatUsdCents } from '../../shared/forma
       </div>
     }
     <div class="row total">
-      <b>Total estimado</b>
+      <b>{{ allCompanies() ? 'Total estimado, todas las empresas' : 'Total estimado' }}</b>
       <strong>{{ money(spend().totalCents) }}</strong>
     </div>
     <p class="field-hint">Tarifas de referencia para números de Venezuela. El monto real lo informa Meta días después.</p>
@@ -41,6 +41,8 @@ import { formatCount, formatUnitPrice, formatUsdCents } from '../../shared/forma
 export class MetaSpendCard {
   readonly spend = input.required<MetaSpend>();
   readonly month = input.required<string>();
+  /** The console's sum of every company: each one pays its own part. */
+  readonly allCompanies = input(false);
 
   protected readonly rows = computed(() => {
     const { service, utility, marketing, freeEntry, numbers } = this.spend();

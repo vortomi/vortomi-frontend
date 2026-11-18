@@ -2,11 +2,14 @@
   <header class="page-top">
     <a class="back" routerLink="/platform/tenants" aria-label="Volver a empresas"><app-icon name="back" /></a>
     <app-avatar class="logo" size="md" [name]="r.tenant.name" [seed]="r.tenant.id" />
-    <div>
-      <h1>{{ r.tenant.name }}</h1>
-      <span class="sub">{{ subtitle(r.tenant) }}</span>
+    <div class="title">
+      <h1>
+        {{ r.tenant.name }}
+        <app-pill [tone]="labels.status[r.tenant.status].tone" [dot]="true">{{ labels.status[r.tenant.status].text }}</app-pill>
+        <span class="plan" [class.team]="r.tenant.plan === 'team'">Plan {{ labels.plan[r.tenant.plan].text }}</span>
+      </h1>
+      <span class="sub">{{ subtitle(r.tenant) }}{{ subtitle(r.tenant) ? ' · ' : '' }}Cliente desde el {{ date(r.tenant.createdAt) }} · <span class="mono">{{ r.tenant.slug }}</span></span>
     </div>
-    <app-pill [tone]="labels.status[r.tenant.status].tone" [dot]="true">{{ labels.status[r.tenant.status].text }}</app-pill>
     <span class="spacer"></span>
     @if (r.tenant.status !== 'draft' && r.tenant.status !== 'awaiting_channel') {
       <button type="button" class="btn" [disabled]="busy()" (click)="editing.set(true)"><app-icon name="edit" /><span>Editar datos</span></button>
@@ -19,129 +22,197 @@
       <a class="btn btn--primary" routerLink="/platform/tenants/new" [queryParams]="{ resume: r.tenant.id }"><app-icon name="arrow" /><span>Seguir el alta</span></a>
     }
     @if (r.tenant.status === 'active' || r.tenant.status === 'suspended') {
-      <button type="button" class="btn btn--danger" [disabled]="busy()" (click)="cancel()"><app-icon name="trash" /><span>Dar de baja</span></button>
+      <button type="button" class="btn btn--danger-outline" [disabled]="busy()" (click)="cancel()"><app-icon name="trash" /><span>Dar de baja</span></button>
     }
   </header>
 
   <div class="page-body">
-    <div class="grid">
-      <section class="card box">
-        <h2>Datos</h2>
-        <dl>
-          <dt>Plan</dt><dd>{{ labels.plan[r.tenant.plan].text }} <span class="muted">· {{ labels.plan[r.tenant.plan].detail }}</span></dd>
-          <dt>Razón social</dt><dd>{{ r.tenant.legalName }}</dd>
-          <dt>RIF</dt><dd class="mono">{{ r.tenant.taxId }}</dd>
-          <dt>Dirección fiscal</dt><dd>{{ r.tenant.fiscalAddress }}</dd>
-          <dt>Zona horaria</dt><dd>{{ r.tenant.timezone }}</dd>
-          <dt>Identificador</dt><dd class="mono">{{ r.tenant.slug }}</dd>
-          <dt>Alta</dt><dd>{{ date(r.tenant.createdAt) }}</dd>
-        </dl>
-      </section>
-
-      <section class="card box">
-        <h2>Consumo de {{ month }}</h2>
-        @if (usage(); as u) {
-          <dl>
-            <dt>Mensajes entrantes y salientes</dt><dd>{{ u.total }}</dd>
-            <dt>Respuestas a clientes</dt><dd>{{ u.service }} de {{ u.free }} gratis</dd>
-            <dt>Plantillas enviadas</dt><dd>{{ u.templates }}</dd>
-          </dl>
-          <div class="track"><i [style.width.%]="u.percent" [class.over]="u.over"></i></div>
-          <p class="field-hint">
-            @if (u.charged) {
-              Paga a Meta unos <b>{{ u.cost }}</b> este mes (estimado){{ u.over ? ', porque un número pasó sus 1.000 respuestas gratis' : ' por las plantillas' }}. Lo paga la empresa con su método de pago.
-            } @else {
-              Dentro de las respuestas gratis del mes y sin plantillas cobradas.
-            }
-          </p>
-        } @else {
-          <p class="muted">Todavía sin consumo.</p>
+    @if (insights(); as i) {
+      <div class="kpis">
+        <div class="card kpi">
+          <p>Mensajes · 30 días</p>
+          <b>{{ count(i.messages30d) }}</b>
+          @if (change() !== null) {
+            <small><span [class.up]="change()! >= 0" [class.down]="change()! < 0">{{ change()! >= 0 ? '▲' : '▼' }} {{ change()! >= 0 ? change() : -change()! }} %</span> frente a los 30 anteriores</small>
+          } @else {
+            <small>Sin mensajes los 30 días anteriores</small>
+          }
+        </div>
+        <div class="card kpi"><p>Conversaciones abiertas</p><b>{{ count(i.openConversations) }}</b><small>{{ i.unassignedOpen }} sin asignar</small></div>
+        <div class="card kpi"><p>Clientes</p><b>{{ count(i.contacts) }}</b><small>+{{ count(i.contactsThisMonth) }} este mes</small></div>
+        <div class="card kpi"><p>Pedidos del mes</p><b>{{ count(i.ordersThisMonth) }}</b><small>{{ i.ordersAwaitingPayment }} esperando pago</small></div>
+        <div class="card kpi">
+          <p>Respuestas del agente</p>
+          <b>{{ count(i.agent.replies) }}</b>
+          <span class="meter"><i [style.width.%]="agentPercent()" [class.warn]="agentPercent() >= 90"></i></span>
+          <small>{{ i.agent.enabled ? 'de ' + count(i.agent.cap) + ' este mes' : 'Agente apagado' }}</small>
+        </div>
+        <div class="card kpi">
+          <p>Última actividad</p>
+          @if (i.lastActivity; as last) {
+            <b class="smaller">{{ ago(last.at) }}</b><small>{{ last.fromCustomer ? 'Mensaje de un cliente' : 'Mensaje de la empresa' }}</small>
+          } @else {
+            <b class="smaller muted">Sin mensajes</b><small>Todavía no ha conversado</small>
+          }
+        </div>
+      </div>
+    } @else if (!insightsLoaded()) {
+      <div class="kpis">
+        @for (k of [1, 2, 3, 4, 5, 6]; track k) {
+          <div class="card kpi"><span class="sk" style="width: 60%"></span><span class="sk" style="width: 40%; height: 22px"></span></div>
         }
-      </section>
-    </div>
+      </div>
+    } @else {
+      <p class="form-alert info"><app-icon name="info" />No se pudieron leer la actividad y las cifras de esta empresa. Sus datos, números y equipo sí se muestran.</p>
+    }
 
-    <h2 class="section-title">Números</h2>
-    <div class="card table-card">
-      <table class="data-table">
-        <thead><tr><th>Número</th><th>Estado</th><th>Calidad</th><th>Clientes por día</th><th>Acceso vence</th><th></th></tr></thead>
-        <tbody>
+    <div class="cols">
+      <div class="col">
+        @if (insights(); as i) {
+          <section class="card box">
+            <h2>Actividad de los últimos 30 días<span class="spacer"></span><small>Mensajes por día</small></h2>
+            <app-activity-chart [daily]="i.daily" />
+          </section>
+        }
+
+        <section class="card box">
+          <h2>Números<span class="spacer"></span><small>{{ r.channels.length }} {{ r.channels.length === 1 ? 'número' : 'números' }}</small></h2>
           @for (channel of r.channels; track channel.id) {
-            <tr>
-              <td><b>{{ channel.label }}</b><span class="muted number">{{ channel.displayNumber }}</span></td>
-              <td><app-pill [tone]="labels.channel[channel.status].tone" [dot]="true">{{ labels.channel[channel.status].text }}</app-pill></td>
-              <td><app-pill [tone]="labels.quality[channel.qualityRating].tone" [dot]="true">{{ labels.quality[channel.qualityRating].text }}</app-pill></td>
-              <td>{{ channel.messagingTier }}</td>
-              <td>{{ channel.accessExpiresAt ? date(channel.accessExpiresAt) : 'Sin acceso' }}</td>
-              <td class="actions-cell">
+            @let facts = channelFacts(channel.id);
+            <div class="number">
+              <span class="ph" [class.off]="channel.status !== 'connected'"><app-icon name="phone" /></span>
+              <div class="info">
+                <b>{{ channel.label }} · {{ channel.displayNumber }}</b>
+                <div class="line">
+                  <app-pill [tone]="labels.channel[channel.status].tone" [dot]="true">{{ labels.channel[channel.status].text }}</app-pill>
+                  @if (facts?.coexistence) {
+                    <app-pill tone="blue">También en el teléfono del dueño</app-pill>
+                  }
+                </div>
+                <dl class="facts">
+                  <div><dt>Conectado desde</dt><dd>{{ facts ? date(facts.connectedAt) : '—' }}</dd></div>
+                  <div><dt>Último mensaje de un cliente</dt><dd>{{ facts?.lastInboundAt ? ago(facts!.lastInboundAt!) : '—' }}</dd></div>
+                  <div><dt>Mensajes · 30 días</dt><dd>{{ facts ? count(facts.messages30d) : '—' }}</dd></div>
+                  <div><dt>Acceso de Meta</dt><dd>{{ channel.accessExpiresAt ? 'Vence el ' + date(channel.accessExpiresAt) : 'Clave sin vencimiento' }}</dd></div>
+                </dl>
+                @if (channel.wabaId || channel.phoneNumberId) {
+                  <p class="ids">Cuenta {{ channel.wabaId || '—' }} · Número {{ channel.phoneNumberId || '—' }}</p>
+                }
+              </div>
+              <div class="acts">
                 @if (channel.status === 'disconnected') {
                   <button type="button" class="btn btn--sm" (click)="requestReconnect(channel)"><span>Pedir reconexión</span></button>
                 }
                 <button type="button" class="btn btn--sm" [disabled]="refreshing() === channel.id" [attr.aria-busy]="refreshing() === channel.id"
                   (click)="refreshNumber(channel)" aria-label="Actualizar el número desde Meta"><app-icon name="swap" /><span>Actualizar</span></button>
                 <button type="button" class="btn btn--sm" (click)="changing.set(channel)"><app-icon name="edit" /><span>Cambiar número o clave</span></button>
-              </td>
-            </tr>
+              </div>
+            </div>
           } @empty {
-            <tr><td colspan="6"><p class="empty-state">Sin números conectados.</p></td></tr>
+            <p class="muted">Sin números conectados.</p>
           }
-        </tbody>
-      </table>
-    </div>
+        </section>
 
-    <div class="grid">
-      <section>
-        <h2 class="section-title">Equipo</h2>
-        <div class="card list">
+        <section class="card box">
+          <h2>Equipo<span class="spacer"></span><small>{{ members().length }} {{ members().length === 1 ? 'persona' : 'personas' }}{{ invitations().length ? ' · ' + invitations().length + (invitations().length === 1 ? ' invitación' : ' invitaciones') : '' }}</small></h2>
           @if (!detailLoaded()) {
-            <app-skeleton class="pad" kind="list" [rows]="3" />
+            <app-skeleton kind="list" [rows]="3" />
           } @else {
-          @for (member of members(); track member.user.id) {
-            <div class="person">
-              <app-avatar [name]="member.user.name" [seed]="member.user.id" />
-              <div class="who">
-                <b>{{ member.user.name }}</b>
-                <span>{{ member.user.email }} · {{ labels.role[member.membership.role] }}</span>
+            @for (member of members(); track member.user.id) {
+              <div class="person">
+                <app-avatar [name]="member.user.name" [seed]="member.user.id" />
+                <div class="who"><b>{{ member.user.name }}</b><span>{{ member.user.email }}</span></div>
+                <app-pill [tone]="member.membership.role === 'admin' ? 'blue' : 'neutral'">{{ labels.role[member.membership.role] }}</app-pill>
+                @if (member.membership.status === 'active') {
+                  <app-pill tone="green" [dot]="true">Activo</app-pill>
+                } @else {
+                  <app-pill tone="neutral" [dot]="true">Desactivado</app-pill>
+                }
               </div>
-              @if (member.membership.status === 'active') {
-                <app-pill tone="green" [dot]="true">Activo</app-pill>
-              } @else {
-                <app-pill tone="neutral" [dot]="true">Desactivado</app-pill>
-              }
-            </div>
-          }
-          @for (invitation of invitations(); track invitation.id) {
-            <div class="person">
-              <app-avatar [name]="invitation.name" [seed]="invitation.id" />
-              <div class="who">
-                <b>{{ invitation.name }}</b>
-                <span>{{ invitation.email }} · invitación pendiente, vence {{ date(invitation.expiresAt) }}</span>
+            }
+            @for (invitation of invitations(); track invitation.id) {
+              <div class="person">
+                <app-avatar [name]="invitation.name" [seed]="invitation.id" />
+                <div class="who"><b>{{ invitation.name }}</b><span>{{ invitation.email }} · invitación pendiente, vence el {{ date(invitation.expiresAt) }}</span></div>
+                <button type="button" class="btn btn--sm" (click)="renew(invitation)"><span>Nuevo enlace</span></button>
               </div>
-              <button type="button" class="btn btn--sm" (click)="renew(invitation)"><span>Nuevo enlace</span></button>
-            </div>
-          }
-          @if (!members().length && !invitations().length) {
-            <p class="muted pad">Todavía nadie. El administrador se invita en el último paso del alta.</p>
-          }
+            }
+            @if (!members().length && !invitations().length) {
+              <p class="muted">Todavía nadie. El administrador se invita en el último paso del alta.</p>
+            }
           }
           <p class="note"><app-icon name="lock" />Desde aquí se ve quién tiene acceso, no lo que escriben.</p>
-        </div>
-      </section>
+        </section>
 
-      @if (data.hasAudit) {
-      <section>
-        <h2 class="section-title">Registro de auditoría</h2>
-        <div class="card list">
-          @for (entry of audit(); track entry.id) {
-            <div class="event">
-              <span class="when">{{ date(entry.createdAt) }}</span>
-              <span><b>{{ actorName(entry.actorUserId) }}</b> · {{ entry.detail }}</span>
+        @if (data.hasAudit) {
+          <section class="card box">
+            <h2>Registro de auditoría</h2>
+            @for (entry of audit(); track entry.id) {
+              <div class="event"><span class="when">{{ date(entry.createdAt) }}</span><span><b>{{ actorName(entry.actorUserId) }}</b> · {{ entry.detail }}</span></div>
+            } @empty {
+              <p class="muted">Sin eventos registrados.</p>
+            }
+          </section>
+        }
+      </div>
+
+      <div class="col">
+        <section class="card box">
+          <h2>Contacto principal</h2>
+          @if (owner(); as o) {
+            <div class="owner">
+              <app-avatar size="md" [name]="o.name" [seed]="o.email" />
+              <div><b>{{ o.name }}</b><span>Administrador · <a class="link" [href]="'mailto:' + o.email">{{ o.email }}</a></span></div>
             </div>
-          } @empty {
-            <p class="muted pad">Sin eventos registrados.</p>
+          } @else {
+            <p class="muted">Todavía sin administrador. Se invita en el último paso del alta.</p>
           }
-        </div>
-      </section>
-      }
+        </section>
+
+        @if (setup().length) {
+          <section class="card box">
+            <h2>Puesta en marcha<span class="spacer"></span><small>{{ setupDone() }} de {{ setup().length }}</small></h2>
+            @for (step of setup(); track step.step) {
+              <div class="check">
+                <span class="mark" [class.ok]="step.done">@if (step.done) { <app-icon name="check" [stroke]="3" /> }</span>
+                <div><span [class.muted]="!step.done">{{ step.title }}</span>@if (step.detail) { <small>{{ step.detail }}</small> }</div>
+              </div>
+            }
+          </section>
+        }
+
+        <section class="card box">
+          <h2>Consumo de {{ month }}</h2>
+          @if (usage(); as u) {
+            <dl class="kv">
+              <dt>Mensajes entrantes y salientes</dt><dd>{{ u.total }}</dd>
+              <dt>Respuestas a clientes</dt><dd>{{ u.service }} de {{ u.free }} gratis</dd>
+              <dt>Plantillas enviadas</dt><dd>{{ u.templates }}</dd>
+              <dt>Estimado a Meta</dt><dd>{{ u.cost }}</dd>
+            </dl>
+            <span class="meter"><i [style.width.%]="u.percent" [class.warn]="u.over"></i></span>
+            <p class="field-hint">
+              @if (u.charged) {
+                Paga a Meta unos <b>{{ u.cost }}</b> este mes (estimado){{ u.over ? ', porque un número pasó sus 1.000 respuestas gratis' : ' por las plantillas' }}. Lo paga la empresa con su método de pago.
+              } @else {
+                Dentro de las respuestas gratis del mes y sin plantillas cobradas.
+              }
+            </p>
+          } @else {
+            <p class="muted">Todavía sin consumo.</p>
+          }
+        </section>
+
+        <section class="card box">
+          <h2>Datos fiscales</h2>
+          <dl class="kv">
+            <dt>Razón social</dt><dd>{{ r.tenant.legalName || '—' }}</dd>
+            <dt>RIF</dt><dd class="mono">{{ r.tenant.taxId || '—' }}</dd>
+            <dt>Dirección fiscal</dt><dd>{{ r.tenant.fiscalAddress || '—' }}</dd>
+            <dt>Zona horaria</dt><dd>{{ r.tenant.timezone }}</dd>
+          </dl>
+        </section>
+      </div>
     </div>
   </div>
 } @else if (!data.ready()) {

@@ -2,6 +2,7 @@ import { Component, computed, input } from '@angular/core';
 import type { Message, MessageStatus } from '../../../shared/api/models';
 import { formatTime } from '../../../shared/format/date-time';
 import { Icon, type IconName } from '../../../shared/ui/icon';
+import { ChatMediaBox } from '../media/chat-media';
 
 /** WhatsApp's ticks, with the word next to them so nobody has to guess what each one means. */
 const STATUS_MARK: Record<MessageStatus, { icon: IconName; label: string }> = {
@@ -14,13 +15,16 @@ const STATUS_MARK: Record<MessageStatus, { icon: IconName; label: string }> = {
 
 @Component({
   selector: 'app-message-bubble',
-  imports: [Icon],
+  imports: [Icon, ChatMediaBox],
   template: `
     @let msg = message();
     @if (msg.direction === 'outbound' && author()) {
       <span class="author">{{ author() }}</span>
     }
-    @if (msg.type === 'product') {
+    @if (msg.media) {
+      <app-chat-media [message]="msg" [sender]="msg.direction === 'inbound' ? contactName() : author()" [when]="time()" />
+      @if (msg.body) { <p>{{ msg.body }}</p> }
+    } @else if (msg.type === 'product') {
       <span class="product"><app-icon name="tag" /><span>{{ msg.body }}</span></span>
     } @else if (msg.type === 'image') {
       <span class="media"><app-icon name="image" />Foto</span>
@@ -47,6 +51,8 @@ export class MessageBubble {
   /** Agent name, or the template label for template messages. */
   readonly author = input<string>('');
   readonly timezone = input.required<string>();
+  /** The customer's name, for the header of a photo opened large. */
+  readonly contactName = input('');
 
   protected readonly time = computed(() => formatTime(this.message().createdAt, this.timezone()));
   protected readonly status = computed(() => {

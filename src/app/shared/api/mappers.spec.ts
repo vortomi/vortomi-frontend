@@ -61,11 +61,15 @@ describe('server -> panel mappers', () => {
       templateId: null, createdAt: '2026-10-19T10:00:00.000Z', clientMessageId: null, status: 'delivered',
     };
     expect(toMessage(TENANT, 'c-1', base)).toMatchObject({ id: '42', direction: 'outbound', type: 'text', body: 'Hola', status: 'delivered' });
-    expect(toMessage(TENANT, 'c-1', { ...base, direction: 'in', type: 'audio', body: null, status: null })).toMatchObject({
+    // A file is drawn by its own box (mockup web-24); the text becomes its caption.
+    expect(toMessage(TENANT, 'c-1', { ...base, direction: 'in', type: 'audio', body: null, status: null, media: { status: 'stored', fileName: null, sizeBytes: 9 } })).toMatchObject({
       direction: 'inbound',
       type: 'text',
-      body: 'Audio',
+      body: '',
+      media: { kind: 'audio', state: 'ready' },
     });
+    // Kinds without a box still read as a word.
+    expect(toMessage(TENANT, 'c-1', { ...base, direction: 'in', type: 'location', body: null, status: null })).toMatchObject({ body: 'Ubicación', media: null });
     // Written by the owner on the WhatsApp Business app (coexistence), not by someone of the team.
     expect(toMessage(TENANT, 'c-1', { ...base, author: 'owner_app', authorUserId: null })).toMatchObject({ fromOwnerApp: true, automatic: false });
     expect(toMessage(TENANT, 'c-1', base)).toMatchObject({ fromOwnerApp: false });

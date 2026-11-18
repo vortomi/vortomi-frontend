@@ -23,6 +23,9 @@ export interface DayBar {
   date: string;
   conversations: number;
   onTime: number;
+  /** Axis label and tooltip name, when the bar is not a day (the console's hours); else the weekday. */
+  label?: string;
+  title?: string;
 }
 
 const DAY_MS = 86_400_000;

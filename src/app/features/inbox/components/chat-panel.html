@@ -78,7 +78,7 @@
           </div>
         }
         @case ('message') {
-          <app-message-bubble [message]="entry.message" [author]="authorOf(entry.message)" [timezone]="timezone()" />
+          <app-message-bubble [message]="entry.message" [author]="authorOf(entry.message)" [timezone]="timezone()" [contactName]="contact().name" />
         }
       }
     }

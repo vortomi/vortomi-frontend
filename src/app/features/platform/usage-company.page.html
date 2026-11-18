@@ -1,0 +1,119 @@
+<header class="page-top">
+  <a class="back" routerLink="/platform/usage" aria-label="Volver a Uso y salud"><app-icon name="back" /></a>
+  @if (ready()) {
+    <app-avatar [name]="header().name" [seed]="tenantId()" />
+    <div class="title">
+      <h1>{{ header().name }}</h1>
+      <span class="sub">{{ header().detail }}</span>
+    </div>
+    <app-pill [tone]="header().status.tone" [dot]="true">{{ header().status.text }}</app-pill>
+  } @else {
+    <h1>Uso y salud</h1>
+  }
+  <span class="spacer"></span>
+  @if (ready()) {
+    <span class="live wide-only" title="Se vuelve a leer cada minuto"><i aria-hidden="true"></i>Actualizado {{ updated() }}</span>
+  }
+  <a class="btn" [routerLink]="['/platform/tenants', tenantId()]"><span>Ver ficha de la empresa</span></a>
+  <div class="segmented" role="group" aria-label="Período">
+    @for (p of periods(); track p.id) {
+      <button type="button" [class.on]="period() === p.id" [attr.aria-pressed]="period() === p.id" (click)="period.set(p.id)">{{ p.label }}</button>
+    }
+  </div>
+</header>
+
+<div class="page-body">
+  @if (data.error(); as message) {
+    <div class="form-alert" role="alert">{{ message }}</div>
+  }
+  @if (!ready()) {
+    <section class="kpis" role="status" aria-label="Cargando la empresa">
+      @for (k of [1, 2, 3, 4]; track k) {
+        <div class="card kpi"><span class="sk" style="width: 55%"></span><span class="sk kpi-sk"></span><span class="sk" style="width: 70%; height: 10px"></span></div>
+      }
+    </section>
+    <section class="grid">
+      <div class="card chart-card"><span class="sk" style="width: 40%; height: 14px"></span><span class="sk chart-sk"></span></div>
+      <div class="card chart-card"><app-skeleton kind="rows" [rows]="5" /></div>
+    </section>
+  } @else {
+    <section class="kpis">
+      <article class="card kpi">
+        <h2>Mensajes</h2>
+        <strong>{{ count(kpis().messages) }}</strong>
+        @let growth = kpis().messagesChange;
+        @if (growth !== null) {
+          <span [class]="growth >= 0 ? 'up' : 'down'">{{ growth >= 0 ? '▲' : '▼' }} {{ growth >= 0 ? growth : -growth }} % frente a {{ comparedTo() }}</span>
+        } @else {
+          <span class="muted">Sin datos para comparar</span>
+        }
+      </article>
+      <article class="card kpi">
+        <h2>Primera respuesta (mediana)</h2>
+        <strong>{{ duration(kpis().medianSec) }}</strong>
+        <span class="muted">{{ count(kpis().customerMessages) }} mensajes de clientes · {{ count(kpis().unanswered) }} sin respuesta · agente incluido</span>
+      </article>
+      <article class="card kpi">
+        <h2>Respondidos automáticamente</h2>
+        <strong>{{ kpis().automaticPercent === null ? '—' : kpis().automaticPercent + ' %' }}</strong>
+        <span class="muted">{{ count(kpis().automatic) }} de {{ count(kpis().answers) }} respuestas · agente IA y avisos</span>
+      </article>
+      <article class="card kpi">
+        <h2>Estimado a Meta</h2>
+        <strong>{{ money(spend().totalCents) }}</strong>
+        <span class="muted">{{ count(freeReplies().used) }} de {{ count(freeReplies().free) }} respuestas gratis</span>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="card chart-card">
+        <header>
+          <h2>Mensajes por día</h2>
+          <span class="legend"><i class="received"></i>de clientes <i class="on-time"></i>respuestas</span>
+        </header>
+        <app-daily-chart [bars]="dayBars()" [series]="days" />
+      </article>
+      <app-meta-spend-card class="card" [spend]="spend()" [month]="monthName(spendMonth())" />
+
+      <article class="card chart-card">
+        <header>
+          <h2>A qué hora escriben</h2>
+          <span class="legend"><i class="received"></i>de clientes <i class="on-time"></i>respuestas</span>
+        </header>
+        <app-daily-chart [bars]="hourBars()" [series]="hoursSeries" />
+      </article>
+      <article class="card list">
+        <header><h2>Quién responde</h2><span class="muted">{{ count(kpis().answers) }} respuestas</span></header>
+        @for (row of who(); track row.title) {
+          <div class="row"><div class="text"><b>{{ row.title }}</b><span>{{ row.detail }}</span></div><strong>{{ row.value }}</strong></div>
+        }
+      </article>
+
+      <article class="card list">
+        <header>
+          <h2>Agente IA</h2>
+          @if (data.current()!.agent.settings?.enabled) {
+            <app-pill tone="green" [dot]="true">Encendido</app-pill>
+          } @else {
+            <app-pill tone="neutral" [dot]="true">Apagado</app-pill>
+          }
+        </header>
+        @for (row of agent(); track row.title) {
+          <div class="row"><div class="text"><b>{{ row.title }}</b><span>{{ row.detail }}</span></div><strong>{{ row.value }}</strong></div>
+        }
+      </article>
+      <article class="card list">
+        <header><h2>Números de la empresa</h2><span class="muted">según Meta</span></header>
+        @for (row of numbers(); track row.id) {
+          <div class="row"><div class="text"><b>{{ row.title }}</b><span>{{ row.detail }}</span></div><app-pill [tone]="row.tone" [dot]="true">{{ row.status }}</app-pill></div>
+        } @empty {
+          <p class="muted empty">Esta empresa todavía no tiene números conectados.</p>
+        }
+        <header class="second"><h2>Operación</h2><span class="muted">ahora</span></header>
+        @for (row of operation(); track row.title) {
+          <div class="row"><div class="text"><b>{{ row.title }}</b><span>{{ row.detail }}</span></div><strong>{{ row.value }}</strong></div>
+        }
+      </article>
+    </section>
+  }
+</div>

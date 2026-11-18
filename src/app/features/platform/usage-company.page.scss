@@ -1,0 +1,89 @@
+// One company's «Uso y salud» (mockup web-27). Layout and cards: reports.page.scss and
+// usage.page.scss, loaded with this one; here only the header and the list cards.
+
+.back {
+  display: inline-flex;
+  color: var(--color-text-muted);
+  --icon-size: 20px;
+}
+
+.title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  h1 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sub {
+    font-size: 12.5px;
+  }
+}
+
+// The header holds the most here: the refresh note gives way first.
+.wide-only {
+  @media (max-width: 1599px) {
+    display: none;
+  }
+}
+
+.grid + .grid {
+  margin-top: 16px;
+}
+
+.list {
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 18px 22px 8px;
+
+    &.second {
+      padding-top: 16px;
+      border-top: 1px solid var(--color-border-soft);
+    }
+
+    .muted {
+      font-size: 12.5px;
+    }
+  }
+
+  .row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 22px;
+    border-top: 1px solid var(--color-border-soft);
+  }
+
+  .text {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+
+    b {
+      font-weight: 500;
+    }
+
+    span {
+      display: block;
+      font-size: 12.5px;
+      color: var(--color-text-muted);
+      margin-top: 2px;
+    }
+  }
+
+  strong {
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .empty {
+    padding: 12px 22px 16px;
+  }
+}

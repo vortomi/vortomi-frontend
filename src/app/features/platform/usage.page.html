@@ -1,0 +1,114 @@
+<header class="page-top">
+  <h1>Uso y salud</h1>
+  <span class="sub">Cuánto usan WhatsApp las empresas y si todo funciona</span>
+  <span class="spacer"></span>
+  @if (ready()) {
+    <span class="live" title="Se vuelve a leer cada minuto"><i aria-hidden="true"></i>Actualizado {{ updated() }}</span>
+  }
+  <div class="segmented" role="group" aria-label="Período">
+    @for (p of periods(); track p.id) {
+      <button type="button" [class.on]="period() === p.id" [attr.aria-pressed]="period() === p.id" (click)="period.set(p.id)">{{ p.label }}</button>
+    }
+  </div>
+</header>
+
+<div class="page-body">
+  @if (data.error(); as message) {
+    <div class="form-alert" role="alert">{{ message }}</div>
+  }
+  @if (!ready()) {
+    <section class="kpis" role="status" aria-label="Cargando uso y salud">
+      @for (k of [1, 2, 3, 4]; track k) {
+        <div class="card kpi"><span class="sk" style="width: 55%"></span><span class="sk kpi-sk"></span><span class="sk" style="width: 70%; height: 10px"></span></div>
+      }
+    </section>
+    <section class="grid">
+      <div class="card chart-card"><span class="sk" style="width: 40%; height: 14px"></span><span class="sk chart-sk"></span></div>
+      <div class="card chart-card"><app-skeleton kind="rows" [rows]="5" /></div>
+    </section>
+  } @else {
+    <section class="kpis">
+      <article class="card kpi">
+        <h2>Mensajes</h2>
+        <strong>{{ count(kpis().messages) }}</strong>
+        @let growth = kpis().messagesChange;
+        @if (growth !== null) {
+          <span [class]="growth >= 0 ? 'up' : 'down'">{{ growth >= 0 ? '▲' : '▼' }} {{ growth >= 0 ? growth : -growth }} % frente a {{ comparedTo() }}</span>
+        } @else {
+          <span class="muted">Sin datos para comparar</span>
+        }
+      </article>
+
+      <article class="card kpi">
+        <h2>Respondidos automáticamente</h2>
+        <strong>{{ percentText(kpis().automaticPercent) }}</strong>
+        <span class="muted">{{ count(kpis().automatic) }} de {{ count(kpis().answers) }} respuestas · agente IA y avisos</span>
+      </article>
+
+      <article class="card kpi">
+        <h2>Entregados por WhatsApp</h2>
+        <strong [class.alert]="kpis().failed > 0">{{ percentText(kpis().deliveredPercent) }}</strong>
+        @if (kpis().failed) {
+          <span class="down">{{ count(kpis().failed) }} {{ kpis().failed === 1 ? 'no se entregó' : 'no se entregaron' }} de {{ count(kpis().outbound) }}</span>
+        } @else {
+          <span class="muted">{{ count(kpis().delivered) }} de {{ count(kpis().outbound) }} · ninguno falló</span>
+        }
+      </article>
+
+      <article class="card kpi">
+        <h2>Empresas activas</h2>
+        <strong>{{ count(companiesNow().active) }}</strong>
+        <span class="muted">{{ count(companiesNow().numbers) }} {{ companiesNow().numbers === 1 ? 'número' : 'números' }} · {{ count(companiesNow().people) }} {{ companiesNow().people === 1 ? 'persona' : 'personas' }}</span>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="card chart-card">
+        <header>
+          <h2>Mensajes por día</h2>
+          <span class="legend"><i class="received"></i>de clientes <i class="on-time"></i>respuestas</span>
+        </header>
+        <app-daily-chart [bars]="bars()" [series]="series" />
+      </article>
+
+      <app-meta-spend-card class="card" [spend]="spend()" [month]="monthName(spendMonth())" [allCompanies]="true" />
+
+      <article class="card table-card companies">
+        <header><h2>Por empresa</h2></header>
+        <table class="data-table">
+          <thead><tr><th>Empresa</th><th>Mensajes</th><th>Automático</th><th>Agente IA</th><th>Gratis</th><th>Estimado</th></tr></thead>
+          <tbody>
+            @for (row of companies(); track row.id) {
+              <tr>
+                <td><a class="link" [routerLink]="['/platform/usage', row.id]">{{ row.name }}</a></td>
+                <td>{{ count(row.messages) }}</td>
+                <td>
+                  @if (row.automaticPercent !== null) {
+                    <span class="rate"><span class="track"><i [style.width.%]="row.automaticPercent"></i></span>{{ row.automaticPercent }} %</span>
+                  } @else {
+                    <span class="muted">Sin respuestas</span>
+                  }
+                </td>
+                <td>{{ count(row.agentReplies) }}</td>
+                <td>{{ count(row.freeUsed) }} <span class="muted">de {{ count(row.free) }}</span></td>
+                <td>{{ row.estimate }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6"><p class="empty-state">Ninguna empresa usó WhatsApp en este período.</p></td></tr>
+            }
+          </tbody>
+        </table>
+      </article>
+
+      <article class="card health">
+        <header><h2>Salud de la plataforma</h2><span class="muted">ahora</span></header>
+        @for (item of health(); track item.id) {
+          <div class="row">
+            <div class="text"><b>{{ item.title }}</b><span>{{ item.hint }}</span></div>
+            <app-pill [tone]="item.tone" [dot]="true">{{ item.status }}</app-pill>
+          </div>
+        }
+      </article>
+    </section>
+  }
+</div>

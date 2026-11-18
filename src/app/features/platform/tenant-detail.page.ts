@@ -17,15 +17,30 @@ import { failIf } from './fail-if';
 import { PlatformData, type PlatformInvitation } from './platform.data';
 import { TenantEditDialog } from './tenant-edit.dialog';
 import { ChangeNumberDialog } from './change-number.dialog';
+import { ActivityChart } from './activity-bars';
+import { TenantInsightsData } from './tenant-insights.data';
+import type { SetupStep, TenantDetailInsights } from './tenant-insights.remote';
+import { percentChange, timeAgo } from './tenant-list.rules';
+import { Clock } from '../../core/clock';
 
 const TZ = 'America/Caracas';
+
+/** «Puesta en marcha»: what each step means to the person reading the page. */
+const SETUP_TEXT: Record<SetupStep, { title: string; detail?: (count: number) => string; missing: string }> = {
+  number: { title: 'Número de WhatsApp conectado', missing: 'Sin un número funcionando no recibe mensajes' },
+  business_info: { title: 'Información del negocio', missing: 'El agente no sabe qué vende ni cómo atiende' },
+  products: { title: 'Productos cargados', detail: (n) => `${n} ${n === 1 ? 'producto' : 'productos'}`, missing: 'Todavía sin productos' },
+  payment_methods: { title: 'Métodos de pago', detail: (n) => `${n} ${n === 1 ? 'método' : 'métodos'}`, missing: 'Sus clientes no saben cómo pagar' },
+  template: { title: 'Plantilla aprobada por Meta', detail: (n) => `${n} ${n === 1 ? 'aprobada' : 'aprobadas'}`, missing: 'No puede escribir pasadas las 24 horas' },
+  agent: { title: 'Agente de ventas encendido', missing: 'Responde solo su equipo' },
+};
 
 /** One company seen from the console: data, numbers, team, usage and audit. No conversations. */
 @Component({
   selector: 'app-tenant-detail-page',
-  imports: [RouterLink, Avatar, Icon, Pill, Skeleton, InvitationLinkDialog, TenantEditDialog, ChangeNumberDialog],
+  imports: [RouterLink, Avatar, Icon, Pill, Skeleton, InvitationLinkDialog, TenantEditDialog, ChangeNumberDialog, ActivityChart],
   templateUrl: './tenant-detail.page.html',
-  styleUrls: ['./platform-pages.scss', './tenant-detail.page.scss'],
+  styleUrl: './tenant-detail.page.scss',
 })
 export class TenantDetailPage {
   protected readonly data = inject(PlatformData);
@@ -33,6 +48,8 @@ export class TenantDetailPage {
   private readonly businessTypes = inject(BusinessTypes);
   private readonly confirm = inject(Confirm);
   private readonly toaster = inject(Toaster);
+  private readonly insightsData = inject(TenantInsightsData);
+  private readonly clock = inject(Clock);
 
   /** From the route: /platform/tenants/:tenantId */
   readonly tenantId = input<string>();
@@ -48,6 +65,9 @@ export class TenantDetailPage {
   protected readonly refreshing = signal<string | null>(null);
   /** This company's people and invitations arrived (they come apart from the list). */
   protected readonly detailLoaded = signal(false);
+  /** This company's figures (mockup web-25); null while loading or if they could not be read. */
+  protected readonly insights = signal<TenantDetailInsights | null>(null);
+  protected readonly insightsLoaded = signal(false);
 
   protected readonly row = computed(() => this.data.row(this.tenantId()));
   protected readonly members = computed(() => (this.row() ? this.data.members(this.row()!.tenant.id) : []));
@@ -70,6 +90,45 @@ export class TenantDetailPage {
     };
   });
 
+  /** Who to call: the server's first administrator, or (preview) the first active admin of the team. */
+  protected readonly owner = computed(() => {
+    const fromServer = this.insights()?.owner;
+    if (fromServer) return fromServer;
+    const admin = this.members().find((m) => m.membership.role === 'admin' && m.membership.status === 'active');
+    return admin ? { name: admin.user.name, email: admin.user.email } : null;
+  });
+
+  protected readonly change = computed(() => {
+    const i = this.insights();
+    return i ? percentChange(i.messages30d, i.previous30d) : null;
+  });
+
+  protected readonly setup = computed(() =>
+    (this.insights()?.setup ?? []).map((item) => {
+      const text = SETUP_TEXT[item.step];
+      return { ...item, title: text.title, detail: item.done ? (item.count !== null && text.detail ? text.detail(item.count) : null) : text.missing };
+    }),
+  );
+  protected readonly setupDone = computed(() => this.setup().filter((s) => s.done).length);
+
+  protected readonly agentPercent = computed(() => {
+    const agent = this.insights()?.agent;
+    return agent && agent.cap > 0 ? Math.min(100, Math.round((agent.replies / agent.cap) * 100)) : 0;
+  });
+
+  /** The figures of one number, by its id. */
+  protected channelFacts(channelId: string) {
+    return this.insights()?.channels.find((c) => c.channelId === channelId) ?? null;
+  }
+
+  protected ago(iso: string): string {
+    return timeAgo(iso, this.clock.now());
+  }
+
+  protected count(value: number): string {
+    return formatCount(value);
+  }
+
   constructor() {
     // 'api' mode: the list (for the header) once, and this company's people every time it changes.
     effect(() => {
@@ -78,6 +137,12 @@ export class TenantDetailPage {
       untracked(() => {
         this.detailLoaded.set(false);
         if (!this.data.ready()) void this.data.load().then(this.report);
+        this.insights.set(null);
+        this.insightsLoaded.set(false);
+        void this.insightsData.detail(id).then((insights) => {
+          this.insights.set(insights);
+          this.insightsLoaded.set(true);
+        });
         void this.data.loadDetail(id).then((error) => {
           this.detailLoaded.set(true);
           this.report(error);

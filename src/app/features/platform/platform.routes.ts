@@ -28,6 +28,12 @@ export const PLATFORM_ROUTES: Routes = [
     loadComponent: () => import('./usage.page').then((m) => m.UsagePage),
   },
   {
+    // One company's use and health (mockup web-27), from «Por empresa».
+    path: 'usage/:tenantId',
+    title: 'Uso de una empresa · Consola',
+    loadComponent: () => import('./usage-company.page').then((m) => m.UsageCompanyPage),
+  },
+  {
     path: 'team',
     title: 'Equipo · Consola',
     loadComponent: () => import('./platform-team.page').then((m) => m.PlatformTeamPage),

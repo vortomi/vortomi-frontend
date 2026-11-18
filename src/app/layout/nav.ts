@@ -15,6 +15,8 @@ export interface NavItem {
   adminOnly?: boolean;
   /** Hidden when the company works in support-only mode; the route is also guarded. */
   salesOnly?: boolean;
+  /** Console only: how many critical alerts are open (red count, mockup web-25). */
+  criticalAlerts?: boolean;
 }
 
 export interface NavGroup {
@@ -57,7 +59,7 @@ export const TENANT_NAV: NavGroup[] = [
 
 export const PLATFORM_NAV: NavItem[] = [
   { path: '/platform/tenants', icon: 'building', label: 'Empresas' },
-  { path: '/platform/alerts', icon: 'alert', label: 'Alertas' },
+  { path: '/platform/alerts', icon: 'alert', label: 'Alertas', criticalAlerts: true },
   { path: '/platform/usage', icon: 'chart', label: 'Uso y salud' },
   { path: '/platform/subscriptions', icon: 'dollar', label: 'Suscripciones' },
   { path: '/platform/team', icon: 'users', label: 'Equipo' },

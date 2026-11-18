@@ -22,7 +22,7 @@ import type {
 import { newId } from '../../shared/api/mock-db';
 import { type MetaSpend, estimateSpend } from '../../shared/billing/meta-pricing';
 import { calendarDay } from '../../shared/format/date-time';
-import { platformAlerts } from './platform-alerts';
+import { type AlertReport, sampleAlertReport } from './platform-alerts';
 import { PlatformRemote, type TenantFields } from './platform-remote';
 
 /** Changing a number asks Meta: the sample data (preview) cannot. */
@@ -118,7 +118,13 @@ export class PlatformData {
     });
   });
 
-  readonly alerts = computed(() => platformAlerts(this.tenants(), this.channels(), this.clock.now()));
+  private readonly remoteAlerts = signal<AlertReport | null>(null);
+  /** The alerts and what was checked (mockup web-25): the server's, or the preview's sample tables'. */
+  readonly alertReport = computed<AlertReport | null>(() =>
+    this.remote ? this.remoteAlerts() : sampleAlertReport(this.tenants(), this.channels(), this.clock.now()),
+  );
+  readonly alerts = computed(() => this.alertReport()?.alerts ?? []);
+  readonly criticalAlerts = computed(() => this.alerts().filter((a) => a.severity === 'critical').length);
 
   readonly kpis = computed(() => ({
     activeTenants: this.tenants().filter((t) => t.status === 'active').length,
@@ -133,14 +139,29 @@ export class PlatformData {
     if (!remote) return null;
     try {
       const month = calendarDay(this.clock.now().toISOString(), PLATFORM_ZONE).slice(0, 7);
+      // The alerts never hold the rest back: the console works while they are being worked out.
+      const alerts = this.refreshAlerts();
       const [tenants, usage] = await Promise.all([remote.tenants(), remote.usage(month)]);
       this.remoteTenants.set(tenants);
       this.remoteUsage.set(usage.map(toUsage));
+      await alerts;
       return null;
     } catch (error) {
       return toApiFailure(error).message;
     } finally {
       this.remoteLoaded.set(true);
+    }
+  }
+
+  /** 'api' mode: the server looks again («Revisar ahora»). Resolves to an error message, or null. */
+  async refreshAlerts(): Promise<string | null> {
+    const remote = this.remote;
+    if (!remote) return null;
+    try {
+      this.remoteAlerts.set(await remote.alerts());
+      return null;
+    } catch (error) {
+      return toApiFailure(error).message;
     }
   }
 

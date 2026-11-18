@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { PlatformData } from '../features/platform/platform.data';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Icon } from '../shared/ui/icon';
 import { PLATFORM_NAV } from './nav';
@@ -28,7 +29,11 @@ import { BrandMark } from '../shared/ui/brand-mark';
       <nav class="nav" aria-label="Menú de la plataforma">
         <h6>Plataforma</h6>
         @for (item of items; track item.path) {
-          <a [routerLink]="item.path" routerLinkActive="on"><app-icon [name]="item.icon" />{{ item.label }}</a>
+          <a [routerLink]="item.path" routerLinkActive="on"><app-icon [name]="item.icon" />{{ item.label }}
+            @if (item.criticalAlerts && data.criticalAlerts(); as count) {
+              <span class="count crit" [attr.aria-label]="count + ' alertas críticas'">{{ count }}</span>
+            }
+          </a>
         }
       </nav>
       <app-user-menu area="platform" class="user" />
@@ -43,6 +48,7 @@ import { BrandMark } from '../shared/ui/brand-mark';
     .brand { @include sidebar.brand; .brand-text { flex: 1; min-width: 0; } }
     .nav { @include sidebar.nav; }
     .user { margin-top: auto; }
+    .nav .count.crit { background: var(--color-danger); color: #fff; }
     .badge { margin: 0 2px 14px; background: var(--color-console-badge-bg); border: 1px solid var(--color-console-badge-border);
       color: var(--color-console-badge-text); border-radius: var(--radius-md); padding: 9px 11px; font-size: 12px;
       line-height: 1.4; display: flex; gap: 8px; --icon-size: 16px; }
@@ -52,5 +58,7 @@ import { BrandMark } from '../shared/ui/brand-mark';
 })
 export class PlatformLayout {
   protected readonly brand = BRAND;
+  /** The same data the console pages load: the red count follows the alerts they read. */
+  protected readonly data = inject(PlatformData);
   protected readonly items = PLATFORM_NAV;
 }

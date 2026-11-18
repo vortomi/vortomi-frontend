@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClient } from '../../core/api/api-client';
-import type { ApiInvitation, ApiList, ApiPlatformTenant, ApiPlatformTenantDetail, ApiUsageRow, ApiWabaLookup } from '../../shared/api/contract';
+import type { ApiInvitation, ApiList, ApiPlatformAlertReport, ApiPlatformTenant, ApiPlatformTenantDetail, ApiUsageRow, ApiWabaLookup } from '../../shared/api/contract';
 import type { Id, TenantPlan } from '../../shared/api/models';
 
 export interface TenantFields {
@@ -120,6 +120,11 @@ export class PlatformRemote {
 
   revokeInvitation(tenantId: Id, invitationId: Id): Promise<void> {
     return this.api.delete(this.path(tenantId, `invitations/${encodeURIComponent(invitationId)}`));
+  }
+
+  /** What our team must act on (mockup web-25), computed by the server on each look. */
+  alerts(): Promise<ApiPlatformAlertReport> {
+    return this.api.get<ApiPlatformAlertReport>('platform/alerts');
   }
 
   async usage(month: string): Promise<ApiUsageRow[]> {

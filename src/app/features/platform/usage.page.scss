@@ -1,0 +1,77 @@
+// «Uso y salud» (mockup web-26): the layout and cards come from the company's Reportes
+// (reports.page.scss, loaded with this one); only what the console adds lives here.
+
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+
+  i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-success);
+  }
+}
+
+.form-alert {
+  margin-bottom: 16px;
+}
+
+.companies {
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  header {
+    padding: 18px 22px 10px;
+  }
+
+  th,
+  td {
+    white-space: nowrap;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  // Narrower than Reportes' bar: this table has more columns.
+  .track {
+    width: 64px;
+  }
+}
+
+.health {
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 18px 22px 8px;
+
+    .muted {
+      font-size: 12.5px;
+    }
+  }
+
+  .row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 13px 22px;
+    border-top: 1px solid var(--color-border-soft);
+  }
+
+  .text {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+
+    span {
+      display: block;
+      font-size: 12.5px;
+      color: var(--color-text-muted);
+      margin-top: 2px;
+    }
+  }
+}

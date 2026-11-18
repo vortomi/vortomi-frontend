@@ -1,100 +1,72 @@
-// What the platform team must act on. Pure, so each rule is tested on its own.
-import type { ChannelAccount, Id, Tenant } from '../../shared/api/models';
+// What the platform team must act on (mockup web-25). The server computes every alert from the
+// data it stores (GET /platform/alerts); the preview, without a server, derives the ones its sample
+// tables can show: numbers and their access, and unfinished sign-ups.
+import type { ApiPlatformAlert, ApiPlatformAlertReport } from '../../shared/api/contract';
+import type { ChannelAccount, Tenant } from '../../shared/api/models';
 
-export type AlertSeverity = 'critical' | 'warning';
-export type AlertKind = 'channel_disconnected' | 'access_expiring' | 'quality_low' | 'onboarding_stalled';
-
-export interface PlatformAlert {
-  id: string;
-  tenantId: Id;
-  tenantName: string;
-  severity: AlertSeverity;
-  kind: AlertKind;
-  text: string;
-}
+export type PlatformAlert = ApiPlatformAlert;
+export type AlertReport = ApiPlatformAlertReport;
+export type AlertSeverity = PlatformAlert['severity'];
+export type AlertCategory = PlatformAlert['category'];
 
 const DAY_MS = 86_400_000;
 const ACCESS_WARNING_DAYS = 7;
 const STALLED_ONBOARDING_DAYS = 3;
 
-const daysUntil = (iso: string, now: Date) => Math.ceil((new Date(iso).getTime() - now.getTime()) / DAY_MS);
-
-export function platformAlerts(tenants: Tenant[], channels: ChannelAccount[], now: Date): PlatformAlert[] {
+/** The preview's report: the same shape the server answers. */
+export function sampleAlertReport(tenants: Tenant[], channels: ChannelAccount[], now: Date): AlertReport {
+  const live = tenants.filter((t) => t.status !== 'cancelled');
+  const names = new Map(live.map((t) => [t.id, t.name]));
   const alerts: PlatformAlert[] = [];
-  for (const tenant of tenants) {
-    if (tenant.status === 'cancelled') continue;
-    const base = { tenantId: tenant.id, tenantName: tenant.name };
 
+  for (const tenant of live) {
     const unfinished = tenant.status === 'draft' || tenant.status === 'awaiting_channel' || tenant.status === 'awaiting_owner';
-    if (unfinished && -daysUntil(tenant.createdAt, now) >= STALLED_ONBOARDING_DAYS) {
-      const days = -daysUntil(tenant.createdAt, now);
+    const days = Math.floor((now.getTime() - new Date(tenant.createdAt).getTime()) / DAY_MS);
+    if (unfinished && days >= STALLED_ONBOARDING_DAYS) {
       alerts.push({
-        ...base,
-        id: `${tenant.id}:onboarding`,
-        severity: 'warning',
-        kind: 'onboarding_stalled',
-        text:
-          tenant.status === 'awaiting_owner'
-            ? `El dueño todavía no conecta su número (alta de hace ${days} días). Llamarlo y hacerlo con él.`
-            : `El alta quedó a medias hace ${days} días. Retomarla con el cliente.`,
+        id: `${tenant.id}:onboarding`, kind: 'onboarding_stalled', severity: 'warning', category: 'onboarding',
+        tenantId: tenant.id, tenantName: tenant.name, channelId: null, channelLabel: null, since: tenant.createdAt,
+        facts: { days, waitingOwner: tenant.status === 'awaiting_owner' ? 1 : 0 },
       });
     }
+  }
 
-    for (const channel of channels.filter((c) => c.tenantId === tenant.id)) {
-      if (channel.status === 'disconnected') {
-        alerts.push({
-          ...base,
-          id: `${channel.id}:disconnected`,
-          severity: 'critical',
-          kind: 'channel_disconnected',
-          text: disconnectedText(channel),
-        });
-        continue;
-      }
-      if (channel.accessExpiresAt) {
-        const days = daysUntil(channel.accessExpiresAt, now);
-        if (days <= ACCESS_WARNING_DAYS) {
-          alerts.push({
-            ...base,
-            id: `${channel.id}:access`,
-            severity: days <= 0 ? 'critical' : 'warning',
-            kind: 'access_expiring',
-            text:
-              days <= 0
-                ? `El acceso al número ${channel.label} venció. Renovarlo ya.`
-                : `El acceso a su cuenta de Meta vence en ${days} ${days === 1 ? 'día' : 'días'}. Renovarlo antes evita cortes.`,
-          });
-        }
-      }
-      if (channel.qualityRating === 'low') {
-        alerts.push({
-          ...base,
-          id: `${channel.id}:quality`,
-          severity: 'warning',
-          kind: 'quality_low',
-          text: `Calidad baja en ${channel.label}: muchos clientes la bloquean. Avisarle antes de que Meta la limite.`,
-        });
-      }
+  const own = channels.filter((c) => names.has(c.tenantId));
+  for (const channel of own) {
+    const base = { tenantId: channel.tenantId, tenantName: names.get(channel.tenantId) ?? null, channelId: channel.id, channelLabel: channel.label, category: 'connection' as const };
+    if (channel.status === 'disconnected') {
+      alerts.push({ ...base, id: `${channel.id}:disconnected`, kind: 'channel_disconnected', severity: 'critical', since: null, facts: { reason: channel.statusReason ?? null } });
+      continue;
+    }
+    if (channel.accessExpiresAt) {
+      const left = Math.ceil((new Date(channel.accessExpiresAt).getTime() - now.getTime()) / DAY_MS);
+      if (left <= 0) alerts.push({ ...base, id: `${channel.id}:access`, kind: 'access_expired', severity: 'critical', since: channel.accessExpiresAt, facts: {} });
+      else if (left <= ACCESS_WARNING_DAYS) alerts.push({ ...base, id: `${channel.id}:access`, kind: 'access_expiring', severity: 'warning', since: channel.accessExpiresAt, facts: { days: left } });
     }
   }
-  return alerts.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'critical' ? -1 : 1));
+
+  return {
+    checkedAt: now.toISOString(),
+    checked: { companies: live.length, numbers: own.length, connected: own.filter((c) => c.status === 'connected').length },
+    alerts: sortAlerts(alerts),
+  };
 }
 
-/** What our team reads about a number that stopped working, by why Meta said it did. */
-function disconnectedText(channel: ChannelAccount): string {
-  const name = channel.label;
-  switch (channel.statusReason) {
-    case 'owner_disconnected':
-      return `El dueño desconectó el número ${name} desde su teléfono. Sus mensajes no están entrando: llamarlo para reconectarlo.`;
-    case 'number_changed':
-      return `El número ${name} se registró de nuevo o cambió de teléfono y se desconectó. Hay que reconectarlo.`;
-    case 'inactive':
-      return `El número ${name} se desconectó porque no abrieron WhatsApp Business en el teléfono. Hay que reconectarlo.`;
-    case 'banned':
-      return `Meta bloqueó el número ${name}. Revisar el motivo con el cliente.`;
-    case 'account_deleted':
-      return `Se eliminó la cuenta de WhatsApp del número ${name}.`;
-    default:
-      return `Quitó nuestro acceso al número ${name}. Sus mensajes no están entrando: hay que volver a conectarlo.`;
+/** Critical first; inside each, the platform's own before any company's (as the server orders them). */
+export function sortAlerts(alerts: PlatformAlert[]): PlatformAlert[] {
+  const rank = (a: PlatformAlert) => (a.severity === 'critical' ? 0 : 2) + (a.tenantId ? 1 : 0);
+  return [...alerts].sort((a, b) => rank(a) - rank(b));
+}
+
+/** The company sections of the page: each company with its alerts, the most urgent company first. */
+export function byCompany(alerts: PlatformAlert[]): { tenantId: string; tenantName: string; alerts: PlatformAlert[] }[] {
+  const groups = new Map<string, { tenantId: string; tenantName: string; alerts: PlatformAlert[] }>();
+  for (const alert of alerts) {
+    if (!alert.tenantId) continue;
+    const group = groups.get(alert.tenantId) ?? { tenantId: alert.tenantId, tenantName: alert.tenantName ?? '', alerts: [] };
+    group.alerts.push(alert);
+    groups.set(alert.tenantId, group);
   }
+  const critical = (g: { alerts: PlatformAlert[] }) => g.alerts.filter((a) => a.severity === 'critical').length;
+  return [...groups.values()].sort((a, b) => critical(b) - critical(a) || b.alerts.length - a.alerts.length || a.tenantName.localeCompare(b.tenantName));
 }

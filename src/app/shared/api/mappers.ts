@@ -1,6 +1,7 @@
 // Server shapes (contract.ts) -> the models the screens already use (models.ts).
 // The only place that knows both: screens never see the server's field names.
 // Fields the server does not provide yet get explicit neutral values, marked "not on the server yet".
+import { chatMediaOf } from './chat-media';
 import { formatWaId } from '../format/phone';
 import type {
   ApiCategory,
@@ -117,15 +118,18 @@ export function toContact(tenantId: Id, row: ApiContact): Contact {
 }
 
 /** The panel shows text, images, templates and product cards; other kinds read as text. */
-export function toMessage(tenantId: Id, conversationId: Id, row: ApiMessage): Message {
-  const shown = row.type === 'image' || row.type === 'template' ? row.type : 'text';
+export function toMessage(tenantId: Id, conversationId: Id, row: ApiMessage, now = Date.now()): Message {
+  // A file (photo, voice note, document...) is drawn by its own box; the text is its caption.
+  const media = chatMediaOf(row, now);
+  const shown = row.type === 'template' ? 'template' : 'text';
   return {
     id: String(row.id),
     tenantId,
     conversationId,
     direction: row.direction === 'in' ? 'inbound' : 'outbound',
     type: shown,
-    body: shown === 'text' && row.type !== 'text' ? previewOf(row.type, row.body) : (row.body ?? ''),
+    body: media ? (row.body ?? '') : shown === 'text' && row.type !== 'text' ? previewOf(row.type, row.body) : (row.body ?? ''),
+    media,
     authorUserId: row.authorUserId,
     automatic: row.author === 'bot',
     fromOwnerApp: row.author === 'owner_app',
