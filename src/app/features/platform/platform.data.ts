@@ -89,8 +89,12 @@ export class PlatformData {
   private readonly tenants = computed<Tenant[]>(() => (this.remote ? this.remoteTenants().map(toTenantModel) : this.directory.tenants()));
   private readonly channels = computed<ChannelAccount[]>(() => {
     if (!this.remote) return this.directory.channels();
+    // The list carries no Meta ids; the open company's page has them («Cambiar número o clave» starts from its account).
+    const detail = this.remoteDetail();
     return this.remoteTenants().flatMap((t) =>
-      t.channels.map((c, index) => toChannel(t.id, { ...c, phoneNumberId: '', wabaId: '' }, index)),
+      detail?.id === t.id
+        ? detail.channels.map((c, index) => toChannel(t.id, c, index))
+        : t.channels.map((c, index) => toChannel(t.id, { ...c, phoneNumberId: '', wabaId: '' }, index)),
     );
   });
   private readonly usageRows = computed(() => (this.remote ? this.remoteUsage() : this.directory.usage()));
