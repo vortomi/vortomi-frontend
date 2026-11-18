@@ -40,7 +40,8 @@ export class SecondFactor {
     const { data, error } = await this.supabase.auth.mfa.enroll({
       factorType: 'totp',
       issuer: TOTP_ISSUER,
-      friendlyName: `Vortomi ${new Date().toISOString().slice(0, 10)}`,
+      // Unique per person: changing phones adds a second code for a moment, so the time goes in too.
+      friendlyName: `Vortomi ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`,
     });
     if (error || !data) throw error ?? new Error('Could not start the enrolment');
     return { factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret };
@@ -52,6 +53,26 @@ export class SecondFactor {
     if (!id) return false;
     const { error } = await this.supabase.auth.mfa.challengeAndVerify({ factorId: id, code });
     return !error;
+  }
+
+  /**
+   * Changing phones (mockup web-29): the new app's code is checked first; only then every other
+   * code is forgotten. If anything fails before that, the old phone keeps working.
+   */
+  async replaceWith(newFactorId: string, code: string): Promise<boolean> {
+    const { error } = await this.supabase.auth.mfa.challengeAndVerify({ factorId: newFactorId, code });
+    if (error) return false;
+    const { data } = await this.supabase.auth.mfa.listFactors();
+    for (const factor of data?.totp ?? []) {
+      if (factor.id !== newFactorId) await this.supabase.auth.mfa.unenroll({ factorId: factor.id });
+    }
+    return true;
+  }
+
+  /** A change of phone left half way: its unconfirmed code is thrown away. */
+  async discard(factorId: string): Promise<void> {
+    const { data } = await this.supabase.auth.mfa.listFactors();
+    if (data?.all.some((factor) => factor.id === factorId && factor.status === 'unverified')) await this.supabase.auth.mfa.unenroll({ factorId });
   }
 
   private async verifiedFactorId(): Promise<string | null> {

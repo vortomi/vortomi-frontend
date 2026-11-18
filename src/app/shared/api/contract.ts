@@ -300,7 +300,22 @@ export interface ApiInvitation {
 }
 
 /** What the invitation page shows before the person signs in (/public/invitations/:token). */
-/** GET /platform/team: who enters our console, their open invitations and the team's history. */
+/** GET /me/profile: «Mi perfil» (mockup web-29), one's own account only. */
+export interface ApiMyProfile {
+  name: string;
+  email: string;
+  /** One of our staff (super admin). */
+  staff: boolean;
+  memberSince: string | null;
+  invitedBy: string | null;
+  lastSignInAt: string | null;
+  code: { since: string; lastUsedAt: string | null } | null;
+  companies: { tenantId: string; name: string; role: 'admin' | 'agent'; since: string }[];
+  sessions: Omit<ApiStaffSession, 'userId' | 'name'>[];
+  /** Staff only: their own last changes in the console. */
+  activity: { action: ConsoleAction | PlatformTeamAction; target: string | null; createdAt: string }[];
+}
+
 /** GET /platform/team: the console's «Staff» (mockup web-28). IPs come with their last part hidden. */
 export interface ApiPlatformTeam {
   admins: {

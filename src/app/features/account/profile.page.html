@@ -6,70 +6,153 @@
 </header>
 
 <div class="page-body">
-  @if (session.user(); as user) {
-    <div class="grid">
-      <section class="card">
-        <h2>Datos</h2>
-        <form (submit)="saveName($event)" novalidate>
-          <div class="field">
-            <label for="name">Nombre</label>
-            <input id="name" class="input" autocomplete="name" [formField]="nameForm.name" />
-            <app-field-error [state]="nameForm.name()" />
-          </div>
-          <div class="field">
-            <label for="email">Correo</label>
-            <input id="email" class="input" [value]="user.email" readonly />
-            <p class="field-hint">Para cambiarlo, pídeselo a quien administra tu empresa.</p>
-          </div>
-          <div class="actions"><button type="submit" class="btn btn--primary" [disabled]="nameForm().submitting()" [attr.aria-busy]="nameForm().submitting()"><span>Guardar</span></button></div>
-        </form>
-      </section>
-
-      <section class="card">
-        <h2>Contraseña</h2>
-        <form (submit)="changePassword($event)" novalidate>
-          <div class="field">
-            <label for="current">Contraseña actual</label>
-            <app-password-field><input id="current" class="input" type="password" autocomplete="current-password" [formField]="passwordForm.current" /></app-password-field>
-            <app-field-error [state]="passwordForm.current()" />
-          </div>
-          <div class="field">
-            <label for="next">Contraseña nueva</label>
-            <app-password-field><input id="next" class="input" type="password" autocomplete="new-password" [formField]="passwordForm.next.password" /></app-password-field>
-            <app-password-meter [password]="passwordForm.next.password().value()" />
-            <app-field-error [state]="passwordForm.next.password()" />
-          </div>
-          <div class="field">
-            <label for="confirm">Repítela</label>
-            <app-password-field><input id="confirm" class="input" type="password" autocomplete="new-password" [formField]="passwordForm.next.confirm" /></app-password-field>
-            <app-field-error [state]="passwordForm.next.confirm()" />
-          </div>
-          <div class="actions"><button type="submit" class="btn btn--primary" [disabled]="passwordForm().submitting()" [attr.aria-busy]="passwordForm().submitting()"><span>Cambiar contraseña</span></button></div>
-        </form>
-      </section>
-
-      <section class="card">
-        <h2>Verificación en dos pasos</h2>
-        @if (session.isSuperAdmin()) {
-          <div class="muted-row"><span>Código de aplicación de autenticación</span><app-pill tone="green" [dot]="true">Activada · obligatoria</app-pill></div>
-          <p class="field-hint">Es obligatoria para nuestro equipo porque la consola tiene acceso a todas las empresas.</p>
-        } @else {
-          <div class="muted-row"><span>Código de aplicación de autenticación</span><app-pill tone="neutral" [dot]="true">Desactivada</app-pill></div>
-          <p class="field-hint">Opcional para las empresas. Se podrá activar en una próxima versión.</p>
-        }
-      </section>
-
-      <section class="card">
-        <h2>Apariencia</h2>
-        <div class="segmented" role="radiogroup" aria-label="Apariencia">
-          @for (m of themeModes; track m.mode) {
-            <button type="button" role="radio" [class.on]="theme.mode() === m.mode" [attr.aria-checked]="theme.mode() === m.mode" (click)="theme.set(m.mode)">
-              <app-icon [name]="m.icon" />{{ m.label }}
-            </button>
+  @if (loadError(); as message) {
+    <div class="card box">
+      <p class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</p>
+      <button type="button" class="btn" (click)="load()"><span>Reintentar</span></button>
+    </div>
+  } @else if (profile(); as p) {
+    <section class="card hero">
+      <app-avatar [name]="p.name" [seed]="session.user()?.id ?? p.email" size="lg" />
+      <div class="who">
+        <h2>{{ p.name }}</h2>
+        <p class="mail">{{ p.email }}</p>
+        <div class="badges">
+          <app-pill [tone]="p.staff ? 'violet' : 'blue'">{{ badge() }}</app-pill>
+          @if (p.code) {
+            <app-pill tone="green" [dot]="true">Código de seguridad activado</app-pill>
           }
         </div>
-        <p class="field-hint">«Sistema» sigue el modo claro u oscuro de este dispositivo. La elección se guarda en este navegador.</p>
+      </div>
+      <dl class="facts">
+        <div><dt>{{ p.staff ? 'En el staff desde' : 'En Vortomi desde' }}</dt><dd>{{ date(p.memberSince) }}</dd></div>
+        @if (p.staff) {
+          <div><dt>Te invitó</dt><dd>{{ p.invitedBy ?? 'Primer administrador' }}</dd></div>
+        }
+        <div><dt>Último acceso</dt><dd>{{ stamp(p.lastSignInAt) }}</dd></div>
+      </dl>
+    </section>
+
+    <div class="cols">
+      <div class="stack">
+        <section class="card box">
+          <h3>Datos</h3>
+          <form (submit)="saveName($event)" novalidate>
+            <div class="field">
+              <label for="name">Nombre</label>
+              <input id="name" class="input" autocomplete="name" [formField]="nameForm.name" />
+              <app-field-error [state]="nameForm.name()" />
+            </div>
+            <div class="field">
+              <label for="email">Correo</label>
+              <input id="email" class="input" [value]="p.email" readonly />
+              <p class="field-hint">Es con el que entras. Para cambiarlo, pídeselo a {{ p.staff && inConsole() ? 'otra persona del staff' : 'quien administra tu empresa' }}.</p>
+            </div>
+            <div class="actions"><button type="submit" class="btn btn--primary" [disabled]="nameForm().submitting()" [attr.aria-busy]="nameForm().submitting()"><span>Guardar</span></button></div>
+          </form>
+        </section>
+
+        <section class="card box">
+          <h3>Apariencia</h3>
+          <div class="segmented" role="radiogroup" aria-label="Apariencia">
+            @for (m of themeModes; track m.mode) {
+              <button type="button" role="radio" [class.on]="theme.mode() === m.mode" [attr.aria-checked]="theme.mode() === m.mode" (click)="theme.set(m.mode)">
+                <app-icon [name]="m.icon" />{{ m.label }}
+              </button>
+            }
+          </div>
+          <p class="field-hint">«Sistema» sigue el modo claro u oscuro de este dispositivo. Se guarda en este navegador.</p>
+        </section>
+      </div>
+
+      <section class="card box">
+        <h3>Seguridad</h3>
+        <div class="sec">
+          <span class="sic blue"><app-icon name="lock" /></span>
+          <div class="text"><b>Contraseña</b><small>Mínimo 8 caracteres, con letras y al menos un número</small></div>
+          <button type="button" class="btn btn--sm" (click)="openPassword()"><span>Cambiar contraseña</span></button>
+        </div>
+        <div class="sec">
+          <span class="sic" [class.green]="p.code" [class.gray]="!p.code"><app-icon name="shield" /></span>
+          @if (p.code) {
+            <div class="text">
+              <b>Código de seguridad <app-pill tone="green" [dot]="true">Activado{{ p.staff ? ' · obligatorio' : '' }}</app-pill></b>
+              <small>Activado el {{ date(p.code.since) }}{{ p.code.lastUsedAt ? ' · pedido por última vez ' + stamp(p.code.lastUsedAt).toLowerCase() : '' }}</small>
+            </div>
+            <button type="button" class="btn btn--sm" (click)="openPhone()"><span>Cambiar de teléfono</span></button>
+          } @else {
+            <div class="text"><b>Código de seguridad <app-pill tone="neutral" [dot]="true">Opcional · próximamente</app-pill></b><small>Las empresas podrán activarlo en una próxima versión</small></div>
+          }
+        </div>
+        <div class="sec">
+          <span class="sic violet"><app-icon name="monitor" /></span>
+          <div class="text"><b>Sesiones abiertas: {{ p.sessions.length }}</b><small>{{ sessionsText() }}</small></div>
+          <button type="button" class="btn btn--sm" [disabled]="!others()" (click)="endOthers()"><span>Cerrar las demás</span></button>
+        </div>
+        @if (p.staff) {
+          <p class="field-hint">El código de seguridad es obligatorio para el staff porque la consola llega a todas las empresas. Si pierdes tu teléfono y no puedes entrar, otra persona del staff puede reiniciarlo desde Staff.</p>
+        }
       </section>
     </div>
+
+    <div class="two">
+      <section class="card box">
+        <h3>Mis sesiones abiertas <span class="count">· {{ p.sessions.length }}</span></h3>
+        @for (s of p.sessions; track s.id) {
+          <div class="row">
+            <span class="device"><app-icon [name]="s.mobile ? 'phone' : 'monitor'" /></span>
+            <div class="text"><b>{{ s.browser }} en {{ s.system }}</b><small>{{ s.ip ? 'IP ' + s.ip + ' · ' : '' }}{{ s.current ? 'esta sesión · ' : '' }}abierta {{ stamp(s.createdAt).toLowerCase() }}</small></div>
+            <span class="live" [class.on]="s.current || isRecent(s.lastActiveAt)">{{ s.current ? 'ahora' : ago(s.lastActiveAt) }}</span>
+            @if (!s.current) {
+              <button type="button" class="btn btn--sm" (click)="endSession(s)"><span>Cerrar</span></button>
+            }
+          </div>
+        }
+        <p class="field-hint">¿No reconoces un dispositivo? Ciérralo y cambia tu contraseña.</p>
+      </section>
+
+      @if (p.staff) {
+        <section class="card box">
+          <h3>Mi actividad reciente</h3>
+          <ul class="timeline">
+            @for (entry of p.activity; track $index) {
+              @let l = look(entry);
+              <li>
+                <span class="when">{{ ago(entry.createdAt) }}</span>
+                <span [class]="'ic tone-' + l.tone"><app-icon [name]="l.icon" /></span>
+                <span>{{ l.text }}@if (l.target) { <b> {{ l.target }}</b> }</span>
+              </li>
+            } @empty {
+              <li class="muted">Todavía no has cambiado nada en la consola.</li>
+            }
+          </ul>
+          <p class="field-hint">Todo lo del staff, en Staff → Actividad en la consola.</p>
+        </section>
+      } @else if (p.companies.length > 1) {
+        <section class="card box">
+          <h3>Mis empresas <span class="count">· {{ p.companies.length }}</span></h3>
+          @for (c of p.companies; track c.tenantId) {
+            <div class="row">
+              <app-avatar [name]="c.name" [seed]="c.tenantId" />
+              <div class="text"><b>{{ c.name }}</b><small>{{ roleText(c.role) }}{{ c.tenantId === session.tenant()?.id ? ' · estás aquí' : '' }}</small></div>
+              @if (c.tenantId === session.tenant()?.id) {
+                <app-pill tone="green" [dot]="true">Actual</app-pill>
+              } @else {
+                <button type="button" class="btn btn--sm" (click)="goTo(c.tenantId)"><span>Ir a esta empresa</span></button>
+              }
+            </div>
+          }
+        </section>
+      }
+    </div>
+  } @else {
+    <div class="card box"><app-skeleton kind="detail" [rows]="5" /></div>
   }
 </div>
+
+@if (changingPassword()) {
+  <app-change-password-dialog (closed)="passwordClosed($event)" />
+}
+@if (changingPhone()) {
+  <app-change-phone-dialog (closed)="phoneClosed($event)" />
+}
