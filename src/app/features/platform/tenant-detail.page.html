@@ -78,7 +78,7 @@
                 }
                 <button type="button" class="btn btn--sm" [disabled]="refreshing() === channel.id" [attr.aria-busy]="refreshing() === channel.id"
                   (click)="refreshNumber(channel)" aria-label="Actualizar el número desde Meta"><app-icon name="swap" /><span>Actualizar</span></button>
-                <button type="button" class="btn btn--sm" (click)="changing.set(channel)"><app-icon name="edit" /><span>Cambiar número</span></button>
+                <button type="button" class="btn btn--sm" (click)="changing.set(channel)"><app-icon name="edit" /><span>Cambiar número o clave</span></button>
               </td>
             </tr>
           } @empty {
@@ -158,6 +158,6 @@
 @if (row(); as r) {
   <app-tenant-edit-dialog [tenant]="r.tenant" [open]="editing()" (closed)="editing.set(false)" (saved)="onSaved()" />
   @if (changing(); as channel) {
-    <app-change-number-dialog [tenantId]="r.tenant.id" [channel]="channel" [open]="true" (closed)="changing.set(null)" (changed)="onNumberChanged()" />
+    <app-change-number-dialog [tenantId]="r.tenant.id" [channel]="channel" [open]="true" (closed)="changing.set(null)" (changed)="onNumberChanged($event)" />
   }
 }

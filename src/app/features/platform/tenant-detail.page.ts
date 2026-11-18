@@ -146,9 +146,9 @@ export class TenantDetailPage {
     this.toaster.show(failure ?? `Número ${channel.label} actualizado desde Meta`, failure ? 'info' : 'success');
   }
 
-  protected onNumberChanged(): void {
+  protected onNumberChanged(kind: 'number' | 'token'): void {
     this.changing.set(null);
-    this.toaster.show('Número cambiado. Desde ahora llegan los mensajes del número nuevo.');
+    this.toaster.show(kind === 'token' ? 'Clave nueva guardada. El número sigue igual.' : 'Número cambiado. Desde ahora llegan los mensajes del número nuevo.');
   }
 
   protected onSaved(): void {

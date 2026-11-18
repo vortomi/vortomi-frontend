@@ -12,13 +12,15 @@ type FoundNumber = ApiWabaLookup['numbers'][number];
  * company's real number instead of a test one. The numbers come from Meta (never typed by hand); the
  * number keeps its place in Vortomi, so conversations, contacts and orders stay with the company.
  * The dialog itself is the confirmation: it says what changes before the button.
+ * With a new access token typed, the current number can be picked too: same number, new token (a
+ * leaked or expired one replaced); the server checks the token against Meta before keeping it.
  */
 @Component({
   selector: 'app-change-number-dialog',
   imports: [Dialog, Icon],
   template: `
-    <app-dialog [open]="open()" [title]="'Cambiar el número ' + channel().label" [locked]="saving()" (closed)="closed.emit()">
-      <p class="lead">Hoy: <b>{{ channel().displayNumber }}</b>. Elige el número correcto de la cuenta de WhatsApp de la empresa; Vortomi lo lee de Meta.</p>
+    <app-dialog [open]="open()" [title]="'Cambiar el número o su clave · ' + channel().label" [locked]="saving()" (closed)="closed.emit()">
+      <p class="lead">Hoy: <b>{{ channel().displayNumber }}</b>. Elige el número correcto de la cuenta de WhatsApp de la empresa; Vortomi lo lee de Meta. Para cambiar solo la clave, escribe la nueva y elige el mismo número.</p>
       @if (error(); as message) {
         <div class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</div>
       }
@@ -42,9 +44,9 @@ type FoundNumber = ApiWabaLookup['numbers'][number];
           <div class="numbers" role="radiogroup" aria-label="Números de la cuenta">
             @for (n of list.numbers; track n.phoneNumberId) {
               <button type="button" class="number" role="radio" [attr.aria-checked]="picked() === n.phoneNumberId" [class.on]="picked() === n.phoneNumberId"
-                [disabled]="!!n.takenBy || isCurrent(n)" (click)="picked.set(n.phoneNumberId)">
+                [disabled]="!!n.takenBy || (isCurrent(n) && !hasToken())" (click)="picked.set(n.phoneNumberId)">
                 <span class="text"><b>{{ n.displayNumber }}</b><small>{{ n.verifiedName }}</small></span>
-                @if (isCurrent(n)) { <span class="tag">Actual</span> }
+                @if (isCurrent(n)) { <span class="tag">{{ hasToken() ? 'Actual · clave nueva' : 'Actual' }}</span> }
                 @else if (n.takenBy) { <span class="tag">Es de {{ n.takenBy }}</span> }
                 @else if (n.alreadyHere) { <span class="tag">Ya es de esta empresa</span> }
               </button>
@@ -52,20 +54,24 @@ type FoundNumber = ApiWabaLookup['numbers'][number];
               <p class="field-hint">Esa cuenta no tiene números.</p>
             }
           </div>
-          <p class="form-alert warn"><app-icon name="info" />Las conversaciones, contactos y pedidos se quedan en la empresa. Desde el cambio, solo llegan los mensajes del número nuevo.</p>
+          @if (keepsNumber()) {
+            <p class="form-alert ok"><app-icon name="check" />El número no cambia: solo se guarda la clave nueva, cifrada. La anterior deja de usarse.</p>
+          } @else {
+            <p class="form-alert warn"><app-icon name="info" />Las conversaciones, contactos y pedidos se quedan en la empresa. Desde el cambio, solo llegan los mensajes del número nuevo.</p>
+          }
         }
       }
       <ng-container dialog-actions>
         <button type="button" class="btn" [disabled]="saving()" (click)="closed.emit()">Cancelar</button>
-        <button type="button" class="btn btn--primary" [disabled]="saving() || !picked()" [attr.aria-busy]="saving()" (click)="change()"><span>Cambiar número</span></button>
+        <button type="button" class="btn btn--primary" [disabled]="!canSave()" [attr.aria-busy]="saving()" (click)="change()"><span>{{ keepsNumber() ? 'Guardar la clave nueva' : 'Cambiar número' }}</span></button>
       </ng-container>
     </app-dialog>
   `,
   styles: `
-    :host { --dialog-width: 600px; }
-    .search { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: start; }
-    .search .btn { margin-top: 26px; }
-    @media (max-width: 640px) { .search { grid-template-columns: 1fr; } .search .btn { margin-top: 0; } }
+    :host { --dialog-width: 540px; }
+    /* One field under the other: side by side, the labels and hints of different lengths never line up. */
+    .search { display: flex; flex-direction: column; gap: 14px; }
+    .search .btn { justify-content: center; }
     .mono { font-family: var(--font-mono); }
     .numbers { display: flex; flex-direction: column; gap: 8px; }
     .number { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md);
@@ -85,7 +91,8 @@ export class ChangeNumberDialog {
   readonly channel = input.required<ChannelAccount>();
   readonly open = input(false);
   readonly closed = output<void>();
-  readonly changed = output<void>();
+  /** What was saved: another number, or the same number with a new token. */
+  readonly changed = output<'number' | 'token'>();
 
   protected readonly wabaId = signal('');
   protected readonly token = signal('');
@@ -97,6 +104,11 @@ export class ChangeNumberDialog {
   /** The account searched last, so the change goes to that one even if the field is edited after. */
   private readonly searchedWaba = signal('');
   private readonly currentId = computed(() => this.channel().phoneNumberId);
+  protected readonly hasToken = computed(() => this.token().trim().length > 0);
+  /** The current number picked again: only its token changes. */
+  protected readonly keepsNumber = computed(() => this.picked() === this.currentId());
+  /** The current number needs a new token; erasing the token after picking it blocks the save. */
+  protected readonly canSave = computed(() => !this.saving() && !!this.picked() && (!this.keepsNumber() || this.hasToken()));
 
   constructor() {
     // Each time it opens: the number's own account, nothing searched yet.
@@ -140,12 +152,13 @@ export class ChangeNumberDialog {
 
   protected async change(): Promise<void> {
     const phoneNumberId = this.picked();
-    if (!phoneNumberId || this.saving()) return;
+    if (!phoneNumberId || !this.canSave()) return;
+    const kind = this.keepsNumber() ? 'token' : 'number';
     this.saving.set(true);
     this.error.set(null);
     const failure = await this.data.replaceNumber(this.tenantId(), this.channel().id, { wabaId: this.searchedWaba(), phoneNumberId, accessToken: this.token() });
     this.saving.set(false);
     if (failure) this.error.set(failure);
-    else this.changed.emit();
+    else this.changed.emit(kind);
   }
 }
