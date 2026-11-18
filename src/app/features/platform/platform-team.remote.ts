@@ -6,7 +6,7 @@ import type { Id } from '../../shared/api/models';
 /** A console invitation link: opens the same invitation page, for our console instead of a company. */
 export const platformInvitationLink = (token: string) => `${window.location.origin}/platform-invitation/${encodeURIComponent(token)}`;
 
-/** «Equipo» of the console (mockup web-22) against vortomi-backend. */
+/** «Staff» of the console (mockups web-22, web-28) against vortomi-backend. */
 @Injectable({ providedIn: 'root' })
 export class PlatformTeamRemote {
   private readonly api = inject(ApiClient);
@@ -36,5 +36,15 @@ export class PlatformTeamRemote {
 
   remove(userId: Id): Promise<void> {
     return this.api.delete(`platform/team/admins/${encodeURIComponent(userId)}`);
+  }
+
+  /** Signs the person out of one device (never the caller's current one). */
+  endSession(userId: Id, sessionId: Id): Promise<void> {
+    return this.api.delete(`platform/team/admins/${encodeURIComponent(userId)}/sessions/${encodeURIComponent(sessionId)}`);
+  }
+
+  /** Signs another person out of every device. */
+  endSessions(userId: Id): Promise<{ ended: number }> {
+    return this.api.delete(`platform/team/admins/${encodeURIComponent(userId)}/sessions`);
   }
 }

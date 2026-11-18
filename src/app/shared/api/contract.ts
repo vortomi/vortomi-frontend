@@ -301,10 +301,43 @@ export interface ApiInvitation {
 
 /** What the invitation page shows before the person signs in (/public/invitations/:token). */
 /** GET /platform/team: who enters our console, their open invitations and the team's history. */
+/** GET /platform/team: the console's «Staff» (mockup web-28). IPs come with their last part hidden. */
 export interface ApiPlatformTeam {
-  admins: { userId: string; name: string; email: string; createdAt: string; hasCode: boolean; isYou: boolean }[];
-  invitations: { id: string; name: string; email: string; expiresAt: string }[];
-  events: { action: PlatformTeamAction; actorName: string; subjectEmail: string; createdAt: string }[];
+  admins: {
+    userId: string;
+    name: string;
+    email: string;
+    createdAt: string;
+    hasCode: boolean;
+    isYou: boolean;
+    /** Who invited them; null for the first admins, made by hand. */
+    invitedBy: string | null;
+    lastSignInAt: string | null;
+    codeSince: string | null;
+    codeLastUsedAt: string | null;
+    sessionCount: number;
+    /** Their last change in the console («Actividad en la consola»). */
+    lastActionAt: string | null;
+  }[];
+  invitations: { id: string; name: string; email: string; expiresAt: string; createdAt: string; invitedBy: string }[];
+  sessions: ApiStaffSession[];
+  events: { action: PlatformTeamAction; actorName: string; subjectEmail: string; subjectName: string | null; createdAt: string }[];
+  activity: { action: ConsoleAction; actorUserId: string; actorName: string; tenantId: string | null; tenantName: string | null; createdAt: string }[];
+}
+
+export interface ApiStaffSession {
+  id: string;
+  userId: string;
+  name: string;
+  browser: string;
+  system: string;
+  mobile: boolean;
+  /** «190.205.x.x»: never the whole address. */
+  ip: string | null;
+  createdAt: string;
+  lastActiveAt: string;
+  /** The session this page is open in: it cannot be ended from here. */
+  current: boolean;
 }
 
 export type PlatformTeamAction =
@@ -313,7 +346,27 @@ export type PlatformTeamAction =
   | 'admin.invitation_revoked'
   | 'admin.joined'
   | 'admin.code_reset'
-  | 'admin.removed';
+  | 'admin.removed'
+  | 'admin.session_ended'
+  | 'admin.sessions_ended';
+
+/** What the console did to a company (backend CONSOLE_ACTIONS). */
+export type ConsoleAction =
+  | 'tenant.created'
+  | 'tenant.updated'
+  | 'tenant.draft_discarded'
+  | 'tenant.activated'
+  | 'tenant.suspended'
+  | 'tenant.cancelled'
+  | 'channel.connected'
+  | 'channel.replaced'
+  | 'channel.refreshed'
+  | 'tenant.admin_invited'
+  | 'tenant.owner_invited'
+  | 'tenant.invitation_renewed'
+  | 'tenant.invitation_revoked'
+  | 'business_type.created'
+  | 'business_type.reclassified';
 
 /** GET /public/platform-invitations/:token */
 export interface ApiPlatformInvitationPreview {

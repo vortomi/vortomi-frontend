@@ -1,90 +1,183 @@
 <header class="page-top">
-  <h1>Equipo de la plataforma</h1>
-  <span class="sub">Personas de Vortex que entran a esta consola</span>
+  <h1>Staff</h1>
+  <span class="sub">Personas de Vortex con acceso a esta consola</span>
   <span class="spacer"></span>
-  @if (remote) {
-    <button type="button" class="btn btn--primary" (click)="openInvite()"><app-icon name="plus" /><span>Invitar administrador</span></button>
-  }
+  <label class="search"><app-icon name="search" /><input type="search" placeholder="Buscar por nombre o correo" aria-label="Buscar en el staff" [value]="query()" (input)="setQuery($event)" /></label>
+  <button type="button" class="btn btn--primary" (click)="openInvite()"><app-icon name="plus" /><span>Invitar al staff</span></button>
 </header>
 
 <div class="page-body">
-  @if (!remote) {
-    <div class="card box"><p class="muted">El equipo de la consola solo se maneja con el servidor real.</p></div>
-  } @else if (loadError(); as message) {
+  @if (loadError(); as message) {
     <div class="card box">
       <p class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</p>
       <button type="button" class="btn" (click)="load()"><span>Reintentar</span></button>
     </div>
   } @else if (team(); as t) {
-    <div class="card table-card">
+    @let s = summary()!;
+    <div class="kpis">
+      <div class="card kpi">
+        <span class="ic blue"><app-icon name="users" /></span>
+        <div><p>Con acceso</p><b>{{ s.withAccess }}</b><small>{{ s.pendingInvitations ? '+' + s.pendingInvitations + (s.pendingInvitations === 1 ? ' invitación pendiente' : ' invitaciones pendientes') : 'sin invitaciones pendientes' }}</small></div>
+      </div>
+      <div class="card kpi">
+        <span class="ic" [class.green]="!s.withoutCode.length" [class.amber]="s.withoutCode.length"><app-icon name="shield" /></span>
+        <div><p>Código de seguridad</p><b [class.warn]="s.withoutCode.length">{{ s.withCode }} <span class="of">de {{ s.withAccess }}</span></b><small>{{ s.withoutCode.length ? s.withoutCode.join(', ') + ' lo configura al entrar' : 'todos lo tienen activado' }}</small></div>
+      </div>
+      <div class="card kpi">
+        <span class="ic violet"><app-icon name="monitor" /></span>
+        <div><p>Sesiones abiertas</p><b>{{ s.sessions }}</b><small>en {{ s.devices }} {{ s.devices === 1 ? 'dispositivo' : 'dispositivos' }}</small></div>
+      </div>
+      <div class="card kpi">
+        <span class="ic green"><app-icon name="clock" /></span>
+        <div><p>Último acceso</p><b>{{ s.lastAccess ? ago(s.lastAccess.at) : '—' }}</b><small>{{ s.lastAccess ? s.lastAccess.name + ' · ' + s.lastAccess.device : 'nadie ha entrado todavía' }}</small></div>
+      </div>
+    </div>
+
+    @if (warnings().length) {
+      <p class="form-alert warn strip"><app-icon name="alert" /><span>{{ warnings().join(' · ') }}</span></p>
+    }
+
+    <div class="card table-card staff-table">
       <table class="data-table">
         <thead>
-          <tr><th>Persona</th><th>Código de seguridad</th><th>Desde</th><th></th></tr>
+          <tr><th>Persona</th><th>Código de seguridad</th><th>Último acceso</th><th>Sesiones abiertas</th><th>En el staff desde</th><th class="menu-col" aria-label="Acciones"></th></tr>
         </thead>
         <tbody>
-          @for (admin of t.admins; track admin.userId) {
+          @for (admin of people(); track admin.userId) {
             <tr>
               <td>
                 <div class="person">
                   <app-avatar [name]="admin.name" [seed]="admin.userId" />
-                  <div><b>{{ admin.name }}{{ admin.isYou ? ' (tú)' : '' }}</b><small>{{ admin.email }}</small></div>
+                  <div><b>{{ admin.name }} @if (admin.isYou) { <app-pill tone="blue">Tú</app-pill> }</b><small>{{ admin.email }}</small></div>
                 </div>
               </td>
               <td>
                 @if (admin.hasCode) {
                   <app-pill tone="green" [dot]="true">Activado</app-pill>
+                  @if (admin.codeSince) {
+                    <small class="below">desde {{ date(admin.codeSince) }}{{ admin.codeLastUsedAt ? ' · pedido ' + ago(admin.codeLastUsedAt) : '' }}</small>
+                  }
                 } @else {
                   <app-pill tone="amber" [dot]="true">Lo configura al entrar</app-pill>
+                  <small class="below">sin código todavía</small>
                 }
               </td>
-              <td class="muted">{{ date(admin.createdAt) }}</td>
-              <td class="actions">
+              <td>{{ lastAccess(admin) }}<small class="below">{{ deviceOf(admin) ?? (admin.lastSignInAt || admin.isYou ? '' : 'todavía no ha entrado') }}</small></td>
+              <td>{{ admin.sessionCount }}</td>
+              <td>{{ date(admin.createdAt) }}<small class="below">{{ admin.invitedBy ? 'invitado por ' + admin.invitedBy : 'primer administrador' }}</small></td>
+              <td class="menu-col">
                 @if (!admin.isYou) {
-                  <button type="button" class="btn btn--sm" [disabled]="busy()" (click)="resetCode(admin)"><span>Reiniciar código</span></button>
-                  <button type="button" class="btn btn--sm btn--danger" [disabled]="busy()" (click)="remove(admin)"><span>Quitar acceso</span></button>
+                  <div class="more">
+                    <button type="button" class="dots" [attr.aria-label]="'Acciones sobre ' + admin.name" [attr.aria-expanded]="menuFor() === admin.userId" (click)="toggleMenu(admin, $event)"><app-icon name="dots" /></button>
+                    @if (menuFor() === admin.userId) {
+                      <div class="menu" role="menu" (click)="$event.stopPropagation()">
+                        <button type="button" role="menuitem" (click)="resetCode(admin)"><b>Reiniciar código de seguridad</b><small>Lo configura de nuevo al entrar</small></button>
+                        <button type="button" role="menuitem" [disabled]="!admin.sessionCount" (click)="endSessions(admin)"><b>Cerrar sus sesiones</b><small>{{ admin.sessionCount ? 'Sale de sus ' + admin.sessionCount + ' dispositivos' : 'No tiene sesiones abiertas' }}</small></button>
+                        <hr />
+                        <button type="button" role="menuitem" class="danger" (click)="remove(admin)"><b>Quitar acceso</b><small>Deja de entrar a la consola</small></button>
+                      </div>
+                    }
+                  </div>
                 }
               </td>
             </tr>
-          }
-          @for (invitation of t.invitations; track invitation.id) {
-            <tr>
-              <td>
-                <div class="person">
-                  <app-avatar [name]="invitation.name" [seed]="invitation.id" />
-                  <div><b>{{ invitation.name }}</b><small>{{ invitation.email }}</small></div>
-                </div>
-              </td>
-              <td><app-pill tone="blue" [dot]="true">Invitación enviada</app-pill></td>
-              <td class="muted">Vence el {{ date(invitation.expiresAt) }}</td>
-              <td class="actions">
-                <button type="button" class="btn btn--sm" [disabled]="busy()" (click)="renew(invitation)"><span>Nuevo enlace</span></button>
-                <button type="button" class="btn btn--sm btn--danger" [disabled]="busy()" (click)="revoke(invitation)"><span>Anular</span></button>
-              </td>
-            </tr>
+          } @empty {
+            <tr><td colspan="6" class="muted">Nadie del staff coincide con «{{ query() }}».</td></tr>
           }
         </tbody>
       </table>
     </div>
 
-    <p class="form-alert info"><app-icon name="lock" /><span>Nadie de esta lista puede leer conversaciones de las empresas. Para entrar a la consola, cada uno usa su contraseña <b>y</b> el código de 6 números de su propio teléfono.</span></p>
-
-    @if (t.events.length) {
+    <div class="two">
       <section class="card box">
-        <h2>Historial</h2>
-        <ul class="history">
-          @for (event of t.events; track $index) {
-            <li><span class="muted">{{ when(event.createdAt) }}</span><span><b>{{ event.actorName }}</b> {{ actionText(event) }}</span></li>
-          }
-        </ul>
+        <h2>Invitaciones pendientes <span class="count">· {{ t.invitations.length }}</span></h2>
+        @for (invitation of t.invitations; track invitation.id) {
+          @let left = expiry(invitation);
+          <div class="row">
+            <app-avatar [name]="invitation.name" [seed]="invitation.id" />
+            <div class="text"><b>{{ invitation.name }}</b><small>{{ invitation.email }} · invitado por {{ invitation.invitedBy }} el {{ date(invitation.createdAt) }}</small></div>
+            <app-pill [tone]="left.tone" [dot]="true">{{ left.text }}</app-pill>
+            <button type="button" class="btn btn--sm" [disabled]="busy()" (click)="renew(invitation)"><span>Nuevo enlace</span></button>
+            <button type="button" class="btn btn--sm btn--danger" [disabled]="busy()" (click)="revoke(invitation)"><span>Anular</span></button>
+          </div>
+        } @empty {
+          <p class="muted">No hay invitaciones esperando.</p>
+        }
+        <p class="muted note">El enlace vale 72 horas. Si vence, «Nuevo enlace» crea otro; el anterior deja de servir.</p>
       </section>
-    }
+
+      <section class="card box">
+        <h2>Sesiones abiertas <span class="count">· {{ t.sessions.length }}</span></h2>
+        @for (session of t.sessions; track session.id) {
+          <div class="row">
+            <span class="device"><app-icon [name]="session.mobile ? 'phone' : 'monitor'" /></span>
+            <div class="text"><b>{{ session.name }} · {{ session.browser }} en {{ session.system }}</b><small>{{ session.ip ? 'IP ' + session.ip + ' · ' : '' }}{{ session.current ? 'esta sesión' : 'abierta el ' + date(session.createdAt) }}</small></div>
+            <span class="live" [class.on]="session.current || isRecent(session.lastActiveAt)">{{ session.current ? 'ahora' : ago(session.lastActiveAt) }}</span>
+            @if (!session.current) {
+              <button type="button" class="btn btn--sm" [disabled]="busy()" (click)="endSession(session)"><span>Cerrar</span></button>
+            }
+          </div>
+        } @empty {
+          <p class="muted">Nadie tiene una sesión abierta.</p>
+        }
+      </section>
+    </div>
+
+    <section class="card box">
+      <div class="head">
+        <h2>Actividad en la consola</h2>
+        <span class="spacer"></span>
+        <app-select-menu label="Persona" size="sm" [options]="personOptions()" [value]="activityPerson()" (picked)="activityPerson.set($event)" />
+      </div>
+      <div class="chips" role="tablist" aria-label="Tipo de actividad">
+        @for (f of activityFilters; track f.key) {
+          <button type="button" role="tab" class="chip" [class.on]="activityKind() === f.key" [attr.aria-selected]="activityKind() === f.key" (click)="activityKind.set(f.key)">{{ f.label }}</button>
+        }
+      </div>
+      <ul class="timeline">
+        @for (entry of activity(); track $index) {
+          @let l = activityLook(entry.action);
+          <li>
+            <span class="when">{{ when(entry.createdAt) }}</span>
+            <span [class]="'ic tone-' + l.tone"><app-icon [name]="l.icon" /></span>
+            <span><b>{{ entry.actorName }}</b> {{ l.text }}@if (entry.tenantName) { <b> {{ entry.tenantName }}</b> }</span>
+          </li>
+        } @empty {
+          <li class="muted">Sin actividad de ese tipo todavía. Se registra desde la publicación de esta función.</li>
+        }
+      </ul>
+    </section>
+
+    <section class="card box">
+      <h2>Historial del staff</h2>
+      <div class="chips" role="tablist" aria-label="Tipo de evento">
+        @for (f of historyFilters; track f.key) {
+          <button type="button" role="tab" class="chip" [class.on]="historyKind() === f.key" [attr.aria-selected]="historyKind() === f.key" (click)="historyKind.set(f.key)">{{ f.label }}</button>
+        }
+      </div>
+      <ul class="timeline">
+        @for (event of history(); track trackEvent($index, event)) {
+          @let l = look(event.action);
+          @let e = eventText(event);
+          <li>
+            <span class="when">{{ when(event.createdAt) }}</span>
+            <span [class]="'ic tone-' + l.tone"><app-icon [name]="l.icon" /></span>
+            <span><b>{{ e.actor }}</b> {{ e.text }}@if (e.subject) { <b> {{ e.subject }}</b> }</span>
+          </li>
+        } @empty {
+          <li class="muted">Nada de ese tipo todavía.</li>
+        }
+      </ul>
+    </section>
+
+    <p class="foot"><app-icon name="lock" /><span>Nadie del staff puede leer conversaciones de las empresas. Para entrar, cada persona usa su contraseña y el código de 6 números de su propio teléfono.</span></p>
   } @else {
-    <div class="card table-card"><app-skeleton kind="table" [rows]="3" [cols]="4" /></div>
+    <div class="card table-card"><app-skeleton kind="table" [rows]="3" [cols]="5" /></div>
   }
 </div>
 
-<app-dialog title="Invitar administrador de la consola" [open]="inviting()" (closed)="inviting.set(false)">
-  <p class="lead">Verá <b>todas las empresas</b> de Vortomi y podrá crearlas, suspenderlas y conectar sus números. No verá conversaciones.</p>
+<app-dialog title="Invitar al staff" [open]="inviting()" (closed)="inviting.set(false)">
+  <p class="lead">Verá <b>todas las empresas</b> de Vortomi y podrá crearlas, suspenderlas y conectar sus números. No verá conversaciones. Todo lo que cambie quedará en la actividad de la consola.</p>
   <div class="field">
     <label for="team-name">Nombre</label>
     <input id="team-name" class="input" autocomplete="off" [value]="draft().name" (input)="setDraft('name', $event)" />

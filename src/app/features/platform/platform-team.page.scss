@@ -1,0 +1,329 @@
+@use 'mixins';
+
+// «Staff» (mockup web-28). Shared console pieces (kpis, search, table-card) come from platform-pages.
+
+.kpi small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.kpi b .of {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.strip {
+  margin-bottom: 14px;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  b {
+    display: block;
+    font-size: 14px;
+  }
+
+  small {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+  }
+}
+
+.below {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 3px;
+}
+
+// The ⋯ menu opens over the rows below: the table must not clip it (phones keep their scroll).
+.staff-table {
+  overflow: visible;
+}
+
+.menu-col {
+  width: 56px;
+  text-align: right;
+}
+
+.more {
+  position: relative;
+  display: inline-block;
+}
+
+.dots {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  --icon-size: 16px;
+}
+
+.menu {
+  position: absolute;
+  right: 0;
+  top: 38px;
+  z-index: 5;
+  width: 260px;
+  padding: 6px;
+  text-align: left;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+
+  button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: 0;
+    background: none;
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    cursor: pointer;
+    color: var(--color-text);
+
+    &:hover:not(:disabled) {
+      background: var(--color-surface-hover);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    &.danger b {
+      color: var(--color-danger);
+    }
+  }
+
+  b {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+
+  small {
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    margin: 4px 0;
+  }
+}
+
+.two {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  margin: 14px 0;
+}
+
+.box {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+
+  h2 {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .count {
+    color: var(--color-text-muted);
+    font-weight: 500;
+  }
+}
+
+.two .box {
+  margin-bottom: 0;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 13.5px;
+
+  &:last-of-type {
+    border-bottom: 0;
+  }
+
+  .text {
+    flex: 1;
+    min-width: 0;
+
+    b {
+      display: block;
+    }
+
+    small {
+      font-size: 12.5px;
+      color: var(--color-text-muted);
+    }
+  }
+}
+
+.device {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-hover);
+  color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  --icon-size: 17px;
+}
+
+.live {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+
+  &.on {
+    color: var(--color-success-text);
+    font-weight: 600;
+  }
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  font-size: 12.5px;
+  padding: 4px 11px;
+  border-radius: 99px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+
+  &.on {
+    background: var(--color-primary-softer);
+    border-color: transparent;
+    color: var(--color-primary-text);
+    font-weight: 600;
+  }
+}
+
+.timeline {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+
+  li {
+    display: grid;
+    grid-template-columns: 130px 28px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 13.5px;
+
+    &:last-child {
+      border-bottom: 0;
+    }
+
+    &.muted {
+      display: block;
+    }
+  }
+
+  .when {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+  }
+}
+
+.ic {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  --icon-size: 13px;
+
+  &.tone-blue {
+    background: var(--color-info-soft);
+    color: var(--color-info-text);
+  }
+
+  &.tone-green {
+    background: var(--color-success-soft);
+    color: var(--color-success-text);
+  }
+
+  &.tone-amber {
+    background: var(--color-warning-soft);
+    color: var(--color-warning-text);
+  }
+
+  &.tone-red {
+    background: var(--color-danger-soft);
+    color: var(--color-danger-text);
+  }
+
+  &.tone-gray {
+    background: var(--color-surface-hover);
+    color: var(--color-text-muted);
+  }
+}
+
+.foot {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  --icon-size: 15px;
+}
+
+@include mixins.below-tablet {
+  .staff-table {
+    overflow-x: auto;
+  }
+
+  .two {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline li {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

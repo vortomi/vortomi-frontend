@@ -35,7 +35,7 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'team',
-    title: 'Equipo · Consola',
+    title: 'Staff · Consola',
     loadComponent: () => import('./platform-team.page').then((m) => m.PlatformTeamPage),
   },
   {
