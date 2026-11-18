@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClient } from '../../core/api/api-client';
-import type { ApiInvitation, ApiList, ApiPlatformAlertReport, ApiPlatformTenant, ApiPlatformTenantDetail, ApiUsageRow, ApiWabaLookup } from '../../shared/api/contract';
+import type { ApiInvitation, ApiIssuedReset, ApiList, ApiPlatformAlertReport, ApiPlatformTenant, ApiPlatformTenantDetail, ApiUsageRow, ApiWabaLookup } from '../../shared/api/contract';
 import type { Id, TenantPlan } from '../../shared/api/models';
 
 export interface TenantFields {
@@ -116,6 +116,15 @@ export class PlatformRemote {
 
   renewInvitation(tenantId: Id, invitationId: Id): Promise<ApiInvitation> {
     return this.api.post(this.path(tenantId, `invitations/${encodeURIComponent(invitationId)}/renew`));
+  }
+
+  /** Mockup web-30: the link comes back once. */
+  resetPassword(tenantId: Id, userId: Id): Promise<ApiIssuedReset> {
+    return this.api.post(this.path(tenantId, `members/${encodeURIComponent(userId)}/password-reset`));
+  }
+
+  transferOwner(tenantId: Id, userId: Id): Promise<void> {
+    return this.api.put(this.path(tenantId, 'owner'), { userId });
   }
 
   revokeInvitation(tenantId: Id, invitationId: Id): Promise<void> {

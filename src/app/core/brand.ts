@@ -11,4 +11,6 @@ export const BRAND = {
   tagline: 'CRM de WhatsApp',
   domain: DOMAIN,
   noReplyEmail: `no-responder@${DOMAIN}`,
+  // Where owners and people of several companies ask for a password link (mockup web-30).
+  supportEmail: 'info@vortexautonomy.com',
 } as const;

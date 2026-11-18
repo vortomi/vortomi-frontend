@@ -37,10 +37,10 @@
       <p class="form-alert warn strip"><app-icon name="alert" /><span>{{ warnings().join(' · ') }}</span></p>
     }
 
-    <div class="card table-card staff-table">
+    <div class="card table-card row-menu-table">
       <table class="data-table">
         <thead>
-          <tr><th>Persona</th><th>Código de seguridad</th><th>Último acceso</th><th>Sesiones abiertas</th><th>En el staff desde</th><th class="menu-col" aria-label="Acciones"></th></tr>
+          <tr><th>Persona</th><th>Código de seguridad</th><th>Último acceso</th><th>Sesiones abiertas</th><th>En el staff desde</th><th class="row-menu-col" aria-label="Acciones"></th></tr>
         </thead>
         <tbody>
           @for (admin of people(); track admin.userId) {
@@ -65,19 +65,15 @@
               <td>{{ lastAccess(admin) }}<small class="below">{{ deviceOf(admin) ?? (admin.lastSignInAt || admin.isYou ? '' : 'todavía no ha entrado') }}</small></td>
               <td>{{ admin.sessionCount }}</td>
               <td>{{ date(admin.createdAt) }}<small class="below">{{ admin.invitedBy ? 'invitado por ' + admin.invitedBy : 'primer administrador' }}</small></td>
-              <td class="menu-col">
+              <td class="row-menu-col">
                 @if (!admin.isYou) {
-                  <div class="more">
-                    <button type="button" class="dots" [attr.aria-label]="'Acciones sobre ' + admin.name" [attr.aria-expanded]="menuFor() === admin.userId" (click)="toggleMenu(admin, $event)"><app-icon name="dots" /></button>
-                    @if (menuFor() === admin.userId) {
-                      <div class="menu" role="menu" (click)="$event.stopPropagation()">
-                        <button type="button" role="menuitem" (click)="resetCode(admin)"><b>Reiniciar código de seguridad</b><small>Lo configura de nuevo al entrar</small></button>
-                        <button type="button" role="menuitem" [disabled]="!admin.sessionCount" (click)="endSessions(admin)"><b>Cerrar sus sesiones</b><small>{{ admin.sessionCount ? 'Sale de sus ' + admin.sessionCount + ' dispositivos' : 'No tiene sesiones abiertas' }}</small></button>
-                        <hr />
-                        <button type="button" role="menuitem" class="danger" (click)="remove(admin)"><b>Quitar acceso</b><small>Deja de entrar a la consola</small></button>
-                      </div>
-                    }
-                  </div>
+                  <app-row-menu [label]="'Acciones sobre ' + admin.name">
+                    <button type="button" role="menuitem" (click)="resetPassword(admin)"><b>Restablecer contraseña</b><small>Le das un enlace. Al entrar, además de la contraseña nueva le pedirá su código de seguridad.</small></button>
+                    <button type="button" role="menuitem" (click)="resetCode(admin)"><b>Reiniciar código de seguridad</b><small>Lo configura de nuevo al entrar</small></button>
+                    <button type="button" role="menuitem" [disabled]="!admin.sessionCount" (click)="endSessions(admin)"><b>Cerrar sus sesiones</b><small>{{ admin.sessionCount ? 'Sale de sus ' + admin.sessionCount + ' dispositivos' : 'No tiene sesiones abiertas' }}</small></button>
+                    <hr />
+                    <button type="button" role="menuitem" class="danger" (click)="remove(admin)"><b>Quitar acceso</b><small>Deja de entrar a la consola</small></button>
+                  </app-row-menu>
                 }
               </td>
             </tr>
@@ -87,6 +83,7 @@
         </tbody>
       </table>
     </div>
+    <p class="field-hint under">Nadie del staff se restablece a sí mismo. Si queda una sola persona y olvida su contraseña, se recupera desde el panel de Supabase.</p>
 
     <div class="two">
       <section class="card box">
@@ -196,3 +193,4 @@
 </app-dialog>
 
 <app-invitation-link-dialog [link]="link()?.link ?? null" [name]="link()?.name ?? ''" (closed)="link.set(null)" />
+<app-reset-link-dialog [link]="resetLink()?.link ?? null" [name]="resetLink()?.name ?? ''" (closed)="resetLink.set(null)" />

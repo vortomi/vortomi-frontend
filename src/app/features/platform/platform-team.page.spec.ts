@@ -29,6 +29,7 @@ async function setup() {
     overview: vi.fn(() => Promise.resolve(TEAM)),
     invite: vi.fn(() => Promise.resolve('https://x/platform-invitation/abc')),
     resetCode: vi.fn(() => Promise.resolve()),
+    resetPassword: vi.fn(() => Promise.resolve('https://x/reset-password/abc')),
     remove: vi.fn(() => Promise.resolve()),
     endSessions: vi.fn(() => Promise.resolve({ ended: 1 })),
     endSession: vi.fn(() => Promise.resolve()),
@@ -64,17 +65,27 @@ describe('PlatformTeamPage («Staff»)', () => {
 
   it('nothing on my own row; another person\'s ⋯ resets their code or signs them out everywhere', async () => {
     const { fixture, remote, rowOf, button } = await setup();
-    expect(rowOf('Luis').querySelector('.dots')).toBeNull();
-    (rowOf('Ana').querySelector('.dots') as HTMLButtonElement).click();
+    expect(rowOf('Luis').querySelector('.row-menu__dots')).toBeNull();
+    (rowOf('Ana').querySelector('.row-menu__dots') as HTMLButtonElement).click();
     await fixture.whenStable();
     button(rowOf('Ana'), 'Cerrar sus sesiones')!.click();
     await fixture.whenStable();
     expect(remote.endSessions).toHaveBeenCalledWith('u-ana');
-    (rowOf('Ana').querySelector('.dots') as HTMLButtonElement).click();
+    (rowOf('Ana').querySelector('.row-menu__dots') as HTMLButtonElement).click();
     await fixture.whenStable();
     button(rowOf('Ana'), 'Reiniciar código')!.click();
     await fixture.whenStable();
     expect(remote.resetCode).toHaveBeenCalledWith('u-ana');
+  });
+
+  it('another person\'s ⋯ gives a password link, shown once', async () => {
+    const { fixture, host, remote, rowOf, button } = await setup();
+    (rowOf('Ana').querySelector('.row-menu__dots') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    button(rowOf('Ana'), 'Restablecer contraseña')!.click();
+    await fixture.whenStable();
+    expect(remote.resetPassword).toHaveBeenCalledWith('u-ana');
+    expect(host.ownerDocument.body.textContent).toContain('Sirve 24 horas');
   });
 
   it('open sessions: this one cannot be closed from here; another one can', async () => {

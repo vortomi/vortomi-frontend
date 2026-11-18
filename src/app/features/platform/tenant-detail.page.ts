@@ -11,10 +11,12 @@ import { Confirm } from '../../shared/ui/confirm';
 import { Icon } from '../../shared/ui/icon';
 import { InvitationLinkDialog } from '../../shared/ui/invitation-link.dialog';
 import { Pill } from '../../shared/ui/pill';
+import { ResetLinkDialog } from '../../shared/ui/reset-link.dialog';
+import { RowMenu } from '../../shared/ui/row-menu';
 import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
 import { failIf } from './fail-if';
-import { PlatformData, type PlatformInvitation } from './platform.data';
+import { type MemberRow, PlatformData, type PlatformInvitation } from './platform.data';
 import { TenantEditDialog } from './tenant-edit.dialog';
 import { ChangeNumberDialog } from './change-number.dialog';
 import { ActivityChart } from './activity-bars';
@@ -38,7 +40,7 @@ const SETUP_TEXT: Record<SetupStep, { title: string; detail?: (count: number) =>
 /** One company seen from the console: data, numbers, team, usage and audit. No conversations. */
 @Component({
   selector: 'app-tenant-detail-page',
-  imports: [RouterLink, Avatar, Icon, Pill, Skeleton, InvitationLinkDialog, TenantEditDialog, ChangeNumberDialog, ActivityChart],
+  imports: [RouterLink, Avatar, Icon, Pill, ResetLinkDialog, RowMenu, Skeleton, InvitationLinkDialog, TenantEditDialog, ChangeNumberDialog, ActivityChart],
   templateUrl: './tenant-detail.page.html',
   styleUrl: './tenant-detail.page.scss',
 })
@@ -56,6 +58,8 @@ export class TenantDetailPage {
 
   protected readonly labels = { status: TENANT_STATUS, plan: TENANT_PLAN, channel: CHANNEL_STATUS, quality: QUALITY, role: ROLE };
   protected readonly link = signal<{ link: string; name: string } | null>(null);
+  /** A password link just given (mockup web-30): shown once. */
+  protected readonly resetLink = signal<{ link: string; name: string } | null>(null);
   protected readonly busy = signal(false);
   /** «Editar datos» is open. */
   protected readonly editing = signal(false);
@@ -240,6 +244,37 @@ export class TenantDetailPage {
       },
     });
     if (done && link) this.link.set({ link, name: invitation.name });
+  }
+
+  /** Mockup web-30: their password stops working and they choose a new one with the link. */
+  protected async resetPassword(member: MemberRow): Promise<void> {
+    const id = this.row()?.tenant.id;
+    if (!id) return;
+    let given: { link: string; name: string } | null = null;
+    const done = await this.confirm.ask({
+      title: '¿Restablecer la contraseña de ' + member.user.name + '?',
+      message: 'Su contraseña actual deja de servir y se cierran sus sesiones. Le das un enlace de un solo uso para que elija una nueva; nadie más la conoce.',
+      confirmLabel: 'Crear enlace',
+      action: async () => {
+        const result = await this.data.resetPassword(id, member.user.id);
+        if ('error' in result) failIf(result.error);
+        else given = result;
+      },
+    });
+    if (done && given) this.resetLink.set(given);
+  }
+
+  /** The company changes hands: the previous owner stays an admin. */
+  protected async makeOwner(member: MemberRow): Promise<void> {
+    const id = this.row()?.tenant.id;
+    if (!id) return;
+    const done = await this.confirm.ask({
+      title: '¿Hacer dueño a ' + member.user.name + '?',
+      message: 'Será quien da los enlaces de contraseña a su equipo. El dueño actual sigue como administrador.',
+      confirmLabel: 'Hacer dueño',
+      action: async () => failIf(await this.data.makeOwner(id, member.user.id)),
+    });
+    if (done) this.toaster.show(member.user.name + ' es ahora el dueño');
   }
 
   /** Asks first; the dialog shows the circle while the server answers and any error inside it. */

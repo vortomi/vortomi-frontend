@@ -1,0 +1,123 @@
+<div class="sec-title">
+  <h2>Equipo</h2>
+  <span class="muted sm">{{ seats().used }} de {{ seats().total }} usuarios del plan</span>
+  <span class="spacer"></span>
+  @if (session.isTenantAdmin()) {
+    <button type="button" class="btn btn--primary" [disabled]="seats().used >= seats().total" (click)="inviting.set(true)">
+      <app-icon name="plus" /><span>Invitar persona</span>
+    </button>
+  }
+</div>
+<div class="card table-card row-menu-table">
+  @if (!loaded()) {
+    <app-skeleton kind="table" [rows]="3" [cols]="3" />
+  } @else {
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Persona</th><th>Rol</th>
+          @if (admin()) { <th>Último acceso</th><th class="row-menu-col" aria-label="Acciones"></th> }
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of active(); track row.user.id) {
+          @let person = access.byUser().get(row.user.id);
+          @let isMe = row.user.id === session.user()?.id;
+          <tr>
+            <td>
+              <div class="who">
+                <app-avatar [name]="row.user.name" [seed]="row.user.id" />
+                <div>
+                  <b>{{ row.user.name }}@if (person?.isOwner) { <app-pill tone="amber">★ Dueño</app-pill> }</b>
+                  <span>{{ row.user.email }}@if (person?.elsewhere) { · también en otra empresa }</span>
+                </div>
+              </div>
+            </td>
+            <td>{{ labels.role[row.membership.role] }}</td>
+            @if (admin()) {
+              <td>{{ isMe ? 'Ahora' : lastAccess(person?.lastSignInAt ?? null) }}@if (isMe) { <small class="below">tú</small> }</td>
+              <td class="row-menu-col">
+                <app-row-menu [label]="'Acciones sobre ' + row.user.name">
+                  <button type="button" role="menuitem" (click)="editingMember.set(row)"><b>Editar rol</b><small>Rol, números y qué conversaciones ve</small></button>
+                  @let blocked = resetBlocked(row);
+                  <button type="button" role="menuitem" [disabled]="!!blocked" (click)="giveLink(row)">
+                    <b>Restablecer contraseña</b><small>{{ blocked ?? 'Le das un enlace para que elija una nueva. Se cierran sus sesiones.' }}</small>
+                  </button>
+                  @if (!isMe) {
+                    <hr />
+                    <button type="button" role="menuitem" class="danger" [disabled]="!!person?.isOwner" (click)="disable(row)">
+                      <b>Desactivar</b><small>{{ person?.isOwner ? 'El dueño no se desactiva. Para cambiarlo, escríbele a Vortomi.' : person?.elsewhere ? 'Deja de entrar a esta empresa; su cuenta sigue en la otra' : 'Deja de entrar a esta empresa' }}</small>
+                    </button>
+                  }
+                </app-row-menu>
+              </td>
+            }
+          </tr>
+        } @empty {
+          <tr><td [attr.colspan]="admin() ? 4 : 2"><p class="empty-state">Todavía no hay nadie activo en el equipo.</p></td></tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
+<p class="field-hint foot">Administración ve todas las conversaciones y las reparte desde la bandeja. Un agente solo ve y responde las que le asignan; una conversación puede tener varios agentes.</p>
+
+@if (admin() && history().length) {
+  <section class="card history">
+    <h3>Historial del equipo</h3>
+    <ul>
+      @for (event of history(); track $index) {
+        @let line = eventLine(event);
+        <li>
+          <span class="when">{{ lastAccess(event.at) }}</span>
+          <span [class]="'ic tone-' + line.tone"><app-icon [name]="line.icon" /></span>
+          <span><b>{{ line.actor }}</b> {{ line.text }}@if (line.subject) { <b> {{ line.subject }}</b> }</span>
+        </li>
+      }
+    </ul>
+  </section>
+}
+
+@if (admin() && team.pendingInvitations().length) {
+  <div class="sec-title"><h2>Invitaciones pendientes</h2><span class="muted sm">Todavía no crearon su contraseña</span></div>
+  <div class="card table-card">
+    <table class="data-table">
+      <thead><tr><th>Persona</th><th>Rol</th><th>Enlace</th><th></th></tr></thead>
+      <tbody>
+        @for (invitation of team.pendingInvitations(); track invitation.id) {
+          <tr>
+            <td><div class="who"><app-avatar [name]="invitation.name" [seed]="invitation.id" /><div><b>{{ invitation.name }}</b><span>{{ invitation.email }}</span></div></div></td>
+            <td>{{ labels.role[invitation.role] }}</td>
+            <td class="muted sm">{{ expires(invitation) }}</td>
+            <td class="actions">
+              <button type="button" class="link" (click)="renew(invitation)">Nuevo enlace</button>
+              <button type="button" class="link danger" (click)="revoke(invitation)">Anular</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+@if (admin() && disabled().length) {
+  <div class="sec-title"><h2>Desactivados</h2><span class="muted sm">No pueden entrar; su historial se conserva</span></div>
+  <div class="card table-card">
+    <table class="data-table">
+      <tbody>
+        @for (row of disabled(); track row.user.id) {
+          <tr>
+            <td><div class="who"><app-avatar [name]="row.user.name" [seed]="row.user.id" /><div><b>{{ row.user.name }}</b><span>{{ row.user.email }}</span></div></div></td>
+            <td>{{ labels.role[row.membership.role] }}</td>
+            <td class="actions"><button type="button" class="link" (click)="reactivate(row)">Reactivar</button></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<app-invite-dialog [open]="inviting()" (closed)="inviting.set(false)" (created)="link.set($event)" />
+<app-invitation-link-dialog [link]="link()?.link ?? null" [name]="link()?.name ?? ''" (closed)="link.set(null)" />
+<app-reset-link-dialog [link]="resetLink()?.link ?? null" [name]="resetLink()?.name ?? ''" (closed)="resetLink.set(null)" />
+<app-member-access-dialog [member]="editingMember()" [submit]="saveAccess" (closed)="editingMember.set(null)" (saved)="accessSaved()" />

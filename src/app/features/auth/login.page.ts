@@ -2,7 +2,8 @@ import { Component, inject, input, signal } from '@angular/core';
 import { FormField, email, form, required, submit } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { Auth } from '../../core/auth';
-import { resolveLanding, safeReturnUrl } from '../../core/landing';
+import { safeReturnUrl } from '../../core/landing';
+import { enterPanel } from './enter-panel';
 import { Session } from '../../core/session';
 import { FieldError } from '../../shared/ui/field-error';
 import { Icon } from '../../shared/ui/icon';
@@ -82,13 +83,7 @@ export class LoginPage {
     });
   }
 
-  private async goToLanding(returnUrl: string | null): Promise<void> {
-    const landing = resolveLanding({
-      isSuperAdmin: this.session.isSuperAdmin(),
-      enterableTenantIds: this.session.enterableTenantIds(),
-      returnUrl,
-    });
-    if (landing.selectTenantId) this.session.switchTenant(landing.selectTenantId);
-    await this.router.navigateByUrl(landing.path);
+  private goToLanding(returnUrl: string | null): Promise<void> {
+    return enterPanel(this.session, this.router, returnUrl);
   }
 }

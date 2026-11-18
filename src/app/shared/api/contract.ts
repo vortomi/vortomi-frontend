@@ -363,7 +363,8 @@ export type PlatformTeamAction =
   | 'admin.code_reset'
   | 'admin.removed'
   | 'admin.session_ended'
-  | 'admin.sessions_ended';
+  | 'admin.sessions_ended'
+  | 'admin.password_reset';
 
 /** What the console did to a company (backend CONSOLE_ACTIONS). */
 export type ConsoleAction =
@@ -381,7 +382,9 @@ export type ConsoleAction =
   | 'tenant.invitation_renewed'
   | 'tenant.invitation_revoked'
   | 'business_type.created'
-  | 'business_type.reclassified';
+  | 'business_type.reclassified'
+  | 'tenant.password_reset'
+  | 'tenant.owner_changed';
 
 /** GET /public/platform-invitations/:token */
 export interface ApiPlatformInvitationPreview {
@@ -422,7 +425,16 @@ export interface ApiPlatformTenant {
 /** One company in detail: numbers (never their token), people and open invitations. */
 export interface ApiPlatformTenantDetail extends Omit<ApiPlatformTenant, 'channels' | 'memberCount'> {
   channels: (ApiChannel & { hasToken: boolean })[];
-  members: { userId: string; name: string; email: string; role: 'admin' | 'agent'; status: 'invited' | 'active' | 'disabled' }[];
+  members: {
+    userId: string;
+    name: string;
+    email: string;
+    role: 'admin' | 'agent';
+    status: 'invited' | 'active' | 'disabled';
+    isOwner: boolean;
+    /** The other companies the person is in, by name (only the console sees them). */
+    otherCompanies: string[];
+  }[];
   invitations: ApiInvitation[];
 }
 
@@ -455,4 +467,32 @@ export interface ApiWabaLookup {
   /** Meta's business verification of the account's owner; null when Meta did not say. */
   businessVerified: boolean | null;
   numbers: { phoneNumberId: string; displayNumber: string; verifiedName: string; nameStatus: string; takenBy: string | null; alreadyHere: boolean }[];
+}
+
+/** A password link just given (mockup web-30): the token comes back only here, once. */
+export interface ApiIssuedReset {
+  token: string;
+  expiresAt: string;
+  name: string;
+}
+
+/** GET /public/password-resets/:token: what the page of the link shows. givenBy null: «Vortomi». */
+export interface ApiResetPreview {
+  name: string;
+  givenBy: string | null;
+  companyName: string | null;
+  staff: boolean;
+  expiresAt: string;
+}
+
+/** Why a link cannot be given to someone from the company's panel. */
+export type ApiResetBlock = 'self' | 'elsewhere' | 'staff' | 'inactive';
+
+/** GET /tenants/:id/team/access (admins): the owner, last accesses, who can get a link and the team's history. */
+export interface ApiTeamAccess {
+  youAreOwner: boolean;
+  /** False when the server cannot set passwords (no Supabase secret key). */
+  available: boolean;
+  people: { userId: string; isOwner: boolean; lastSignInAt: string | null; elsewhere: boolean; blocked: ApiResetBlock | null }[];
+  history: { kind: 'reset_given' | 'reset_used' | 'invited' | 'joined'; actor: string | null; subject: string; at: string }[];
 }

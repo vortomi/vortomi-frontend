@@ -1,0 +1,20 @@
+// Section titles of Canales y equipo, shared by the page (numbers) and the team section.
+.sec-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 12px;
+  flex-wrap: wrap;
+
+  h2 {
+    font-size: 15.5px;
+  }
+
+  .spacer {
+    flex: 1;
+  }
+}
+
+.sm {
+  font-size: 12.5px;
+}

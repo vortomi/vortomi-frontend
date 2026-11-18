@@ -89,6 +89,18 @@ const MESSAGES: Record<string, string> = {
   invitation_email_mismatch: 'Esta invitación es para otro correo. Entra con el correo al que te invitaron.',
   email_in_use: 'Ese correo ya tiene otra cuenta. Inicia sesión con ella para aceptar.',
 
+  // Password links (mockup web-30)
+  owner_protected: 'El dueño de la empresa sigue siendo administrador. Para cambiarlo, escríbele a Vortomi.',
+  owner_required: 'Solo el dueño de la empresa puede dar enlaces para restablecer la contraseña.',
+  member_elsewhere: 'Esa persona también trabaja en otra empresa: su contraseña solo la puede restablecer Vortomi.',
+  staff_member: 'Esa persona es del staff de Vortomi: su contraseña se restablece desde la consola.',
+  owner_not_admin: 'El nuevo dueño tiene que ser administrador activo de la empresa.',
+  owner_exists: 'La empresa ya tiene dueño. Recarga la página e inténtalo de nuevo.',
+  reset_not_found: 'Este enlace no existe, ya se usó o se cambió por uno más nuevo.',
+  reset_expired: 'Este enlace venció. Pide uno nuevo a quien te lo dio.',
+  reset_unavailable: 'Restablecer contraseñas no está disponible en este momento. Escríbele a Vortomi.',
+  weak_password: 'Esa contraseña es muy débil. Elige otra más larga.',
+
   // Platform console
   tenant_not_found: 'Esa empresa ya no existe.',
   no_channel: 'La empresa necesita un número conectado antes de activarse.',

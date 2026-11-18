@@ -63,6 +63,7 @@ const TEAM_EVENT: Record<PlatformTeamAction, { text: string; kind: Exclude<Histo
   'admin.removed': { text: 'quitó el acceso a', kind: 'access', icon: 'x', tone: 'red' },
   'admin.session_ended': { text: 'cerró una sesión de', kind: 'sessions', icon: 'lock', tone: 'gray' },
   'admin.sessions_ended': { text: 'cerró todas las sesiones de', kind: 'sessions', icon: 'lock', tone: 'gray' },
+  'admin.password_reset': { text: 'dio un enlace para restablecer la contraseña a', kind: 'access', icon: 'lock', tone: 'amber' },
 };
 
 export const HISTORY_FILTERS: { key: HistoryKind; label: string }[] = [
@@ -99,6 +100,8 @@ const CONSOLE_ACTION: Record<ConsoleAction, { text: string; kind: Exclude<Activi
   'tenant.invitation_revoked': { text: 'anuló una invitación de', kind: 'invitations', icon: 'x', tone: 'gray' },
   'business_type.created': { text: 'creó un rubro nuevo', kind: 'types', icon: 'tag', tone: 'blue' },
   'business_type.reclassified': { text: 'reclasificó empresas a otro rubro', kind: 'types', icon: 'tag', tone: 'gray' },
+  'tenant.password_reset': { text: 'dio un enlace para restablecer una contraseña en', kind: 'invitations', icon: 'lock', tone: 'amber' },
+  'tenant.owner_changed': { text: 'cambió el dueño de', kind: 'companies', icon: 'swap', tone: 'blue' },
 };
 
 export const ACTIVITY_FILTERS: { key: ActivityKind; label: string }[] = [

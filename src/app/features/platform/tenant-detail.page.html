@@ -121,10 +121,19 @@
             @for (member of members(); track member.user.id) {
               <div class="person">
                 <app-avatar [name]="member.user.name" [seed]="member.user.id" />
-                <div class="who"><b>{{ member.user.name }}</b><span>{{ member.user.email }}</span></div>
+                <div class="who">
+                  <b>{{ member.user.name }}@if (member.isOwner) { <app-pill tone="amber" style="margin-left: 6px">★ Dueño</app-pill> }</b>
+                  <span>{{ member.user.email }}@if (member.otherCompanies.length) { · también en {{ member.otherCompanies.join(', ') }} }</span>
+                </div>
                 <app-pill [tone]="member.membership.role === 'admin' ? 'blue' : 'neutral'">{{ labels.role[member.membership.role] }}</app-pill>
                 @if (member.membership.status === 'active') {
                   <app-pill tone="green" [dot]="true">Activo</app-pill>
+                  <app-row-menu [label]="'Acciones sobre ' + member.user.name">
+                    <button type="button" role="menuitem" (click)="resetPassword(member)"><b>Restablecer contraseña</b><small>Le das un enlace para que elija una nueva. Queda en la actividad de la consola.</small></button>
+                    <button type="button" role="menuitem" [disabled]="member.isOwner || member.membership.role !== 'admin'" (click)="makeOwner(member)">
+                      <b>★ Hacer dueño a esta persona</b><small>{{ member.isOwner ? 'Ya es el dueño de la empresa' : member.membership.role !== 'admin' ? 'Primero tiene que ser administrador' : 'Para cuando la empresa cambia de dueño' }}</small>
+                    </button>
+                  </app-row-menu>
                 } @else {
                   <app-pill tone="neutral" [dot]="true">Desactivado</app-pill>
                 }
@@ -141,7 +150,7 @@
               <p class="muted">Todavía nadie. El administrador se invita en el último paso del alta.</p>
             }
           }
-          <p class="note"><app-icon name="lock" />Desde aquí se ve quién tiene acceso, no lo que escriben.</p>
+          <p class="note"><app-icon name="lock" />Desde aquí se ve quién tiene acceso, no lo que escriben. Se puede restablecer la contraseña de cualquiera; para quien está solo en esta empresa, lo normal es que lo haga el dueño.</p>
         </section>
 
         @if (data.hasAudit) {
@@ -225,6 +234,7 @@
 }
 
 <app-invitation-link-dialog [link]="link()?.link ?? null" [name]="link()?.name ?? ''" (closed)="link.set(null)" />
+<app-reset-link-dialog [link]="resetLink()?.link ?? null" [name]="resetLink()?.name ?? ''" (closed)="resetLink.set(null)" />
 
 @if (row(); as r) {
   <app-tenant-edit-dialog [tenant]="r.tenant" [open]="editing()" (closed)="editing.set(false)" (saved)="onSaved()" />

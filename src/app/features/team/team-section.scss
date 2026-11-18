@@ -1,0 +1,107 @@
+// «Equipo» of Canales y equipo (mockup web-30). The ⋯ menu: .row-menu (_components.scss).
+:host {
+  display: block;
+}
+
+// The members table lets its ⋯ menu out (.row-menu-table); the others scroll on phones.
+.table-card:not(.row-menu-table) {
+  overflow-x: auto;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  b {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  span {
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+}
+
+.below {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.actions {
+  white-space: nowrap;
+  text-align: right;
+
+  .link + .link {
+    margin-left: 10px;
+  }
+}
+
+.foot {
+  margin: 10px 0 18px;
+}
+
+.history {
+  padding: 16px 18px;
+  margin-bottom: 22px;
+
+  h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  li {
+    display: grid;
+    grid-template-columns: 96px 28px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 13.5px;
+
+    &:last-child {
+      border-bottom: 0;
+    }
+  }
+
+  .when {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+  }
+}
+
+.ic {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  --icon-size: 13px;
+
+  &.tone-amber {
+    background: var(--color-warning-soft);
+    color: var(--color-warning-text);
+  }
+
+  &.tone-green {
+    background: var(--color-success-soft);
+    color: var(--color-success-text);
+  }
+
+  &.tone-blue {
+    background: var(--color-info-soft);
+    color: var(--color-info-text);
+  }
+}

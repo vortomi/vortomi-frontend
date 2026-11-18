@@ -1,3 +1,5 @@
+import { resetLinkOf } from '../../shared/ui/reset-link.dialog';
+import { DEMO_RESET_TOKEN } from '../auth/password-reset.remote';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { API_CONFIG } from '../../core/api/api-config';
 import { toApiFailure } from '../../core/api/api-error';
@@ -42,6 +44,10 @@ export interface TenantRow {
 export interface MemberRow {
   user: User;
   membership: Membership;
+  /** The company's owner (mockup web-30). */
+  isOwner: boolean;
+  /** The other companies the person is in, by name. */
+  otherCompanies: string[];
 }
 
 /** An open invitation as the console shows it. The link itself is only shown when created or renewed. */
@@ -188,16 +194,21 @@ export class PlatformData {
       return detail.members.map((m) => ({
         user: { id: m.userId, name: m.name, email: m.email, platformRole: null },
         membership: { tenantId, userId: m.userId, role: m.role, status: m.status, channelAccountIds: [], canSeeOthers: m.role === 'admin' },
+        isOwner: m.isOwner,
+        otherCompanies: m.otherCompanies,
       }));
     }
+    // Preview: the owner is the first active admin; the other companies come from the sample tables.
     const users = this.directory.userById();
-    return this.directory
-      .memberships()
-      .filter((m) => m.tenantId === tenantId && m.status !== 'invited')
-      .flatMap((membership) => {
-        const user = users.get(membership.userId);
-        return user ? [{ user, membership }] : [];
-      });
+    const tenants = this.directory.tenantById();
+    const all = this.directory.memberships();
+    const here = all.filter((m) => m.tenantId === tenantId && m.status !== 'invited');
+    const owner = here.find((m) => m.role === 'admin' && m.status === 'active')?.userId;
+    return here.flatMap((membership) => {
+      const user = users.get(membership.userId);
+      const otherCompanies = all.filter((o) => o.userId === membership.userId && o.tenantId !== tenantId).map((o) => tenants.get(o.tenantId)?.name ?? '');
+      return user ? [{ user, membership, isOwner: membership.userId === owner, otherCompanies }] : [];
+    });
   }
 
   pendingInvitations(tenantId: Id): PlatformInvitation[] {
@@ -313,6 +324,31 @@ export class PlatformData {
   }
 
   /** A fresh link with a new 72 h window; the old one stops working. Resolves to the link, or an error. */
+  /** Mockup web-30: a link for anyone of the company to choose a new password, shown once. */
+  async resetPassword(tenantId: Id, userId: Id): Promise<{ link: string; name: string } | { error: string }> {
+    const remote = this.remote;
+    if (!remote) return { link: resetLinkOf(DEMO_RESET_TOKEN), name: this.directory.userById().get(userId)?.name ?? '' };
+    try {
+      const issued = await remote.resetPassword(tenantId, userId);
+      return { link: resetLinkOf(issued.token), name: issued.name };
+    } catch (error) {
+      return { error: toApiFailure(error).message };
+    }
+  }
+
+  /** «Hacer dueño a otra persona»: an active admin of the company. Resolves to an error sentence, or null. */
+  async makeOwner(tenantId: Id, userId: Id): Promise<string | null> {
+    const remote = this.remote;
+    if (!remote) return 'Esto solo funciona con el servidor real.';
+    try {
+      await remote.transferOwner(tenantId, userId);
+      await this.loadDetail(tenantId);
+      return null;
+    } catch (error) {
+      return toApiFailure(error).message;
+    }
+  }
+
   async renewInvitation(tenantId: Id, invitationId: Id): Promise<{ link: string } | { error: string }> {
     const remote = this.remote;
     if (remote) {

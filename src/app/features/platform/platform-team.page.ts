@@ -9,6 +9,8 @@ import { Dialog } from '../../shared/ui/dialog';
 import { Icon } from '../../shared/ui/icon';
 import { InvitationLinkDialog } from '../../shared/ui/invitation-link.dialog';
 import { Pill } from '../../shared/ui/pill';
+import { ResetLinkDialog } from '../../shared/ui/reset-link.dialog';
+import { RowMenu } from '../../shared/ui/row-menu';
 import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
 import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
@@ -47,10 +49,9 @@ const EVERYONE = '__all__';
  */
 @Component({
   selector: 'app-platform-team-page',
-  imports: [Avatar, Dialog, Icon, InvitationLinkDialog, Pill, SelectMenu, Skeleton],
+  imports: [Avatar, Dialog, Icon, InvitationLinkDialog, Pill, ResetLinkDialog, RowMenu, SelectMenu, Skeleton],
   templateUrl: './platform-team.page.html',
   styleUrls: ['./platform-pages.scss', './platform-team.page.scss'],
-  host: { '(document:click)': 'menuFor.set(null)' },
 })
 export class PlatformTeamPage {
   private readonly remote = inject(API_CONFIG).mode === 'api' ? inject(PlatformTeamRemote) : null;
@@ -67,8 +68,8 @@ export class PlatformTeamPage {
   protected readonly inviteError = signal<string | null>(null);
   /** The link just created or renewed: shown once. */
   protected readonly link = signal<{ link: string; name: string } | null>(null);
-  /** The person whose ⋯ menu is open. */
-  protected readonly menuFor = signal<string | null>(null);
+  /** A password link just given (mockup web-30): shown once. */
+  protected readonly resetLink = signal<{ link: string; name: string } | null>(null);
   protected readonly query = signal('');
   protected readonly historyKind = signal<HistoryKind>('all');
   protected readonly activityKind = signal<ActivityKind>('all');
@@ -144,11 +145,6 @@ export class PlatformTeamPage {
     return session ? `${session.browser} en ${session.system}` : null;
   }
 
-  protected toggleMenu(admin: StaffMember, event: MouseEvent): void {
-    event.stopPropagation();
-    this.menuFor.update((open) => (open === admin.userId ? null : admin.userId));
-  }
-
   protected setQuery(event: Event): void {
     this.query.set((event.target as HTMLInputElement).value);
   }
@@ -210,6 +206,25 @@ export class PlatformTeamPage {
     });
   }
 
+  /** Mockup web-30: their password stops working and they choose a new one with the link; the code stays. */
+  protected async resetPassword(admin: StaffMember): Promise<void> {
+    const remote = this.remote;
+    if (!remote || this.onlyWithServer()) return;
+    let link: string | null = null;
+    const done = await this.confirm.ask({
+      title: `¿Restablecer la contraseña de ${admin.name}?`,
+      message: 'Su contraseña actual deja de servir y se cierran sus sesiones. Le das un enlace de un solo uso para que elija una nueva; su código de seguridad sigue igual.',
+      confirmLabel: 'Crear enlace',
+      action: async () => {
+        link = await remote.resetPassword(admin.userId);
+      },
+    });
+    if (done && link) {
+      this.resetLink.set({ link, name: admin.name });
+      await this.load();
+    }
+  }
+
   protected async resetCode(admin: StaffMember): Promise<void> {
     await this.act({
       title: `¿Reiniciar el código de seguridad de ${admin.name}?`,
@@ -253,7 +268,6 @@ export class PlatformTeamPage {
 
   /** A confirmed change, its toast and a reload. Preview mode only explains. */
   private async act(step: { title: string; message: string; confirmLabel: string; danger?: boolean; run: (remote: PlatformTeamRemote) => Promise<unknown>; toast: string }): Promise<void> {
-    this.menuFor.set(null);
     const remote = this.remote;
     if (!remote || this.onlyWithServer()) return;
     const done = await this.confirm.ask({ title: step.title, message: step.message, confirmLabel: step.confirmLabel, danger: step.danger ?? false, action: () => step.run(remote) });

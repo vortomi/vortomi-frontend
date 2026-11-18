@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClient } from '../../core/api/api-client';
-import type { ApiPlatformTeam } from '../../shared/api/contract';
+import type { ApiIssuedReset, ApiPlatformTeam } from '../../shared/api/contract';
+import { resetLinkOf } from '../../shared/ui/reset-link.dialog';
 import type { Id } from '../../shared/api/models';
 
 /** A console invitation link: opens the same invitation page, for our console instead of a company. */
@@ -28,6 +29,12 @@ export class PlatformTeamRemote {
 
   revoke(invitationId: Id): Promise<void> {
     return this.api.delete(`platform/team/invitations/${encodeURIComponent(invitationId)}`);
+  }
+
+  /** A password link for another staff member (mockup web-30): comes back once. */
+  async resetPassword(userId: Id): Promise<string> {
+    const issued = await this.api.post<ApiIssuedReset>(`platform/team/admins/${encodeURIComponent(userId)}/password-reset`, {});
+    return resetLinkOf(issued.token);
   }
 
   resetCode(userId: Id): Promise<void> {

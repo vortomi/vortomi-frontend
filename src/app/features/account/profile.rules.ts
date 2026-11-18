@@ -20,6 +20,8 @@ const YOU: Record<Activity['action'], { text: string; icon: IconName; tone: stri
   'tenant.invitation_revoked': { text: 'Anulaste una invitación de', icon: 'x', tone: 'gray' },
   'business_type.created': { text: 'Creaste un rubro nuevo', icon: 'tag', tone: 'blue' },
   'business_type.reclassified': { text: 'Reclasificaste empresas a otro rubro', icon: 'tag', tone: 'gray' },
+  'tenant.password_reset': { text: 'Diste un enlace para restablecer una contraseña en', icon: 'lock', tone: 'amber' },
+  'tenant.owner_changed': { text: 'Cambiaste el dueño de', icon: 'swap', tone: 'blue' },
   'admin.invited': { text: 'Invitaste al staff a', icon: 'mail', tone: 'blue' },
   'admin.invitation_renewed': { text: 'Creaste un enlace nuevo para', icon: 'mail', tone: 'gray' },
   'admin.invitation_revoked': { text: 'Anulaste la invitación de', icon: 'x', tone: 'gray' },
@@ -28,6 +30,7 @@ const YOU: Record<Activity['action'], { text: string; icon: IconName; tone: stri
   'admin.removed': { text: 'Quitaste el acceso a', icon: 'x', tone: 'red' },
   'admin.session_ended': { text: 'Cerraste una sesión de', icon: 'lock', tone: 'gray' },
   'admin.sessions_ended': { text: 'Cerraste todas las sesiones de', icon: 'lock', tone: 'gray' },
+  'admin.password_reset': { text: 'Diste un enlace para restablecer la contraseña a', icon: 'lock', tone: 'amber' },
 };
 
 export function myActivityLook(entry: Activity): { text: string; icon: IconName; tone: string; target: string | null } {
