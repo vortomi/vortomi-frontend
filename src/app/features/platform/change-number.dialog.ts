@@ -31,7 +31,7 @@ type FoundNumber = ApiWabaLookup['numbers'][number];
         </div>
         <div class="field">
           <label for="cn-token">Token de acceso <span class="opt">opcional</span></label>
-          <input id="cn-token" class="input mono" type="password" autocomplete="off" [value]="token()" (input)="token.set(value($event))" />
+          <input id="cn-token" class="input mono" type="password" autocomplete="new-password" data-1p-ignore data-lpignore="true" data-bwignore [value]="token()" (input)="token.set(value($event))" />
           <p class="field-hint">Vacío: se usa el acceso que ya está guardado para este número.</p>
         </div>
         <button type="submit" class="btn" [disabled]="searching() || !wabaId().trim()" [attr.aria-busy]="searching()"><app-icon name="search" /><span>Buscar números</span></button>
@@ -136,6 +136,11 @@ export class ChangeNumberDialog {
   protected async search(event: Event): Promise<void> {
     event.preventDefault();
     if (this.searching() || !this.wabaId().trim()) return;
+    // Something else in the field (a browser filling it with an email) never reaches the server.
+    if (!/^[\d\s]+$/.test(this.wabaId().trim())) {
+      this.error.set('El identificador de la cuenta de WhatsApp lleva solo números.');
+      return;
+    }
     this.searching.set(true);
     this.error.set(null);
     this.picked.set(null);

@@ -67,6 +67,19 @@ describe('ChangeNumberDialog', () => {
     expect(changed).toHaveBeenCalledWith('token');
   });
 
+  it('an account field that is not digits (a browser filled it with an email) is never sent', async () => {
+    const { host, data, type, search } = await setup();
+    await type('#cn-waba', 'someone@example.com');
+    await search();
+    expect(data.lookupForChannel).not.toHaveBeenCalled();
+    expect(host.textContent).toContain('lleva solo números');
+  });
+
+  it('the token field asks password managers not to fill it', async () => {
+    const { host } = await setup();
+    expect(host.querySelector('#cn-token')!.getAttribute('autocomplete')).toBe('new-password');
+  });
+
   it('erasing the token after picking the current number blocks the save', async () => {
     const { fixture, type, search, current, save } = await setup();
     await type('#cn-token', 'EAAnewtoken1234567890');
