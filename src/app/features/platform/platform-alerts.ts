@@ -47,7 +47,7 @@ export function sampleAlertReport(tenants: Tenant[], channels: ChannelAccount[],
 
   return {
     checkedAt: now.toISOString(),
-    checked: { companies: live.length, numbers: own.length, connected: own.filter((c) => c.status === 'connected').length },
+    checked: { companies: live.length, numbers: own.length, connected: own.filter((c) => c.status === 'connected').length, appsUnread: 0 },
     alerts: sortAlerts(alerts),
   };
 }

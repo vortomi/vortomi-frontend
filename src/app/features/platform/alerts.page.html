@@ -31,8 +31,8 @@
           </div>
         </div>
         <ul class="checks">
-          @for (check of checks(); track check) {
-            <li><app-icon name="check" />{{ check }}</li>
+          @for (check of checks(); track check.text) {
+            <li [class.pending]="!check.ok"><app-icon [name]="check.ok ? 'check' : 'clock'" />{{ check.text }}</li>
           }
         </ul>
       </div>

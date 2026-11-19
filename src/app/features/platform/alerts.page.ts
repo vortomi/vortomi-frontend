@@ -81,17 +81,23 @@ export class AlertsPage {
     return `Revisado a las ${formatTime(report.checkedAt, 'America/Caracas')}`;
   });
 
-  /** What «todo en orden» means, said plainly: what was looked at. */
+  /** What «todo en orden» means, said plainly: what was looked at (ok: vouched for by the server). */
   protected readonly checks = computed(() => {
     const checked = this.data.alertReport()?.checked;
     const numbers = checked?.numbers ?? 0;
+    const unread = checked?.appsUnread ?? 0;
+    const ok = (text: string) => ({ text, ok: true });
     return [
-      numbers === 1 ? 'El número está conectado' : `Los ${numbers} números están conectados`,
-      'Ningún acceso de Meta vence esta semana',
-      'Todos los mensajes de Meta se procesaron',
-      'Ningún agente cerca de su límite del mes',
-      'Los catálogos propios responden',
-      'La tasa del BCV se leyó bien',
+      ok(numbers === 1 ? 'El número está conectado' : `Los ${numbers} números están conectados`),
+      ok('Ningún acceso de Meta vence esta semana'),
+      ok('Todos los mensajes de Meta se procesaron'),
+      // Mockup web-31: said only when every number's apps were read in the last hour.
+      unread === 0
+        ? ok('Ningún número entrega mensajes a apps ajenas')
+        : { text: `Falta revisar qué apps reciben los mensajes de ${unread} ${unread === 1 ? 'número' : 'números'}`, ok: false },
+      ok('Ningún agente cerca de su límite del mes'),
+      ok('Los catálogos propios responden'),
+      ok('La tasa del BCV se leyó bien'),
     ];
   });
 

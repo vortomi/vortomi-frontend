@@ -98,6 +98,22 @@
                 @if (channel.wabaId || channel.phoneNumberId) {
                   <p class="ids">Cuenta {{ channel.wabaId || '—' }} · Número {{ channel.phoneNumberId || '—' }}</p>
                 }
+                @let watched = channelApps().get(channel.id);
+                @if (watched) {
+                  <div class="apps">
+                    <p class="apps__head">Apps que reciben sus mensajes <small>{{ appsChecked(watched) }}</small></p>
+                    @if (watched.apps) {
+                      <ul class="apps__list">
+                        @for (app of sortedApps(watched); track app.id) {
+                          <li [class.foreign]="!app.ours">
+                            <app-pill [tone]="app.ours ? 'green' : 'red'">{{ app.ours ? '✓ Nuestra' : '⚠ Ajena' }}</app-pill>
+                            <span><b>{{ app.name || 'Sin nombre' }}</b><small>{{ app.id }}@if (!app.ours) { · vista por primera vez {{ ago(app.firstSeenAt) }} }</small></span>
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                }
               </div>
               <div class="acts">
                 @if (channel.status === 'disconnected') {

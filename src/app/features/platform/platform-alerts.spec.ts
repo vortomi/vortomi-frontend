@@ -44,7 +44,7 @@ describe('the alerts of the preview (the server computes the real ones)', () => 
   it('is quiet when everything is healthy, and says what it looked at', () => {
     const report = sampleAlertReport([tenant()], [channel()], NOW);
     expect(report.alerts).toEqual([]);
-    expect(report.checked).toEqual({ companies: 1, numbers: 1, connected: 1 });
+    expect(report.checked).toEqual({ companies: 1, numbers: 1, connected: 1, appsUnread: 0 });
   });
 
   it('a disconnected number is critical and goes first, with why', () => {
@@ -73,6 +73,15 @@ describe('what each alert says', () => {
     expect(free.text).toBe('El número Ventas lleva 1.140 respuestas este mes: desde la 1.001, Meta cobra cada una a la tarjeta de la empresa.');
     expect(free.action).toEqual({ label: 'Ver consumo', link: ['/platform/usage'] });
     expect(alertCopy(alert({ kind: 'webhooks_failed', tenantId: null, facts: { count: 2, lastError: 'timeout' } })).text).toContain('2 avisos de Meta fallaron en todos los intentos (último error: «timeout»)');
+  });
+
+  it('a foreign app on a number: what is leaking and how to remove it (mockup web-31)', () => {
+    const facts = { apps: 'Vortex Autonomy (882956320901316)', count: 1, wabaId: '1523410889418669' };
+    const copy = alertCopy(alert({ kind: 'foreign_app', category: 'connection', channelId: 'c1', channelLabel: 'Ventas', facts }));
+    expect(copy.title).toBe('Otra app recibe los mensajes del número Ventas');
+    expect(copy.text).toBe('Meta también le entrega cada mensaje de este número a la app «Vortex Autonomy (882956320901316)», que no es de Vortomi. Las conversaciones de sus clientes están saliendo de Vortomi.');
+    expect(copy.todo).toContain('DELETE 1523410889418669/subscribed_apps');
+    expect(copy.action).toEqual({ label: 'Ver el número', link: ['/platform/tenants', 't1'] });
   });
 
   it('since when, as people say it', () => {

@@ -24,6 +24,8 @@ import { TenantInsightsData } from './tenant-insights.data';
 import type { SetupStep, TenantDetailInsights } from './tenant-insights.remote';
 import { percentChange, timeAgo } from './tenant-list.rules';
 import { Clock } from '../../core/clock';
+import type { ApiChannelApps } from '../../shared/api/contract';
+import { appsCheckedText, sortedApps } from './channel-apps.rules';
 
 const TZ = 'America/Caracas';
 
@@ -119,6 +121,11 @@ export class TenantDetailPage {
     const agent = this.insights()?.agent;
     return agent && agent.cap > 0 ? Math.min(100, Math.round((agent.replies / agent.cap) * 100)) : 0;
   });
+
+  /** Who receives each number's messages (mockup web-31). */
+  protected readonly channelApps = computed(() => (this.row() ? this.data.channelApps(this.row()!.tenant.id) : new Map<string, ApiChannelApps>()));
+  protected readonly appsChecked = (watched: ApiChannelApps) => appsCheckedText(watched, this.clock.now());
+  protected readonly sortedApps = sortedApps;
 
   /** The figures of one number, by its id. */
   protected channelFacts(channelId: string) {

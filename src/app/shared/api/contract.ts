@@ -422,9 +422,26 @@ export interface ApiPlatformTenant {
   memberCount: number;
 }
 
+/** An app Meta delivers a number's messages to (mockup web-31); any app not ours is a leak. */
+export interface ApiSubscribedApp {
+  id: string;
+  name: string;
+  ours: boolean;
+  firstSeenAt: string;
+}
+
+/** What the server last read about who receives a number's messages (console only). */
+export interface ApiChannelApps {
+  /** Null until the first successful read. */
+  apps: ApiSubscribedApp[] | null;
+  appsCheckedAt: string | null;
+  /** The last attempt Meta did not answer; null after a successful read. */
+  appsFailedAt: string | null;
+}
+
 /** One company in detail: numbers (never their token), people and open invitations. */
 export interface ApiPlatformTenantDetail extends Omit<ApiPlatformTenant, 'channels' | 'memberCount'> {
-  channels: (ApiChannel & { hasToken: boolean })[];
+  channels: (ApiChannel & { hasToken: boolean } & ApiChannelApps)[];
   members: {
     userId: string;
     name: string;
@@ -441,7 +458,8 @@ export interface ApiPlatformTenantDetail extends Omit<ApiPlatformTenant, 'channe
 /** GET /platform/alerts (mockup web-25): facts only, the console writes the sentences. */
 export type ApiAlertKind =
   | 'webhooks_failed' | 'unroutable_number' | 'bcv_unread' | 'channel_disconnected' | 'access_expired' | 'access_expiring'
-  | 'number_silent' | 'agent_cap_reached' | 'agent_cap_near' | 'catalog_unavailable' | 'free_replies_exceeded' | 'onboarding_stalled';
+  | 'number_silent' | 'agent_cap_reached' | 'agent_cap_near' | 'catalog_unavailable' | 'free_replies_exceeded' | 'onboarding_stalled'
+  | 'foreign_app';
 
 export interface ApiPlatformAlert {
   id: string;
@@ -458,7 +476,8 @@ export interface ApiPlatformAlert {
 
 export interface ApiPlatformAlertReport {
   checkedAt: string;
-  checked: { companies: number; numbers: number; connected: number };
+  /** appsUnread: numbers whose apps were not read in the last hour (mockup web-31). */
+  checked: { companies: number; numbers: number; connected: number; appsUnread: number };
   alerts: ApiPlatformAlert[];
 }
 

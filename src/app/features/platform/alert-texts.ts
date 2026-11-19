@@ -79,6 +79,15 @@ export function alertCopy(alert: PlatformAlert): AlertCopy {
         todo: 'pedirle que pulse «Reconectar con WhatsApp», o poner una clave nueva en «Cambiar número o clave».',
         action: company && { label: 'Cambiar clave', link: company },
       };
+    case 'foreign_app': {
+      const many = n(alert, 'count') > 1;
+      return {
+        title: `Otra app recibe los mensajes ${alert.channelLabel ? `del número ${alert.channelLabel}` : 'de su número'}`,
+        text: `Meta también le entrega cada mensaje de este número a ${many ? 'estas apps, que no son' : 'la app'} «${s(alert, 'apps')}»${many ? '' : ', que no es'} de Vortomi. Las conversaciones de sus clientes están saliendo de Vortomi.`,
+        todo: `quien maneja esa app debe quitarla de la cuenta de WhatsApp (en el explorador de Meta, con una clave de esa app: DELETE ${s(alert, 'wabaId')}/subscribed_apps). Si es una herramienta del propio cliente, confirmarlo con él.`,
+        action: company && { label: 'Ver el número', link: company },
+      };
+    }
     case 'access_expiring':
       return {
         title: `El acceso a su cuenta de Meta vence en ${n(alert, 'days')} ${n(alert, 'days') === 1 ? 'día' : 'días'}`,

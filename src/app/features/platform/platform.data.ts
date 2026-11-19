@@ -6,7 +6,8 @@ import { toApiFailure } from '../../core/api/api-error';
 import { Clock } from '../../core/clock';
 import { Directory } from '../../core/directory';
 import { Session } from '../../core/session';
-import type { ApiPlatformTenant, ApiPlatformTenantDetail, ApiWabaLookup } from '../../shared/api/contract';
+import type { ApiChannelApps, ApiPlatformTenant, ApiPlatformTenantDetail, ApiWabaLookup } from '../../shared/api/contract';
+import { sampleChannelApps } from './channel-apps.rules';
 import { toChannel, toUsage } from '../../shared/api/mappers';
 import type {
   AuditAction,
@@ -185,6 +186,17 @@ export class PlatformData {
 
   row(tenantId: Id | undefined): TenantRow | null {
     return this.rows().find((r) => r.tenant.id === tenantId) ?? null;
+  }
+
+  /** Who receives each number's messages (mockup web-31), by number id; from the open company's page. */
+  channelApps(tenantId: Id): Map<string, ApiChannelApps> {
+    if (!this.remote) {
+      const sample = sampleChannelApps(this.clock.now());
+      return new Map(this.channels().filter((c) => c.tenantId === tenantId).map((c) => [c.id, sample]));
+    }
+    const detail = this.remoteDetail();
+    if (detail?.id !== tenantId) return new Map();
+    return new Map(detail.channels.map((c) => [c.id, { apps: c.apps, appsCheckedAt: c.appsCheckedAt, appsFailedAt: c.appsFailedAt }]));
   }
 
   members(tenantId: Id): MemberRow[] {

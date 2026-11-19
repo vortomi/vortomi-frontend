@@ -264,6 +264,14 @@
     app-icon {
       color: var(--color-success);
     }
+
+    &.pending {
+      color: var(--color-text-2);
+
+      app-icon {
+        color: var(--color-text-muted);
+      }
+    }
   }
 }
 
