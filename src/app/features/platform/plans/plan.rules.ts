@@ -15,7 +15,8 @@ export const EMPTY_DRAFT: PlanDraft = {
   name: '',
   description: '',
   price: '',
-  discounts: { '1': '0', '3': '0', '6': '0', '12': '0' },
+  // Empty shows the «0» placeholder; empty reads as 0 %.
+  discounts: { '1': '', '3': '', '6': '', '12': '' },
   benefits: [],
   isActive: true,
 };
@@ -28,7 +29,7 @@ export function draftOf(plan: Plan): PlanDraft {
     name: plan.name,
     description: plan.description,
     price: priceText(plan.priceCents),
-    discounts: Object.fromEntries(PLAN_PERIODS.map((p) => [p, String(plan.discounts[p])])),
+    discounts: Object.fromEntries(PLAN_PERIODS.map((p) => [p, plan.discounts[p] ? String(plan.discounts[p]) : ''])),
     benefits: [...plan.benefits],
     isActive: plan.isActive,
   };

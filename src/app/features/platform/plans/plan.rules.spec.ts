@@ -46,7 +46,7 @@ describe('reading the plan form', () => {
   });
 
   it('fills the form back from a saved plan', () => {
-    expect(draftOf(plan)).toMatchObject({ price: '79,00', discounts: { '1': '0', '3': '5', '6': '10', '12': '20' } });
+    expect(draftOf(plan)).toMatchObject({ price: '79,00', discounts: { '1': '', '3': '5', '6': '10', '12': '20' } });
   });
 });
 

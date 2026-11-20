@@ -71,7 +71,7 @@ const LIST_QUERY = { tab: 'plans' };
                 @for (period of periods; track period) {
                   <label class="discount">
                     <span>{{ periodLabel[period] }}</span>
-                    <span class="pct"><input class="input" appNumeric="quantity" [decimals]="0" inputmode="numeric" maxlength="2" [attr.aria-label]="'Descuento de ' + periodLabel[period]"
+                    <span class="pct"><input class="input" appNumeric="quantity" [decimals]="0" inputmode="numeric" maxlength="2" placeholder="0" [attr.aria-label]="'Descuento de ' + periodLabel[period]"
                       [value]="d.discounts[period]" (input)="setDiscount(period, text($event))" /><i>%</i></span>
                   </label>
                 }
