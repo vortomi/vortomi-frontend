@@ -2,16 +2,17 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Clock } from '../../../core/clock';
 import type { Id, TenantPlan } from '../../../shared/api/models';
 import { calendarDay } from '../../../shared/format/date-time';
-import type { Day, NewPayment, PlanTerms, Subscription } from './subscription.models';
-import { addDays, monthOf, nextMonthDay } from './subscription.rules';
+import type { Day, PlanTerms, Subscription } from './subscription.models';
+import { addDays } from './subscription.rules';
 import { SAMPLE_PLANS, sampleSubscriptions } from './subscription.sample';
 
 const ZONE = 'America/Caracas';
 
 /**
  * The console's subscriptions, for now the sample of subscription.sample.ts kept in memory: what is
- * done here (payments, plan changes, grace) lasts until the page is reloaded and never reaches the
- * server. When billing exists, this is the one place that changes to read and write remotely.
+ * done here (plan changes, grace) lasts until the page is reloaded and never reaches the server. The
+ * console never records payments: companies will report theirs from their panel. When billing
+ * exists, this is the one place that changes to read and write remotely.
  */
 @Injectable({ providedIn: 'root' })
 export class SubscriptionsStore {
@@ -30,19 +31,6 @@ export class SubscriptionsStore {
 
   terms(plan: TenantPlan): PlanTerms {
     return this.plans().find((p) => p.plan === plan)!;
-  }
-
-  /** Pays the first month still owed: the next charge moves one month and any grace ends. */
-  registerPayment(id: Id, payment: NewPayment): void {
-    this.update(id, (sub) => {
-      const record = { id: `${id}-p${Date.now()}`, month: monthOf(sub.nextChargeOn), ...payment };
-      return {
-        ...sub,
-        payments: [record, ...sub.payments],
-        nextChargeOn: nextMonthDay(sub.nextChargeOn, sub.billingDay),
-        graceUntil: null,
-      };
-    });
   }
 
   /** The new fee applies from the next charge, never to the month already running. */

@@ -2,20 +2,23 @@
   <h1>Suscripciones</h1>
   <span class="sub">Lo que paga cada empresa y quién está al día</span>
   <span class="spacer"></span>
-  <button type="button" class="btn btn--primary" (click)="paying.set(true)"><app-icon name="plus" /><span>Registrar pago</span></button>
+  @if (tab() === 'methods') {
+    <a class="btn btn--primary" [routerLink]="[methodsHost.formBase, 'new']"><app-icon name="plus" /><span>Agregar método</span></a>
+  }
 </header>
 
 <div class="page-body">
-  @if (store.isSample) {
+  @if (store.isSample && tab() !== 'methods') {
     <div class="form-alert warn sample" role="note">
       <app-icon name="info" />
-      <span><b>Datos de ejemplo.</b> Todavía no hay cobros reales: las empresas, los precios y los pagos de esta sección son de muestra. Lo que hagas aquí se borra al recargar la página.</span>
+      <span><b>Datos de ejemplo.</b> Todavía no hay cobros reales: las empresas, los precios y los pagos de Cobros y Planes son de muestra. Lo que hagas aquí se borra al recargar la página. Los métodos de pago sí son reales.</span>
     </div>
   }
 
   <nav class="tabs-line" role="tablist" aria-label="Secciones de suscripciones">
-    <button type="button" role="tab" [class.on]="tab() === 'charges'" [attr.aria-selected]="tab() === 'charges'" (click)="tab.set('charges')">Cobros</button>
-    <button type="button" role="tab" [class.on]="tab() === 'plans'" [attr.aria-selected]="tab() === 'plans'" (click)="tab.set('plans')">Planes</button>
+    <button type="button" role="tab" [class.on]="tab() === 'charges'" [attr.aria-selected]="tab() === 'charges'" (click)="showTab('charges')">Cobros</button>
+    <button type="button" role="tab" [class.on]="tab() === 'plans'" [attr.aria-selected]="tab() === 'plans'" (click)="showTab('plans')">Planes</button>
+    <button type="button" role="tab" [class.on]="tab() === 'methods'" [attr.aria-selected]="tab() === 'methods'" (click)="showTab('methods')">Métodos de pago</button>
   </nav>
 
   @if (tab() === 'charges') {
@@ -61,7 +64,7 @@
         </tbody>
       </table>
     </div>
-  } @else {
+  } @else if (tab() === 'plans') {
     <div class="plans">
       @for (plan of store.plans(); track plan.plan) {
         <section class="card plan" [class.featured]="plan.plan === 'team'">
@@ -80,7 +83,9 @@
     </div>
     <p class="form-alert info"><app-icon name="info" />Un precio nuevo se aplicará desde el próximo cobro de cada empresa, nunca al mes que ya corre. Los precios se podrán editar cuando estén decididos.</p>
     <p class="form-alert warn"><app-icon name="alert" />Si una empresa llega al límite de usuarios o de números de su plan, el panel le avisará y no la dejará agregar más. Nunca se borra nada.</p>
+  } @else {
+    <p class="lead methods-intro">{{ methodsHost.texts.listIntro }}</p>
+    <app-payment-method-list />
   }
 </div>
 
-<app-register-payment-dialog [open]="paying()" (closed)="paying.set(false)" (saved)="paid($event)" />

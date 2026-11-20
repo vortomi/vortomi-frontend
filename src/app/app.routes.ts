@@ -12,7 +12,6 @@ import {
 import { AppLayout } from './layout/app-layout';
 import { AuthLayout } from './layout/auth-layout';
 import { unsavedChangesGuard } from './shared/ui/unsaved-changes';
-
 const inboxPage = () => import('./features/inbox/inbox.page').then((m) => m.InboxPage);
 const profilePage = () => import('./features/account/profile.page').then((m) => m.ProfilePage);
 
@@ -120,25 +119,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/orders/order-detail.page').then((m) => m.OrderDetailPage),
       },
       {
+        // The company's own methods: list and editor share its host.
         path: 'payment-methods',
         canActivate: [tenantAdminGuard, salesModeGuard],
-        title: 'Métodos de pago',
-        loadComponent: () => import('./features/payment-methods/payment-methods.page').then((m) => m.PaymentMethodsPage),
-      },
-      {
-        // "new" before :methodId, which would otherwise take it as an id.
-        path: 'payment-methods/new',
-        canActivate: [tenantAdminGuard, salesModeGuard],
-        canDeactivate: [unsavedChangesGuard],
-        title: 'Nuevo método de pago',
-        loadComponent: () => import('./features/payment-methods/payment-method-form.page').then((m) => m.PaymentMethodFormPage),
-      },
-      {
-        path: 'payment-methods/:methodId',
-        canActivate: [tenantAdminGuard, salesModeGuard],
-        canDeactivate: [unsavedChangesGuard],
-        title: 'Método de pago',
-        loadComponent: () => import('./features/payment-methods/payment-method-form.page').then((m) => m.PaymentMethodFormPage),
+        loadChildren: () => import('./features/payment-methods/payment-methods.routes').then((m) => m.PAYMENT_METHOD_ROUTES),
       },
       {
         path: 'inventory',

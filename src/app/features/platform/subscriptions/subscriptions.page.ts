@@ -1,38 +1,41 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
-import type { Id } from '../../../shared/api/models';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TENANT_PLAN } from '../../../shared/api/labels';
 import { formatShortDate } from '../../../shared/format/date-time';
 import { formatUsdCents } from '../../../shared/format/money';
 import { Avatar } from '../../../shared/ui/avatar';
 import { Icon } from '../../../shared/ui/icon';
 import { Pill } from '../../../shared/ui/pill';
-import { Toaster } from '../../../shared/ui/toaster';
-import { RegisterPaymentDialog } from './register-payment.dialog';
+import { PaymentMethodList } from '../../payment-methods/payment-method-list';
+import { PAYMENT_METHODS_HOST } from '../../payment-methods/payment-methods.host';
 import type { PlanTerms, Subscription } from './subscription.models';
 import { type StatusFilter, billingFigures, billingStatus, matchesFilter, statusLabel } from './subscription.rules';
 import { SubscriptionsStore } from './subscriptions.store';
 
-type Tab = 'charges' | 'plans';
+type Tab = 'charges' | 'plans' | 'methods';
+const TABS: Tab[] = ['charges', 'plans', 'methods'];
 
 /**
  * Console → Suscripciones (mockup web-32, option A: a fixed fee per plan). What each company pays
- * and who is up to date, plus the plans. Sample data until the billing model is decided.
+ * and who is up to date, the plans, and where companies pay Vortomi. The console manages; it never
+ * records payments (companies report theirs from their panel, later). Charges and plans are sample
+ * data until the billing model is decided; the payment methods are real (PaymentMethodList).
  */
 @Component({
   selector: 'app-subscriptions-page',
-  imports: [Avatar, Icon, Pill, RegisterPaymentDialog],
+  imports: [Avatar, Icon, PaymentMethodList, Pill, RouterLink],
   templateUrl: './subscriptions.page.html',
   styleUrls: ['../platform-pages.scss', './subscriptions.page.scss'],
 })
 export class SubscriptionsPage {
   protected readonly store = inject(SubscriptionsStore);
+  protected readonly methodsHost = inject(PAYMENT_METHODS_HOST);
   private readonly router = inject(Router);
-  private readonly toaster = inject(Toaster);
+  private readonly route = inject(ActivatedRoute);
 
-  protected readonly tab = signal<Tab>('charges');
+  /** From ?tab=, so coming back from the payment method editor lands on its tab. */
+  protected readonly tab = signal<Tab>(this.tabFromUrl());
   protected readonly filter = signal<StatusFilter>('all');
-  protected readonly paying = signal(false);
   protected readonly planText = TENANT_PLAN;
 
   protected readonly filters: { id: StatusFilter; label: string }[] = [
@@ -97,10 +100,15 @@ export class SubscriptionsPage {
     void this.router.navigate(['/platform/subscriptions', sub.id]);
   }
 
-  protected paid(id: Id): void {
-    this.paying.set(false);
-    const name = this.store.byId().get(id)?.companyName ?? 'la empresa';
-    this.toaster.show(`Pago de ${name} registrado. Es de ejemplo: se borra al recargar la página.`);
+  /** Each tab keeps its place in the address (?tab=), without a new history step. */
+  protected showTab(tab: Tab): void {
+    this.tab.set(tab);
+    void this.router.navigate([], { queryParams: { tab: tab === 'charges' ? null : tab }, queryParamsHandling: 'merge', replaceUrl: true });
+  }
+
+  private tabFromUrl(): Tab {
+    const tab = this.route.snapshot.queryParamMap.get('tab');
+    return TABS.find((t) => t === tab) ?? 'charges';
   }
 }
 

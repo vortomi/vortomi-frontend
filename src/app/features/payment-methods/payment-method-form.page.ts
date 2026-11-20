@@ -1,8 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { API_CONFIG } from '../../core/api/api-config';
 import { toApiFailure } from '../../core/api/api-error';
-import { Session } from '../../core/session';
 import type { PaymentField, PaymentFieldKind, PaymentMethodType, PaymentProofRule } from '../../shared/api/models';
 import { Icon } from '../../shared/ui/icon';
 import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
@@ -10,14 +8,13 @@ import { Skeleton } from '../../shared/ui/skeleton';
 import { Switch } from '../../shared/ui/switch';
 import { Toaster } from '../../shared/ui/toaster';
 import { UnsavedChanges } from '../../shared/ui/unsaved-changes';
-import { ExchangeRatesRemote } from '../exchange-rates/exchange-rates-remote';
-import { rateInUse } from '../exchange-rates/rate-format';
 import { FieldValueInput } from './field-value-input';
 import { MethodPreview } from './method-preview';
 import { MethodTypeSelect } from './method-type-select';
 import type { MessageMethod } from './payment-message';
 import { MAX_FIELDS, RECEIPT_OPTIONS, REFERENCE_OPTIONS, isCash, takesNoProof, typeInfo } from './payment-methods.models';
-import { type PaymentMethodInput, PaymentMethodsRemote } from './payment-methods-remote';
+import { PAYMENT_METHODS_HOST } from './payment-methods.host';
+import type { PaymentMethodInput } from './payment-methods-remote';
 import { FORMAT_HINT, hasValidFormat } from './venezuelan-formats';
 
 /** A datum being edited; the placeholder comes from the type's suggestion. */
@@ -57,11 +54,11 @@ const toMenu = (options: { value: string; label: string }[]): MenuOption[] => op
   imports: [FieldValueInput, Icon, MethodPreview, MethodTypeSelect, RouterLink, SelectMenu, Skeleton, Switch],
   template: `
     <header class="page-top">
-      <nav class="crumbs" aria-label="Ruta"><a routerLink="/payment-methods">Métodos de pago</a><app-icon name="chev-right" /><span>{{ isNew() ? 'Nuevo' : original()?.name ?? '…' }}</span></nav>
+      <nav class="crumbs" aria-label="Ruta"><a [routerLink]="host.listLink" [queryParams]="host.listQuery">Métodos de pago</a><app-icon name="chev-right" /><span>{{ isNew() ? 'Nuevo' : original()?.name ?? '…' }}</span></nav>
     </header>
     <div class="page-body">
       @if (missing()) {
-        <div class="card"><p class="empty-state"><app-icon name="dollar" />Ese método ya no existe.<a class="link" routerLink="/payment-methods">Volver a la lista</a></p></div>
+        <div class="card"><p class="empty-state"><app-icon name="dollar" />Ese método ya no existe.<a class="link" [routerLink]="host.listLink" [queryParams]="host.listQuery">Volver a la lista</a></p></div>
       } @else if (loadError(); as error) {
         <div class="form-alert" role="alert">
           <app-icon name="alert" /><span class="grow">{{ error }}</span>
@@ -75,23 +72,23 @@ const toMenu = (options: { value: string; label: string }[]): MenuOption[] => op
         <p class="intro">
           {{ isNew()
             ? 'Elige el tipo: te proponemos los datos que se suelen pedir. Cambia las etiquetas, agrega o quita los que quieras.'
-            : 'Los cambios se usan en los próximos pedidos. Los pedidos ya hechos conservan el mensaje que se envió.' }}
+            : host.texts.editIntro }}
         </p>
-        <div class="layout">
+        <div class="layout" [class.single]="!host.preview">
           <div class="form">
             <section class="card box">
               <h2>Tipo de método</h2>
-              <p class="lead">Define la moneda en que paga el cliente y los datos que te proponemos.</p>
+              <p class="lead">{{ host.texts.typeLead }}</p>
               <app-method-type-select [value]="d.type" (picked)="chooseType($event)" />
               @if (!d.type) { <p class="lead">Al elegir el tipo aparece su formulario: nombre, datos para pagar, instrucciones y vista previa.</p> }
             </section>
 
             @if (d.type) {
               <section class="card box">
-                <h2>Datos que recibirá el cliente</h2>
-                <p class="lead">Se envían en este orden; arrastra para cambiarlo.</p>
+                <h2>{{ host.texts.dataTitle }}</h2>
+                <p class="lead">{{ host.texts.dataLead }}</p>
                 <div class="field">
-                  <label for="method-name">Nombre que ve el cliente</label>
+                  <label for="method-name">{{ host.texts.nameLabel }}</label>
                   <input id="method-name" class="input" maxlength="120" [value]="d.name" (input)="patch({ name: text($event) })" />
                   <p class="field-hint">Si tienes cuentas en varios bancos, crea un método por banco.</p>
                 </div>
@@ -122,7 +119,7 @@ const toMenu = (options: { value: string; label: string }[]): MenuOption[] => op
                     <button type="button" class="btn btn--sm" (click)="addField('text', '')"><app-icon name="plus" /><span>{{ paysInBolivares() ? 'Otro dato' : 'Agregar dato' }}</span></button>
                   </div>
                 }
-                <p class="form-alert ok"><app-icon name="info" /><span>El <b>monto a pagar</b> se agrega solo al final, en la moneda del método. No hace falta escribirlo.</span></p>
+                @if (host.texts.amountNote; as note) { <p class="form-alert ok"><app-icon name="info" /><span [innerHTML]="note"></span></p> }
 
                 <div class="field">
                   <label for="method-instructions">Instrucciones · {{ noProof() ? 'obligatorias' : 'opcional' }}</label>
@@ -132,9 +129,7 @@ const toMenu = (options: { value: string; label: string }[]): MenuOption[] => op
 
                 @if (noProof()) {
                   <p class="lead">
-                    {{ d.type === 'arrange'
-                      ? 'No se pide referencia ni comprobante: un asesor acuerda con el cliente cómo y cuándo pagar.'
-                      : 'En efectivo no se pide referencia ni comprobante: el pedido pasa directo a revisión de un asesor.' }}
+                    {{ d.type === 'arrange' ? host.texts.noProofArrange : host.texts.noProofCash }}
                   </p>
                 } @else {
                   <div class="rules">
@@ -147,7 +142,7 @@ const toMenu = (options: { value: string; label: string }[]): MenuOption[] => op
                       <app-select-menu label="Comprobante" [options]="receiptOptions" [value]="d.receiptRule" (picked)="patch({ receiptRule: asRule($event) })" />
                     </div>
                   </div>
-                  <p class="field-hint">Con comprobante, el cliente envía el capture por el chat y queda guardado en su pedido para que un asesor lo revise.</p>
+                  <p class="field-hint">{{ host.texts.receiptHint }}</p>
                 }
               </section>
             }
@@ -155,18 +150,18 @@ const toMenu = (options: { value: string; label: string }[]): MenuOption[] => op
             @if (error(); as message) { <p class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</p> }
             <footer class="card box bar">
               <label class="visible">
-                <app-switch [checked]="d.isActive" label="Visible para los clientes" (toggled)="patch({ isActive: $event })" />
-                {{ d.isActive ? 'Visible para los clientes' : 'Oculto' }}
+                <app-switch [checked]="d.isActive" [label]="host.texts.visible" (toggled)="patch({ isActive: $event })" />
+                {{ d.isActive ? host.texts.visible : 'Oculto' }}
               </label>
               <span class="spacer"></span>
-              <a class="btn btn--ghost" routerLink="/payment-methods"><span>Cancelar</span></a>
+              <a class="btn btn--ghost" [routerLink]="host.listLink" [queryParams]="host.listQuery"><span>Cancelar</span></a>
               <button type="button" class="btn btn--primary" [disabled]="saving() || !d.type" [attr.aria-busy]="saving()" (click)="save()">
                 <app-icon name="check" /><span>{{ isNew() ? 'Crear método' : 'Guardar cambios' }}</span>
               </button>
             </footer>
           </div>
 
-          @if (previewMethod(); as method) {
+          @if (host.preview && previewMethod(); as method) {
             <aside class="card box preview"><app-method-preview [method]="method" [bsPerUsd]="bsPerUsd()" /></aside>
           }
         </div>
@@ -182,6 +177,7 @@ const toMenu = (options: { value: string; label: string }[]): MenuOption[] => op
     h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
     .intro { color: var(--color-text-muted); font-size: 14px; margin: 4px 0 18px; }
     .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+    .layout.single { grid-template-columns: minmax(0, 860px); }
     @media (max-width: 1000px) { .layout { grid-template-columns: minmax(0, 1fr); } }
     .preview { position: sticky; top: 0; }
     .rows { gap: 8px; }
@@ -201,9 +197,7 @@ const toMenu = (options: { value: string; label: string }[]): MenuOption[] => op
   `,
 })
 export class PaymentMethodFormPage {
-  protected readonly remote = inject(API_CONFIG).mode === 'api' ? inject(PaymentMethodsRemote) : null;
-  private readonly rates = inject(ExchangeRatesRemote);
-  private readonly session = inject(Session);
+  protected readonly host = inject(PAYMENT_METHODS_HOST);
   private readonly toaster = inject(Toaster);
   private readonly router = inject(Router);
   private readonly methodId = inject(ActivatedRoute).snapshot.paramMap.get('methodId');
@@ -318,9 +312,8 @@ export class PaymentMethodFormPage {
   }
 
   protected async save(): Promise<void> {
-    const tenantId = this.session.tenant()?.id;
     const d = this.draft();
-    if (!this.remote || !tenantId || !d.type) return;
+    if (!this.host.available || !d.type || this.saving()) return;
     const problem = this.problem(d);
     if (problem) return this.error.set(problem);
     const input: PaymentMethodInput = {
@@ -334,10 +327,10 @@ export class PaymentMethodFormPage {
     };
     this.saving.set(true);
     try {
-      const saved = this.methodId ? await this.remote.update(tenantId, this.methodId, input) : await this.remote.create(tenantId, input);
+      const saved = this.methodId ? await this.host.update(this.methodId, input) : await this.host.create(input);
       this.baseline.set(JSON.stringify(this.draft()));
       this.toaster.show(`${saved.name} guardado.`);
-      await this.router.navigate(['/payment-methods'], { queryParams: { saved: saved.id } });
+      await this.router.navigate([this.host.listLink], { queryParams: { ...this.host.listQuery, saved: saved.id } });
     } catch (error) {
       this.error.set(toApiFailure(error).message);
     } finally {
@@ -347,7 +340,7 @@ export class PaymentMethodFormPage {
 
   /** What to fix before saving, in plain words; null when it is ready. */
   private problem(d: Draft): string | null {
-    if (d.name.trim().length < 2) return 'Escribe el nombre que verá el cliente.';
+    if (d.name.trim().length < 2) return this.host.texts.nameMissing;
     if (d.fields.some((f) => !f.label.trim() || isBlank(f))) return 'Completa la etiqueta y el valor de cada dato, o quita los que no uses.';
     const wrong = d.fields.find((f) => !hasValidFormat(f.kind, f.value.trim()));
     if (wrong) return `Revisa «${wrong.label}»: ${FORMAT_HINT[wrong.kind]}.`;
@@ -356,15 +349,16 @@ export class PaymentMethodFormPage {
   }
 
   private async load(): Promise<void> {
-    const tenantId = this.session.tenant()?.id;
-    if (!this.remote || !tenantId) return;
-    void this.rates
-      .get(tenantId)
-      .then((book) => this.bsPerUsd.set(rateInUse(book)))
-      .catch(() => undefined);
+    if (!this.host.available) return;
+    if (this.host.preview) {
+      void this.host
+        .bsPerUsd()
+        .then((rate) => this.bsPerUsd.set(rate))
+        .catch(() => undefined);
+    }
     try {
       if (this.methodId) {
-        const method = (await this.remote.list(tenantId)).find((m) => m.id === this.methodId);
+        const method = (await this.host.list()).find((m) => m.id === this.methodId);
         if (!method) return this.missing.set(true);
         const { type, name, fields, instructions, referenceRule, receiptRule, isActive } = method;
         const draft: Draft = { type, name, fields, instructions, referenceRule, receiptRule, isActive };

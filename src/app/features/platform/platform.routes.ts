@@ -1,4 +1,7 @@
 import type { Routes } from '@angular/router';
+import { unsavedChangesGuard } from '../../shared/ui/unsaved-changes';
+import { PAYMENT_METHODS_HOST } from '../payment-methods/payment-methods.host';
+import { PlatformPaymentMethodsHost } from './subscriptions/platform-payment-methods.host';
 
 export const PLATFORM_ROUTES: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'tenants' },
@@ -39,15 +42,35 @@ export const PLATFORM_ROUTES: Routes = [
     loadComponent: () => import('./platform-team.page').then((m) => m.PlatformTeamPage),
   },
   {
-    // Sample data until the billing model is decided (mockup web-32, option A).
+    // Charges and plans are sample data until the billing model is decided (mockup web-32, option A);
+    // Vortomi's payment methods are real, on the same screens as a company's own (shared host).
     path: 'subscriptions',
-    title: 'Suscripciones · Consola',
-    loadComponent: () => import('./subscriptions/subscriptions.page').then((m) => m.SubscriptionsPage),
-  },
-  {
-    path: 'subscriptions/:subscriptionId',
-    title: 'Suscripción · Consola',
-    loadComponent: () => import('./subscriptions/subscription-detail.page').then((m) => m.SubscriptionDetailPage),
+    providers: [{ provide: PAYMENT_METHODS_HOST, useClass: PlatformPaymentMethodsHost }],
+    children: [
+      {
+        path: '',
+        title: 'Suscripciones · Consola',
+        loadComponent: () => import('./subscriptions/subscriptions.page').then((m) => m.SubscriptionsPage),
+      },
+      {
+        // "new" before :methodId, which would otherwise take it as an id.
+        path: 'payment-methods/new',
+        canDeactivate: [unsavedChangesGuard],
+        title: 'Nuevo método de pago · Consola',
+        loadComponent: () => import('../payment-methods/payment-method-form.page').then((m) => m.PaymentMethodFormPage),
+      },
+      {
+        path: 'payment-methods/:methodId',
+        canDeactivate: [unsavedChangesGuard],
+        title: 'Método de pago · Consola',
+        loadComponent: () => import('../payment-methods/payment-method-form.page').then((m) => m.PaymentMethodFormPage),
+      },
+      {
+        path: ':subscriptionId',
+        title: 'Suscripción · Consola',
+        loadComponent: () => import('./subscriptions/subscription-detail.page').then((m) => m.SubscriptionDetailPage),
+      },
+    ],
   },
   {
     path: 'profile',

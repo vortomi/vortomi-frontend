@@ -55,7 +55,6 @@
         }
         @if (s.plan !== 'internal') {
           <div class="acts">
-            <button type="button" class="btn btn--primary" (click)="paying.set(true)"><app-icon name="plus" /><span>Registrar pago</span></button>
             <button type="button" class="btn" (click)="openPlanChange()"><app-icon name="swap" /><span>Cambiar de plan</span></button>
             @if (status() === 'overdue' || status() === 'grace') {
               <button type="button" class="btn" (click)="givingGrace.set(true)"><app-icon name="calendar" /><span>Dar días de gracia</span></button>
@@ -65,8 +64,6 @@
       </section>
     </div>
   </div>
-
-  <app-register-payment-dialog [open]="paying()" [subscriptionId]="s.id" (closed)="paying.set(false)" (saved)="paid()" />
 
   <app-dialog title="Cambiar de plan" [open]="changingPlan()" (closed)="changingPlan.set(false)">
     <p class="lead">Hoy paga el plan <b>{{ planText[s.plan].text }}</b>. El nuevo precio se aplica desde su próximo cobro.</p>

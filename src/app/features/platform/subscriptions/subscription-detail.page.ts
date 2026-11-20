@@ -11,18 +11,17 @@ import { Icon } from '../../../shared/ui/icon';
 import { type OptionCard, OptionCards } from '../../../shared/ui/option-cards';
 import { Pill } from '../../../shared/ui/pill';
 import { Toaster } from '../../../shared/ui/toaster';
-import { RegisterPaymentDialog } from './register-payment.dialog';
 import type { Day, Subscription } from './subscription.models';
 import { GRACE_OPTIONS, PAYMENT_METHOD_LABEL, addDays, billingStatus, fitsPlan, monthOf, monthTitle, statusLabel } from './subscription.rules';
 import { SubscriptionsStore } from './subscriptions.store';
 
 /**
  * One company's billing (mockup web-32, step 6): its status, payment history and plan, with
- * «Registrar pago», «Cambiar de plan» and «Dar días de gracia». Sample data, kept in memory.
+ * «Cambiar de plan» and «Dar días de gracia». The console never records payments. Sample data, kept in memory.
  */
 @Component({
   selector: 'app-subscription-detail-page',
-  imports: [RouterLink, Avatar, Dialog, Icon, OptionCards, Pill, RegisterPaymentDialog],
+  imports: [RouterLink, Avatar, Dialog, Icon, OptionCards, Pill],
   templateUrl: './subscription-detail.page.html',
   styleUrls: ['../platform-pages.scss', './subscription-detail.page.scss'],
 })
@@ -35,7 +34,6 @@ export class SubscriptionDetailPage {
   readonly subscriptionId = input.required<string>();
 
   protected readonly today = signal(this.store.today());
-  protected readonly paying = signal(false);
   protected readonly changingPlan = signal(false);
   protected readonly givingGrace = signal(false);
   protected readonly newPlan = signal<TenantPlan | null>(null);
@@ -155,10 +153,5 @@ export class SubscriptionDetailPage {
     if (!yes) return;
     this.store.giveGrace(sub.id, days);
     this.toaster.show(`${sub.companyName} tiene ${days} días de gracia. Es de ejemplo: se borra al recargar.`);
-  }
-
-  protected paid(): void {
-    this.paying.set(false);
-    this.toaster.show('Pago registrado. Es de ejemplo: se borra al recargar la página.');
   }
 }

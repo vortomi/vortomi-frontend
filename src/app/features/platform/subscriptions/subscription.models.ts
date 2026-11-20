@@ -19,7 +19,7 @@ export interface PlanTerms {
   features: { text: string; included: boolean }[];
 }
 
-/** A payment the company already made outside Vortomi, written down by our team. */
+/** A payment a company made to Vortomi (to be reported by the company from its panel). */
 export interface SubscriptionPayment {
   id: Id;
   /** The month it pays, "2026-11". */
@@ -52,12 +52,4 @@ export interface Subscription {
   numbersUsed: number;
   /** Newest first. */
   payments: SubscriptionPayment[];
-}
-
-export interface NewPayment {
-  amountCents: number;
-  method: PaymentMethod;
-  reference: string;
-  paidOn: Day;
-  receiptName: string | null;
 }
