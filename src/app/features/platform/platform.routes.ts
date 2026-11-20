@@ -66,6 +66,19 @@ export const PLATFORM_ROUTES: Routes = [
         loadComponent: () => import('../payment-methods/payment-method-form.page').then((m) => m.PaymentMethodFormPage),
       },
       {
+        // Vortomi's plans (mockup web-34). "new" before :planId.
+        path: 'plans/new',
+        canDeactivate: [unsavedChangesGuard],
+        title: 'Nuevo plan · Consola',
+        loadComponent: () => import('./plans/plan-form.page').then((m) => m.PlanFormPage),
+      },
+      {
+        path: 'plans/:planId',
+        canDeactivate: [unsavedChangesGuard],
+        title: 'Plan · Consola',
+        loadComponent: () => import('./plans/plan-form.page').then((m) => m.PlanFormPage),
+      },
+      {
         path: ':subscriptionId',
         title: 'Suscripción · Consola',
         loadComponent: () => import('./subscriptions/subscription-detail.page').then((m) => m.SubscriptionDetailPage),

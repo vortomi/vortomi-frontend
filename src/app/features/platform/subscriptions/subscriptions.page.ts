@@ -8,7 +8,8 @@ import { Icon } from '../../../shared/ui/icon';
 import { Pill } from '../../../shared/ui/pill';
 import { PaymentMethodList } from '../../payment-methods/payment-method-list';
 import { PAYMENT_METHODS_HOST } from '../../payment-methods/payment-methods.host';
-import type { PlanTerms, Subscription } from './subscription.models';
+import { PlanList } from '../plans/plan-list';
+import type { Subscription } from './subscription.models';
 import { type StatusFilter, billingFigures, billingStatus, matchesFilter, statusLabel } from './subscription.rules';
 import { SubscriptionsStore } from './subscriptions.store';
 
@@ -18,12 +19,12 @@ const TABS: Tab[] = ['charges', 'plans', 'methods'];
 /**
  * Console → Suscripciones (mockup web-32, option A: a fixed fee per plan). What each company pays
  * and who is up to date, the plans, and where companies pay Vortomi. The console manages; it never
- * records payments (companies report theirs from their panel, later). Charges and plans are sample
- * data until the billing model is decided; the payment methods are real (PaymentMethodList).
+ * records payments (companies report theirs from their panel, later). Charges are sample data until
+ * billing exists; the plans (PlanList) and the payment methods (PaymentMethodList) are real.
  */
 @Component({
   selector: 'app-subscriptions-page',
-  imports: [Avatar, Icon, PaymentMethodList, Pill, RouterLink],
+  imports: [Avatar, Icon, PaymentMethodList, Pill, PlanList, RouterLink],
   templateUrl: './subscriptions.page.html',
   styleUrls: ['../platform-pages.scss', './subscriptions.page.scss'],
 })
@@ -59,12 +60,6 @@ export class SubscriptionsPage {
       .sort((a, b) => rank(a) - rank(b) || a.nextChargeOn.localeCompare(b.nextChargeOn)),
   );
 
-  protected readonly planCounts = computed(() => {
-    const counts = new Map<string, number>();
-    for (const sub of this.store.subscriptions()) counts.set(sub.plan, (counts.get(sub.plan) ?? 0) + 1);
-    return counts;
-  });
-
   protected count(filter: StatusFilter): number {
     return this.store.subscriptions().filter((sub) => matchesFilter(billingStatus(sub, this.today()), filter)).length;
   }
@@ -85,15 +80,6 @@ export class SubscriptionsPage {
 
   protected money(cents: number): string {
     return formatUsdCents(cents);
-  }
-
-  protected price(plan: PlanTerms): string {
-    return plan.priceCents ? formatUsdCents(plan.priceCents) : '0,00 $';
-  }
-
-  protected limit(value: number | null, one: string, many: string): string {
-    if (value === null) return `${many.charAt(0).toUpperCase()}${many.slice(1)} sin límite`;
-    return `${value} ${value === 1 ? one : many}`;
   }
 
   protected open(sub: Subscription): void {

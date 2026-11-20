@@ -2,16 +2,18 @@
   <h1>Suscripciones</h1>
   <span class="sub">Lo que paga cada empresa y quién está al día</span>
   <span class="spacer"></span>
-  @if (tab() === 'methods') {
+  @if (tab() === 'plans') {
+    <a class="btn btn--primary" routerLink="/platform/subscriptions/plans/new"><app-icon name="plus" /><span>Nuevo plan</span></a>
+  } @else if (tab() === 'methods') {
     <a class="btn btn--primary" [routerLink]="[methodsHost.formBase, 'new']"><app-icon name="plus" /><span>Agregar método</span></a>
   }
 </header>
 
 <div class="page-body">
-  @if (store.isSample && tab() !== 'methods') {
+  @if (store.isSample && tab() === 'charges') {
     <div class="form-alert warn sample" role="note">
       <app-icon name="info" />
-      <span><b>Datos de ejemplo.</b> Todavía no hay cobros reales: las empresas, los precios y los pagos de Cobros y Planes son de muestra. Lo que hagas aquí se borra al recargar la página. Los métodos de pago sí son reales.</span>
+      <span><b>Datos de ejemplo.</b> Todavía no hay cobros reales: las empresas, los precios y los pagos de Cobros son de muestra. Lo que hagas aquí se borra al recargar la página. Los planes y los métodos de pago sí son reales.</span>
     </div>
   }
 
@@ -65,24 +67,7 @@
       </table>
     </div>
   } @else if (tab() === 'plans') {
-    <div class="plans">
-      @for (plan of store.plans(); track plan.plan) {
-        <section class="card plan" [class.featured]="plan.plan === 'team'">
-          <h2>{{ planText[plan.plan].text }}</h2>
-          <p class="price">{{ price(plan) }} <small>{{ plan.priceCents ? 'al mes' : 'sin cobro' }}</small></p>
-          <ul>
-            <li><app-icon name="users" />{{ limit(plan.users, 'usuario', 'usuarios') }}</li>
-            <li><app-icon name="phone" />{{ limit(plan.numbers, 'número de WhatsApp', 'números de WhatsApp') }}</li>
-            @for (feature of plan.features; track feature.text) {
-              <li [class.no]="!feature.included"><app-icon [name]="feature.included ? 'check' : 'x'" />{{ feature.text }}</li>
-            }
-          </ul>
-          <p class="count">{{ planCounts().get(plan.plan) ?? 0 }} {{ planCounts().get(plan.plan) === 1 ? 'empresa' : 'empresas' }} en este plan</p>
-        </section>
-      }
-    </div>
-    <p class="form-alert info"><app-icon name="info" />Un precio nuevo se aplicará desde el próximo cobro de cada empresa, nunca al mes que ya corre. Los precios se podrán editar cuando estén decididos.</p>
-    <p class="form-alert warn"><app-icon name="alert" />Si una empresa llega al límite de usuarios o de números de su plan, el panel le avisará y no la dejará agregar más. Nunca se borra nada.</p>
+    <app-plan-list />
   } @else {
     <p class="lead methods-intro">{{ methodsHost.texts.listIntro }}</p>
     <app-payment-method-list />

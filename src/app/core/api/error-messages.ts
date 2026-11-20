@@ -22,6 +22,11 @@ const MESSAGES: Record<string, string> = {
   payment_reference_used: 'Esa referencia ya pagó otro pedido con el mismo método de pago. Revisa el comprobante antes de confirmar.',
   payment_method_not_found: 'Ese método de pago ya no existe.',
   order_mismatch: 'La lista de métodos cambió mientras la ordenabas. Vuelve a intentarlo.',
+
+  // Vortomi's plans (console)
+  plan_not_found: 'Ese plan ya no existe.',
+  plan_in_use: 'Ese plan lo tienen empresas: no se puede eliminar. Suspéndelo para que nadie más lo elija.',
+  plan_name_taken: 'Ya existe un plan con ese nombre. Usa otro.',
   mention_not_member: 'Solo puedes mencionar a alguien de tu equipo.',
   service_window_closed: 'Pasaron más de 24 horas desde el último mensaje del cliente. Solo puedes enviarle una plantilla aprobada.',
   send_in_progress: 'Este mensaje ya se está enviando.',
