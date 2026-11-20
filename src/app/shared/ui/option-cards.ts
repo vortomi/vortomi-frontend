@@ -25,7 +25,7 @@ const normalize = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}
         <input type="search" [attr.aria-label]="searchLabel()" [placeholder]="searchLabel()" [value]="query()" (input)="query.set(text($event))" />
       </label>
     }
-    <div class="grid" role="radiogroup" [attr.aria-label]="label()">
+    <div class="grid" role="radiogroup" [attr.aria-label]="label()" [style.grid-template-columns]="columns() ? 'repeat(' + columns() + ', minmax(0, 1fr))' : null">
       @for (option of shown(); track option.value) {
         @let on = option.value === value();
         <button type="button" role="radio" class="card" [class.on]="on" [attr.aria-checked]="on" (click)="picked.emit(option.value)">
@@ -74,6 +74,8 @@ export class OptionCards {
   readonly searchLabel = input('Buscar');
   /** Always shown, even when the search does not match (for example «Otro»). */
   readonly pinned = input<string[]>([]);
+  /** Fixed number of columns (1: one under the other, as in a dialog). Left out, as many as fit. */
+  readonly columns = input<number | null>(null);
   readonly picked = output<string>();
 
   protected readonly query = signal('');

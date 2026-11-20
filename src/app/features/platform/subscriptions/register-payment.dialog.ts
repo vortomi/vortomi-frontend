@@ -5,11 +5,20 @@ import { DatePicker } from '../../../shared/ui/date-picker';
 import { Dialog } from '../../../shared/ui/dialog';
 import { FileDrop } from '../../../shared/ui/file-drop';
 import { Icon } from '../../../shared/ui/icon';
+import type { IconName } from '../../../shared/ui/icon';
 import { NumericInput } from '../../../shared/ui/numeric-input';
+import { type OptionCard, OptionCards } from '../../../shared/ui/option-cards';
 import { type MenuOption, SelectMenu } from '../../../shared/ui/select-menu';
 import type { PaymentMethod } from './subscription.models';
 import { PAYMENT_METHOD_LABEL, monthOf, monthTitle } from './subscription.rules';
 import { SubscriptionsStore } from './subscriptions.store';
+
+const METHOD_ICON: Record<PaymentMethod, IconName> = {
+  mobile_payment: 'phone',
+  transfer: 'swap',
+  zelle: 'send',
+  cash: 'dollar',
+};
 
 /**
  * «Registrar un pago» (mockup web-32, step 4): writes down a payment the company already made by
@@ -18,7 +27,7 @@ import { SubscriptionsStore } from './subscriptions.store';
  */
 @Component({
   selector: 'app-register-payment-dialog',
-  imports: [Dialog, Icon, SelectMenu, DatePicker, FileDrop, NumericInput],
+  imports: [Dialog, Icon, SelectMenu, DatePicker, FileDrop, NumericInput, OptionCards],
   template: `
     <app-dialog [open]="open()" title="Registrar un pago" (closed)="closed.emit()">
       <p class="lead">Anota un pago que la empresa ya hizo. Vortomi no cobra ni guarda datos de tarjetas.</p>
@@ -32,14 +41,19 @@ import { SubscriptionsStore } from './subscriptions.store';
             [searchable]="companies().length > 7" [disabled]="!!subscriptionId()" (picked)="pickCompany($event)" />
           @if (owed(); as text) { <p class="field-hint">{{ text }}</p> }
         </div>
+        <!-- Up here the calendar has room to open: lower down, the dialog's edge cuts it. -->
+        <div class="field">
+          <label for="rp-date">Fecha del pago</label>
+          <app-date-picker id="rp-date" label="Fecha del pago" [value]="paidOn()" [max]="today()" [todayIso]="today()" (picked)="paidOn.set($event)" />
+        </div>
         <div class="field">
           <label for="rp-amount">Monto en dólares</label>
           <input id="rp-amount" class="input" appNumeric="money" inputmode="decimal" autocomplete="off" [value]="amount()" (input)="amount.set(value($event))" />
           <p class="field-hint">Si pagó en bolívares, anota el equivalente en dólares.</p>
         </div>
         <div class="field">
-          <label for="rp-method">Forma de pago</label>
-          <app-select-menu id="rp-method" label="Forma de pago" placeholder="Elige cómo pagó" [options]="methods" [value]="method()" (picked)="pickMethod($event)" />
+          <span class="label">Forma de pago</span>
+          <app-option-cards [columns]="2" label="Forma de pago" [options]="methods" [value]="method()" (picked)="pickMethod($event)" />
         </div>
         @if (method() !== 'cash') {
           <div class="field">
@@ -47,10 +61,6 @@ import { SubscriptionsStore } from './subscriptions.store';
             <input id="rp-reference" class="input" autocomplete="off" maxlength="40" [value]="reference()" (input)="reference.set(value($event))" />
           </div>
         }
-        <div class="field">
-          <label for="rp-date">Fecha del pago</label>
-          <app-date-picker id="rp-date" label="Fecha del pago" [value]="paidOn()" [max]="today()" [todayIso]="today()" (picked)="paidOn.set($event)" />
-        </div>
         <div class="field">
           <label>Comprobante <span class="opt">opcional</span></label>
           <app-file-drop [compact]="true" accept="image/png,image/jpeg,application/pdf" label="Arrastra la captura o haz clic para elegirla"
@@ -66,8 +76,7 @@ import { SubscriptionsStore } from './subscriptions.store';
   styles: `
     :host { --dialog-width: 460px; }
     .fields { display: flex; flex-direction: column; gap: 14px; }
-    .opt { font-weight: 400; color: var(--color-text-muted); }
-  `,
+    .opt { font-weight: 400; color: var(--color-text-muted); }  `,
 })
 export class RegisterPaymentDialog {
   private readonly store = inject(SubscriptionsStore);
@@ -79,7 +88,12 @@ export class RegisterPaymentDialog {
   /** The company whose payment was saved. */
   readonly saved = output<Id>();
 
-  protected readonly methods: MenuOption[] = (Object.entries(PAYMENT_METHOD_LABEL) as [PaymentMethod, string][]).map(([value, label]) => ({ value, label }));
+  /** In sight as cards: a dropdown halfway down the dialog would be cut by its edge. */
+  protected readonly methods: OptionCard[] = (Object.entries(PAYMENT_METHOD_LABEL) as [PaymentMethod, string][]).map(([value, label]) => ({
+    value,
+    label,
+    icon: METHOD_ICON[value],
+  }));
   protected readonly companies = computed<MenuOption[]>(() =>
     this.store.subscriptions().filter((s) => s.plan !== 'internal').map((s) => ({ value: s.id, label: s.companyName })),
   );

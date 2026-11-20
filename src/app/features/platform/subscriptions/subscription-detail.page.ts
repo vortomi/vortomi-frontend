@@ -8,12 +8,12 @@ import { Avatar } from '../../../shared/ui/avatar';
 import { Confirm } from '../../../shared/ui/confirm';
 import { Dialog } from '../../../shared/ui/dialog';
 import { Icon } from '../../../shared/ui/icon';
+import { type OptionCard, OptionCards } from '../../../shared/ui/option-cards';
 import { Pill } from '../../../shared/ui/pill';
-import { type MenuOption, SelectMenu } from '../../../shared/ui/select-menu';
 import { Toaster } from '../../../shared/ui/toaster';
 import { RegisterPaymentDialog } from './register-payment.dialog';
 import type { Day, Subscription } from './subscription.models';
-import { GRACE_OPTIONS, PAYMENT_METHOD_LABEL, billingStatus, fitsPlan, monthOf, monthTitle, statusLabel } from './subscription.rules';
+import { GRACE_OPTIONS, PAYMENT_METHOD_LABEL, addDays, billingStatus, fitsPlan, monthOf, monthTitle, statusLabel } from './subscription.rules';
 import { SubscriptionsStore } from './subscriptions.store';
 
 /**
@@ -22,7 +22,7 @@ import { SubscriptionsStore } from './subscriptions.store';
  */
 @Component({
   selector: 'app-subscription-detail-page',
-  imports: [RouterLink, Avatar, Dialog, Icon, Pill, SelectMenu, RegisterPaymentDialog],
+  imports: [RouterLink, Avatar, Dialog, Icon, OptionCards, Pill, RegisterPaymentDialog],
   templateUrl: './subscription-detail.page.html',
   styleUrls: ['../platform-pages.scss', './subscription-detail.page.scss'],
 })
@@ -59,16 +59,29 @@ export class SubscriptionDetailPage {
     return sub ? this.store.terms(sub.plan) : null;
   });
 
-  /** The paid plans other than the current one; one the company would not fit in says so. */
-  protected readonly planOptions = computed<MenuOption[]>(() => {
+  /**
+   * The paid plans other than the current one, in sight (a dropdown would be cut by the dialog).
+   * One the company would not fit in says so.
+   */
+  protected readonly planOptions = computed<OptionCard[]>(() => {
     const sub = this.sub();
     if (!sub) return [];
     return this.store
       .plans()
       .filter((p) => p.plan !== 'internal' && p.plan !== sub.plan)
-      .map((p) => ({ value: p.plan, label: `${TENANT_PLAN[p.plan].text} · ${formatUsdCents(p.priceCents)} al mes${fitsPlan(sub, p) ? '' : ' · no le alcanza'}` }));
+      .map((p) => ({
+        value: p.plan,
+        label: `${TENANT_PLAN[p.plan].text} · ${formatUsdCents(p.priceCents)} al mes`,
+        icon: 'layers',
+        hint: fitsPlan(sub, p)
+          ? `${p.numbers} ${p.numbers === 1 ? 'número' : 'números'} · ${p.users} usuarios`
+          : `No le alcanza: usa ${sub.usersUsed} usuarios y ${sub.numbersUsed} ${sub.numbersUsed === 1 ? 'número' : 'números'}`,
+      }));
   });
-  protected readonly graceOptions: MenuOption[] = GRACE_OPTIONS.map((d) => ({ value: String(d), label: `${d} días` }));
+  /** «7 días · hasta el 27 nov 2026». */
+  protected readonly graceOptions = computed<OptionCard[]>(() =>
+    GRACE_OPTIONS.map((d) => ({ value: String(d), label: `${d} días`, icon: 'calendar', hint: `Hasta el ${this.date(addDays(this.today(), d))}` })),
+  );
 
   /** The status said in a full sentence, above the two boxes. */
   protected readonly notice = computed(() => {

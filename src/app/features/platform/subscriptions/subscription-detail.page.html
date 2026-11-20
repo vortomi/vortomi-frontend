@@ -70,10 +70,7 @@
 
   <app-dialog title="Cambiar de plan" [open]="changingPlan()" (closed)="changingPlan.set(false)">
     <p class="lead">Hoy paga el plan <b>{{ planText[s.plan].text }}</b>. El nuevo precio se aplica desde su próximo cobro.</p>
-    <div class="field">
-      <label for="sd-plan">Plan nuevo</label>
-      <app-select-menu id="sd-plan" label="Plan nuevo" placeholder="Elige el plan" [options]="planOptions()" [value]="newPlan()" (picked)="pickPlan($event)" />
-    </div>
+    <app-option-cards [columns]="1" label="Plan nuevo" [options]="planOptions()" [value]="newPlan()" (picked)="pickPlan($event)" />
     <ng-container dialog-actions>
       <button type="button" class="btn" (click)="changingPlan.set(false)">Cancelar</button>
       <button type="button" class="btn btn--primary" [disabled]="!newPlan()" (click)="changePlan(s)"><span>Continuar</span></button>
@@ -82,10 +79,7 @@
 
   <app-dialog title="Dar días de gracia" [open]="givingGrace()" (closed)="givingGrace.set(false)">
     <p class="lead">Mientras duren, {{ s.companyName }} no aparece como atrasada. Sigue debiendo lo mismo.</p>
-    <div class="field">
-      <label for="sd-grace">Cuántos días</label>
-      <app-select-menu id="sd-grace" label="Cuántos días" [options]="graceOptions" [value]="graceDays()" (picked)="graceDays.set($event)" />
-    </div>
+    <app-option-cards [columns]="1" label="Cuántos días" [options]="graceOptions()" [value]="graceDays()" (picked)="graceDays.set($event)" />
     <ng-container dialog-actions>
       <button type="button" class="btn" (click)="givingGrace.set(false)">Cancelar</button>
       <button type="button" class="btn btn--primary" (click)="giveGrace(s)"><span>Continuar</span></button>
