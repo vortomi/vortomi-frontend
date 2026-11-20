@@ -1,4 +1,5 @@
 import { Component, ElementRef, computed, inject, input, output, signal } from '@angular/core';
+import { FloatingPanel } from './floating-panel';
 import { Icon } from './icon';
 
 const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -27,7 +28,7 @@ export function longDate(iso: string): string {
  */
 @Component({
   selector: 'app-date-picker',
-  imports: [Icon],
+  imports: [Icon, FloatingPanel],
   host: { '(document:click)': 'onOutside($event)', '(keydown.escape)': 'close()' },
   template: `
     <button type="button" class="trigger" [class.open]="open()" [disabled]="disabled()" [attr.aria-label]="label()" aria-haspopup="dialog" [attr.aria-expanded]="open()" (click)="toggle()">
@@ -36,7 +37,7 @@ export function longDate(iso: string): string {
       <app-icon name="down" class="chev" />
     </button>
     @if (open()) {
-      <div class="panel" role="dialog" [attr.aria-label]="label()">
+      <div class="panel" appFloatingPanel="auto" role="dialog" [attr.aria-label]="label()">
         <div class="head">
           <button type="button" class="nav" aria-label="Mes anterior" (click)="shift(-1)"><app-icon name="chev-left" /></button>
           <b>{{ monthTitle() }}</b>

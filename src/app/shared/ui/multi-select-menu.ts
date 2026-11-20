@@ -1,4 +1,5 @@
 import { Component, ElementRef, computed, inject, input, output, signal } from '@angular/core';
+import { FloatingPanel } from './floating-panel';
 import { Icon } from './icon';
 import { MENU_STYLES, type MenuOption, normalize } from './select-menu';
 
@@ -10,14 +11,14 @@ import { MENU_STYLES, type MenuOption, normalize } from './select-menu';
  */
 @Component({
   selector: 'app-multi-select-menu',
-  imports: [Icon],
+  imports: [Icon, FloatingPanel],
   template: `
     <button type="button" class="trigger" [class.open]="open()" [disabled]="disabled() || busy()" [attr.aria-busy]="busy()" [attr.aria-label]="label()" aria-haspopup="listbox" [attr.aria-expanded]="open()" (click)="toggle()">
       <span class="value" [class.placeholder]="!summary()">{{ summary() || placeholder() }}</span>
       <app-icon name="down" class="chev" />
     </button>
     @if (open()) {
-      <div class="panel">
+      <div class="panel" appFloatingPanel>
         @if (searchable()) {
           <label class="search"><app-icon name="search" />
             <input type="search" aria-label="Buscar" placeholder="Buscar…" [value]="query()" (input)="filter($event)" (keydown)="onKey($event)" />

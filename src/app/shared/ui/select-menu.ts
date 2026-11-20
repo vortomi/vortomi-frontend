@@ -1,4 +1,5 @@
 import { Component, ElementRef, computed, inject, input, output, signal } from '@angular/core';
+import { FloatingPanel } from './floating-panel';
 import { Icon, type IconName } from './icon';
 
 export interface MenuOption {
@@ -46,7 +47,7 @@ export const normalize = (text: string) => text.normalize('NFD').replace(/\p{Dia
  */
 @Component({
   selector: 'app-select-menu',
-  imports: [Icon],
+  imports: [Icon, FloatingPanel],
   template: `
     <button type="button" class="trigger" [class.open]="open()" [disabled]="disabled()" [attr.aria-label]="label()" aria-haspopup="listbox" [attr.aria-expanded]="open()" (click)="toggle()">
       @if (selected(); as s) {
@@ -58,7 +59,7 @@ export const normalize = (text: string) => text.normalize('NFD').replace(/\p{Dia
       <app-icon name="down" class="chev" />
     </button>
     @if (open()) {
-      <div class="panel">
+      <div class="panel" appFloatingPanel>
         @if (searchable()) {
           <label class="search"><app-icon name="search" />
             <input #box type="search" aria-label="Buscar" placeholder="Buscar…" [value]="query()" (input)="filter($event)" (keydown)="onKey($event)" />
