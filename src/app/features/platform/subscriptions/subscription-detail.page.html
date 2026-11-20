@@ -1,0 +1,102 @@
+@if (sub(); as s) {
+  <header class="page-top">
+    <a class="back" routerLink="/platform/subscriptions" aria-label="Volver a suscripciones"><app-icon name="back" /></a>
+    <app-avatar class="logo" size="md" [name]="s.companyName" [seed]="s.id" />
+    <div class="title">
+      <h1>{{ s.companyName }} @if (label(); as l) { <app-pill [tone]="l.tone" [dot]="true">{{ l.text }}</app-pill> }</h1>
+      <span class="sub">Plan {{ planText[s.plan].text }} · {{ s.companyLine }} · cliente desde el {{ date(s.since) }}</span>
+    </div>
+  </header>
+
+  <div class="page-body">
+    @if (store.isSample) {
+      <div class="form-alert warn" role="note"><app-icon name="info" /><span><b>Datos de ejemplo.</b> Esta empresa y sus pagos son de muestra.</span></div>
+    }
+    @if (notice(); as n) {
+      <div class="form-alert" [class.warn]="n.tone === 'warn'" [class.info]="n.tone === 'info'" role="status">
+        <app-icon [name]="n.tone === 'info' ? 'info' : 'alert'" /><span>{{ n.text }}</span>
+      </div>
+    }
+
+    <div class="cols">
+      <section class="card box">
+        <h2>Historial de pagos</h2>
+        <ul class="history">
+          @if (s.plan !== 'internal' && status() !== 'trial') {
+            <li>
+              <div><b>{{ monthTitle(monthOf(s.nextChargeOn)) }}</b><small>vence el {{ date(s.nextChargeOn) }}</small></div>
+              <app-pill [tone]="label()!.tone" [dot]="true">Pendiente</app-pill>
+            </li>
+          }
+          @for (p of s.payments; track p.id) {
+            <li>
+              <div>
+                <b>{{ monthTitle(p.month) }} · {{ money(p.amountCents) }}</b>
+                <small>{{ methodText[p.method] }}{{ p.reference ? ' · ref. ' + p.reference : '' }} · {{ date(p.paidOn) }}{{ p.receiptName ? ' · ' + p.receiptName : '' }}</small>
+              </div>
+              <app-pill tone="green" [dot]="true">Pagado</app-pill>
+            </li>
+          } @empty {
+            <li class="none">{{ s.plan === 'internal' ? 'Esta empresa no paga: es de uso propio.' : 'Todavía no hay pagos.' }}</li>
+          }
+        </ul>
+      </section>
+
+      <section class="card box">
+        <h2>Suscripción</h2>
+        @if (terms(); as t) {
+          <dl class="kv">
+            <dt>Plan</dt><dd>{{ planText[s.plan].text }}</dd>
+            <dt>Cuota</dt><dd>{{ t.priceCents ? money(t.priceCents) + ' al mes' : 'Sin cobro' }}</dd>
+            @if (s.plan !== 'internal') { <dt>Día de cobro</dt><dd>Los {{ s.billingDay }}</dd> }
+            <dt>Usuarios</dt><dd>{{ usage(s.usersUsed, t.users) }}</dd>
+            <dt>Números</dt><dd>{{ usage(s.numbersUsed, t.numbers) }}</dd>
+          </dl>
+        }
+        @if (s.plan !== 'internal') {
+          <div class="acts">
+            <button type="button" class="btn btn--primary" (click)="paying.set(true)"><app-icon name="plus" /><span>Registrar pago</span></button>
+            <button type="button" class="btn" (click)="openPlanChange()"><app-icon name="swap" /><span>Cambiar de plan</span></button>
+            @if (status() === 'overdue' || status() === 'grace') {
+              <button type="button" class="btn" (click)="givingGrace.set(true)"><app-icon name="calendar" /><span>Dar días de gracia</span></button>
+            }
+          </div>
+        }
+      </section>
+    </div>
+  </div>
+
+  <app-register-payment-dialog [open]="paying()" [subscriptionId]="s.id" (closed)="paying.set(false)" (saved)="paid()" />
+
+  <app-dialog title="Cambiar de plan" [open]="changingPlan()" (closed)="changingPlan.set(false)">
+    <p class="lead">Hoy paga el plan <b>{{ planText[s.plan].text }}</b>. El nuevo precio se aplica desde su próximo cobro.</p>
+    <div class="field">
+      <label for="sd-plan">Plan nuevo</label>
+      <app-select-menu id="sd-plan" label="Plan nuevo" placeholder="Elige el plan" [options]="planOptions()" [value]="newPlan()" (picked)="pickPlan($event)" />
+    </div>
+    <ng-container dialog-actions>
+      <button type="button" class="btn" (click)="changingPlan.set(false)">Cancelar</button>
+      <button type="button" class="btn btn--primary" [disabled]="!newPlan()" (click)="changePlan(s)"><span>Continuar</span></button>
+    </ng-container>
+  </app-dialog>
+
+  <app-dialog title="Dar días de gracia" [open]="givingGrace()" (closed)="givingGrace.set(false)">
+    <p class="lead">Mientras duren, {{ s.companyName }} no aparece como atrasada. Sigue debiendo lo mismo.</p>
+    <div class="field">
+      <label for="sd-grace">Cuántos días</label>
+      <app-select-menu id="sd-grace" label="Cuántos días" [options]="graceOptions" [value]="graceDays()" (picked)="graceDays.set($event)" />
+    </div>
+    <ng-container dialog-actions>
+      <button type="button" class="btn" (click)="givingGrace.set(false)">Cancelar</button>
+      <button type="button" class="btn btn--primary" (click)="giveGrace(s)"><span>Continuar</span></button>
+    </ng-container>
+  </app-dialog>
+} @else {
+  <header class="page-top">
+    <a class="back" routerLink="/platform/subscriptions" aria-label="Volver a suscripciones"><app-icon name="back" /></a>
+    <h1>Suscripción</h1>
+  </header>
+  <div class="page-body">
+    <div class="card empty-state">Esta suscripción no existe. <a class="link" routerLink="/platform/subscriptions">Ver todas</a></div>
+  </div>
+}

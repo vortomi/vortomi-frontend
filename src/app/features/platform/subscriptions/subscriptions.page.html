@@ -1,0 +1,86 @@
+<header class="page-top">
+  <h1>Suscripciones</h1>
+  <span class="sub">Lo que paga cada empresa y quién está al día</span>
+  <span class="spacer"></span>
+  <button type="button" class="btn btn--primary" (click)="paying.set(true)"><app-icon name="plus" /><span>Registrar pago</span></button>
+</header>
+
+<div class="page-body">
+  @if (store.isSample) {
+    <div class="form-alert warn sample" role="note">
+      <app-icon name="info" />
+      <span><b>Datos de ejemplo.</b> Todavía no hay cobros reales: las empresas, los precios y los pagos de esta sección son de muestra. Lo que hagas aquí se borra al recargar la página.</span>
+    </div>
+  }
+
+  <nav class="tabs-line" role="tablist" aria-label="Secciones de suscripciones">
+    <button type="button" role="tab" [class.on]="tab() === 'charges'" [attr.aria-selected]="tab() === 'charges'" (click)="tab.set('charges')">Cobros</button>
+    <button type="button" role="tab" [class.on]="tab() === 'plans'" [attr.aria-selected]="tab() === 'plans'" (click)="tab.set('plans')">Planes</button>
+  </nav>
+
+  @if (tab() === 'charges') {
+    @let f = figures();
+    <div class="kpis">
+      <div class="card kpi"><span class="ic blue"><app-icon name="dollar" /></span><div><p>Cobro mensual</p><b>{{ money(f.monthlyCents) }}</b><small>{{ f.paying }} {{ f.paying === 1 ? 'empresa paga' : 'empresas pagan' }}</small></div></div>
+      <div class="card kpi"><span class="ic green"><app-icon name="check" /></span><div><p>Cobrado este mes</p><b>{{ money(f.collectedCents) }}</b><small>{{ f.collectedFrom }} {{ f.collectedFrom === 1 ? 'empresa' : 'empresas' }}</small></div></div>
+      <div class="card kpi"><span class="ic amber"><app-icon name="clock" /></span><div><p>Por cobrar</p><b [class.bad]="f.overdue > 0">{{ money(f.owedCents) }}</b><small>{{ f.overdue ? f.overdue + (f.overdue === 1 ? ' atrasada' : ' atrasadas') : 'Ninguna atrasada' }}</small></div></div>
+      <div class="card kpi"><span class="ic violet"><app-icon name="sparkles" /></span><div><p>En prueba gratis</p><b>{{ f.trials }}</b><small>{{ f.firstTrialEndsIn === null ? 'Ninguna' : f.firstTrialEndsIn === 0 ? 'Una termina hoy' : 'La primera termina en ' + f.firstTrialEndsIn + (f.firstTrialEndsIn === 1 ? ' día' : ' días') }}</small></div></div>
+    </div>
+
+    <div class="segmented" role="tablist" aria-label="Filtrar por estado">
+      @for (option of filters; track option.id) {
+        <button type="button" role="tab" [class.on]="filter() === option.id" [attr.aria-selected]="filter() === option.id" (click)="filter.set(option.id)">
+          {{ option.label }} · {{ count(option.id) }}
+        </button>
+      }
+    </div>
+
+    <div class="card table-card">
+      <table class="data-table">
+        <thead>
+          <tr><th>Empresa</th><th>Plan</th><th class="num">Cuota</th><th>Próximo cobro</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          @for (sub of rows(); track sub.id) {
+            @let s = status(sub);
+            <tr class="clickable" tabindex="0" (click)="open(sub)" (keydown.enter)="open(sub)">
+              <td>
+                <div class="company">
+                  <app-avatar class="logo" [name]="sub.companyName" [seed]="sub.id" />
+                  <div><p>{{ sub.companyName }}</p><span>{{ sub.companyLine }}</span></div>
+                </div>
+              </td>
+              <td>{{ planText[sub.plan].text }}</td>
+              <td class="num">{{ fee(sub) }}</td>
+              <td class="muted">{{ nextCharge(sub) }}</td>
+              <td><app-pill [tone]="s.tone" [dot]="true">{{ s.text }}</app-pill></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="empty-state">Ninguna empresa con este filtro.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="plans">
+      @for (plan of store.plans(); track plan.plan) {
+        <section class="card plan" [class.featured]="plan.plan === 'team'">
+          <h2>{{ planText[plan.plan].text }}</h2>
+          <p class="price">{{ price(plan) }} <small>{{ plan.priceCents ? 'al mes' : 'sin cobro' }}</small></p>
+          <ul>
+            <li><app-icon name="users" />{{ limit(plan.users, 'usuario', 'usuarios') }}</li>
+            <li><app-icon name="phone" />{{ limit(plan.numbers, 'número de WhatsApp', 'números de WhatsApp') }}</li>
+            @for (feature of plan.features; track feature.text) {
+              <li [class.no]="!feature.included"><app-icon [name]="feature.included ? 'check' : 'x'" />{{ feature.text }}</li>
+            }
+          </ul>
+          <p class="count">{{ planCounts().get(plan.plan) ?? 0 }} {{ planCounts().get(plan.plan) === 1 ? 'empresa' : 'empresas' }} en este plan</p>
+        </section>
+      }
+    </div>
+    <p class="form-alert info"><app-icon name="info" />Un precio nuevo se aplicará desde el próximo cobro de cada empresa, nunca al mes que ya corre. Los precios se podrán editar cuando estén decididos.</p>
+    <p class="form-alert warn"><app-icon name="alert" />Si una empresa llega al límite de usuarios o de números de su plan, el panel le avisará y no la dejará agregar más. Nunca se borra nada.</p>
+  }
+</div>
+
+<app-register-payment-dialog [open]="paying()" (closed)="paying.set(false)" (saved)="paid($event)" />

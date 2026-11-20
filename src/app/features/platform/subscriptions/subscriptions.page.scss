@@ -1,0 +1,145 @@
+@use 'mixins';
+
+// Console → Suscripciones (mockup web-32). Shares .kpis, .kpi, .company and .table-card with the
+// other console pages (platform-pages.scss).
+.page-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  // The body scrolls: nothing in it may be squeezed to fit the screen's height.
+  > * {
+    flex-shrink: 0;
+  }
+}
+
+.sample {
+  align-items: flex-start;
+}
+
+.kpis {
+  margin-bottom: 0;
+}
+
+.kpi {
+  b.bad {
+    color: var(--color-danger);
+  }
+
+  small {
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+}
+
+.segmented {
+  align-self: flex-start;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.data-table {
+  .num {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .muted {
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  tr.clickable {
+    cursor: pointer;
+
+    &:hover td {
+      background: var(--color-surface-hover);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-ring);
+      outline-offset: -2px;
+    }
+  }
+}
+
+.plans {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.plan {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &.featured {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
+
+  h2 {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .price {
+    font-size: 26px;
+    font-weight: 700;
+
+    small {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-muted);
+    }
+  }
+
+  ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13.5px;
+    color: var(--color-text-2);
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    --icon-size: 15px;
+
+    app-icon {
+      color: var(--color-success);
+    }
+
+    &.no {
+      color: var(--color-text-faint);
+
+      app-icon {
+        color: var(--color-text-faint);
+      }
+    }
+  }
+
+  .count {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border-soft);
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+  }
+}
+
+@include mixins.below-tablet {
+  .plans {
+    grid-template-columns: 1fr;
+  }
+
+  // Two figures per row leave no room for the icon beside them.
+  .kpi .ic {
+    display: none;
+  }
+}

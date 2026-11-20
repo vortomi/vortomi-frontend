@@ -39,9 +39,15 @@ export const PLATFORM_ROUTES: Routes = [
     loadComponent: () => import('./platform-team.page').then((m) => m.PlatformTeamPage),
   },
   {
+    // Sample data until the billing model is decided (mockup web-32, option A).
     path: 'subscriptions',
-    loadComponent: () => import('../../shared/ui/coming-soon').then((m) => m.ComingSoon),
-    data: { title: 'Suscripciones', mockup: 'web-7-plataforma' },
+    title: 'Suscripciones · Consola',
+    loadComponent: () => import('./subscriptions/subscriptions.page').then((m) => m.SubscriptionsPage),
+  },
+  {
+    path: 'subscriptions/:subscriptionId',
+    title: 'Suscripción · Consola',
+    loadComponent: () => import('./subscriptions/subscription-detail.page').then((m) => m.SubscriptionDetailPage),
   },
   {
     path: 'profile',
