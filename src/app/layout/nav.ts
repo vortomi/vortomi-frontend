@@ -1,8 +1,8 @@
 import type { IconName } from '../shared/ui/icon';
 
-export type NavBadge = 'unread' | 'ordersToReview' | 'rejectedTemplates' | 'outOfStock';
+export type NavBadge = 'unread' | 'ordersToReview' | 'rejectedTemplates' | 'outOfStock' | 'subscription';
 /** Counts of something wrong (amber); the rest are work waiting (blue). */
-export const WARNING_BADGES: readonly NavBadge[] = ['rejectedTemplates', 'outOfStock'];
+export const WARNING_BADGES: readonly NavBadge[] = ['rejectedTemplates', 'outOfStock', 'subscription'];
 
 export interface NavItem {
   path: string;
@@ -52,6 +52,8 @@ export const TENANT_NAV: NavGroup[] = [
     title: 'Empresa',
     items: [
       { path: '/channels-and-team', icon: 'phone', label: 'Canales y equipo', adminOnly: true },
+      // Mockup web-35: «6 d» beside it from 7 days before the plan is due.
+      { path: '/subscription', icon: 'calendar', label: 'Suscripción', adminOnly: true, badge: 'subscription' },
       { path: '/settings', icon: 'gear', label: 'Ajustes', adminOnly: true },
     ],
   },

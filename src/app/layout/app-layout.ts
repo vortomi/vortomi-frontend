@@ -6,6 +6,8 @@ import { InboxData } from '../features/inbox/inbox.data';
 import { InventoryData } from '../features/inventory/inventory.data';
 import { OrdersQueue } from '../features/orders/orders-queue';
 import { SetupData } from '../features/setup/setup.data';
+import { SubscriptionBanner } from '../features/subscription/subscription-banner';
+import { SubscriptionData } from '../features/subscription/subscription.data';
 import { Icon } from '../shared/ui/icon';
 import { type NavBadge, type NavItem, TENANT_NAV, WARNING_BADGES } from './nav';
 import { ChannelBanner } from './channel-banner';
@@ -19,7 +21,7 @@ import { BrandMark } from '../shared/ui/brand-mark';
 /** Frame of the company panel (app.<domain>): sidebar on desktop, bottom bar on phones. */
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, ChannelBanner, TenantSwitcher, UsageMeter, UserMenu, ThemeToggle, BrandMark],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, ChannelBanner, SubscriptionBanner, TenantSwitcher, UsageMeter, UserMenu, ThemeToggle, BrandMark],
   templateUrl: './app-layout.html',
   styleUrl: './app-layout.scss',
 })
@@ -31,6 +33,7 @@ export class AppLayout {
   private readonly inventory = inject(InventoryData);
   private readonly orders = inject(OrdersQueue);
   private readonly setup = inject(SetupData);
+  private readonly subscription = inject(SubscriptionData);
   private readonly router = inject(Router);
 
   constructor() {
@@ -48,18 +51,20 @@ export class AppLayout {
   );
   protected readonly mobileItems = computed(() => TENANT_NAV.flatMap((g) => g.items).filter((i) => i.mobile && this.visible(i)));
 
-  private readonly badges = computed<Record<NavBadge, number>>(() => ({
+  /** A count, or a short text («6 d»); 0 or null shows nothing. */
+  private readonly badges = computed<Record<NavBadge, number | string | null>>(() => ({
     unread: this.inbox.unreadTotal(),
     ordersToReview: this.orders.toReview(),
     rejectedTemplates: this.workspace.templates().filter((t) => t.status === 'rejected').length,
     outOfStock: this.inventory.items().filter((i) => i.status === 'out').length,
+    subscription: this.subscription.badge(),
   }));
 
   protected warns(kind: NavBadge | undefined): boolean {
     return !!kind && WARNING_BADGES.includes(kind);
   }
 
-  protected badge(kind: NavBadge | undefined): number {
-    return kind ? this.badges()[kind] : 0;
+  protected badge(kind: NavBadge | undefined): number | string | null {
+    return kind ? this.badges()[kind] : null;
   }
 }

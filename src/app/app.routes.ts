@@ -204,6 +204,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/team/channels-team.page').then((m) => m.ChannelsTeamPage),
       },
       {
+        // The company's plan, payments and Vortomi's plans (mockup web-35): owner and admins.
+        path: 'subscription',
+        title: 'Suscripción',
+        canActivate: [tenantAdminGuard],
+        loadComponent: () => import('./features/subscription/subscription.page').then((m) => m.SubscriptionPage),
+      },
+      {
         path: 'settings',
         title: 'Ajustes',
         canActivate: [tenantAdminGuard],
