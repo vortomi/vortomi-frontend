@@ -7,6 +7,8 @@ import type { ExchangeRate, ExchangeRateBook, Id, RateSource } from '../../share
 import { editableTable } from '../../shared/api/editable-table';
 import { calendarDay } from '../../shared/format/date-time';
 import { Toaster } from '../../shared/ui/toaster';
+import type { ExchangeRateCard } from './exchange-rate-card';
+import { COMPANY_RATE_TEXTS } from './exchange-rate-texts';
 import { ExchangeRatesRemote } from './exchange-rates-remote';
 import { rateInUse } from './rate-format';
 
@@ -19,7 +21,7 @@ const EMPTY_BCV = { bsPerUsd: null, effectiveDate: null, checkedAt: null, error:
  * - 'api':  read from the server; each write answers with the whole card. One action at a time.
  */
 @Injectable({ providedIn: 'root' })
-export class ExchangeRates {
+export class ExchangeRates implements ExchangeRateCard {
   private readonly session = inject(Session);
   private readonly clock = inject(Clock);
   private readonly toaster = inject(Toaster);
@@ -27,6 +29,8 @@ export class ExchangeRates {
   private readonly table = editableTable<ExchangeRateBook>('exchange-rates');
 
   readonly busy = signal(false);
+  readonly texts = COMPANY_RATE_TEXTS;
+  readonly timezone = () => this.session.timezone();
   /** The company's card arrived from the server (always true on the prototype's data). */
   readonly loaded = signal(false);
   /** The card could not be read: the screen says so, with a retry, instead of showing "no rate". */

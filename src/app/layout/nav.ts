@@ -65,4 +65,6 @@ export const PLATFORM_NAV: NavItem[] = [
   { path: '/platform/usage', icon: 'chart', label: 'Uso y salud' },
   { path: '/platform/subscriptions', icon: 'dollar', label: 'Suscripciones' },
   { path: '/platform/team', icon: 'users', label: 'Staff' },
+  // Vortomi's own settings (mockup web-36): for now, its exchange rate.
+  { path: '/platform/settings', icon: 'gear', label: 'Ajustes' },
 ];

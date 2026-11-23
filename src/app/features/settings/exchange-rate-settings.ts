@@ -1,6 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Clock } from '../../core/clock';
-import { Session } from '../../core/session';
 import type { RateSource } from '../../shared/api/models';
 import { calendarDay, formatShortDate, formatTime } from '../../shared/format/date-time';
 import { Confirm } from '../../shared/ui/confirm';
@@ -10,7 +9,7 @@ import { Pill } from '../../shared/ui/pill';
 import { Skeleton } from '../../shared/ui/skeleton';
 import { Switch } from '../../shared/ui/switch';
 import { Toaster } from '../../shared/ui/toaster';
-import { ExchangeRates } from '../exchange-rates/exchange-rates.data';
+import { EXCHANGE_RATE_CARD } from '../exchange-rates/exchange-rate-card';
 import { formatIsoDay, formatRate, normalizeRate, weekdayOf } from '../exchange-rates/rate-format';
 
 const SOURCES: { value: RateSource; label: string; detail: string }[] = [
@@ -22,7 +21,8 @@ const SOURCES: { value: RateSource; label: string; detail: string }[] = [
  * «Tasa de cambio» (as ochoa-parts doc 18): the rate comes from the BCV, read every hour and
  * applied on its fecha valor (one published for a later day shows as the «próxima tasa»), or
  * from an admin, who registers it by hand. Every rate stays in the history with its origin.
- * The browser computes no amounts: it only picks which sentence to show.
+ * The browser computes no amounts: it only picks which sentence to show. The card comes from
+ * EXCHANGE_RATE_CARD: the company's own in the panel, Vortomi's in the console (Ajustes).
  */
 @Component({
   selector: 'app-exchange-rate-settings',
@@ -31,8 +31,7 @@ const SOURCES: { value: RateSource; label: string; detail: string }[] = [
   styleUrls: ['../../shared/ui/section.scss', './exchange-rate-settings.scss'],
 })
 export class ExchangeRateSettings {
-  protected readonly rates = inject(ExchangeRates);
-  private readonly session = inject(Session);
+  protected readonly rates = inject(EXCHANGE_RATE_CARD);
   private readonly clock = inject(Clock);
   private readonly toaster = inject(Toaster);
   private readonly confirm = inject(Confirm);
@@ -42,7 +41,7 @@ export class ExchangeRateSettings {
   protected readonly formatIsoDay = formatIsoDay;
   protected readonly weekdayOf = weekdayOf;
 
-  private readonly today = computed(() => calendarDay(this.clock.now().toISOString(), this.session.timezone()));
+  private readonly today = computed(() => calendarDay(this.clock.now().toISOString(), this.rates.timezone()));
   protected readonly source = computed(() => this.rates.book()?.rateSource ?? 'custom');
   protected readonly bcv = computed(() => this.rates.book()?.bcv ?? null);
   protected readonly history = computed(() => this.rates.book()?.exchangeRates ?? []);
@@ -74,9 +73,9 @@ export class ExchangeRateSettings {
   protected readonly working = signal<'source' | 'system' | 'bcv' | 'rate' | null>(null);
   protected readonly todayIso = computed(() => this.today());
 
-  /** "27 oct 2026, 09:17", on the company's clock. */
+  /** "27 oct 2026, 09:17", on the card's clock. */
   protected stamp(iso: string): string {
-    const timezone = this.session.timezone();
+    const timezone = this.rates.timezone();
     return `${formatShortDate(iso, timezone)}, ${formatTime(iso, timezone)}`;
   }
 
@@ -89,8 +88,8 @@ export class ExchangeRateSettings {
     if (source === this.source() || this.rates.busy()) return;
     const yes = await this.confirm.ask(
       source === 'bcv'
-        ? { title: '¿Usar la tasa del BCV?', message: 'Los precios en bolívares pasan a la tasa oficial del BCV y se actualizan solos cada día.', confirmLabel: 'Usar la tasa del BCV' }
-        : { title: '¿Usar una tasa personalizada?', message: 'Los precios en bolívares usarán la tasa que registres aquí, hasta que la cambies.', confirmLabel: 'Usar tasa personalizada' },
+        ? { title: '¿Usar la tasa del BCV?', message: this.rates.texts.toBcv, confirmLabel: 'Usar la tasa del BCV' }
+        : { title: '¿Usar una tasa personalizada?', message: this.rates.texts.toCustom, confirmLabel: 'Usar tasa personalizada' },
     );
     if (yes) await this.during('source', () => this.rates.setSource(source));
   }
@@ -109,7 +108,7 @@ export class ExchangeRateSettings {
     if (this.rates.busy()) return;
     const yes = await this.confirm.ask({
       title: '¿Consultar el BCV ahora?',
-      message: 'Si el BCV ya publicó una tasa nueva para hoy, tus precios en bolívares cambian en este momento.',
+      message: this.rates.texts.refreshNow,
       confirmLabel: 'Consultar ahora',
     });
     if (yes) await this.during('bcv', () => this.rates.refreshBcv());
@@ -124,7 +123,7 @@ export class ExchangeRateSettings {
     if (this.rates.busy()) return;
     const yes = await this.confirm.ask({
       title: `¿Registrar ${formatRate(rate)} Bs por dólar?`,
-      message: `Vale desde el ${formatIsoDay(this.rateDate())}. Una tasa registrada no se edita ni se borra, y tus clientes ven los precios con ella.`,
+      message: `Vale desde el ${formatIsoDay(this.rateDate())}. Una tasa registrada no se edita ni se borra, y ${this.rates.texts.registered}`,
       confirmLabel: 'Registrar tasa',
     });
     if (yes && (await this.during('rate', () => this.rates.addRate(rate, this.rateDate())))) this.rateDraft.set('');

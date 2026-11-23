@@ -86,6 +86,11 @@ export const PLATFORM_ROUTES: Routes = [
     ],
   },
   {
+    path: 'settings',
+    title: 'Ajustes · Consola',
+    loadComponent: () => import('./settings/platform-settings.page').then((m) => m.PlatformSettingsPage),
+  },
+  {
     path: 'profile',
     title: 'Mi perfil · Consola',
     loadComponent: () => import('../account/profile.page').then((m) => m.ProfilePage),

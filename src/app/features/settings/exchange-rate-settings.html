@@ -1,7 +1,7 @@
 <section class="card box" aria-labelledby="rate-title">
   <div>
     <h2 id="rate-title">Tasa de cambio</h2>
-    <p class="lead">Convierte los precios en USD a bolívares. Los pedidos guardarán la tasa del día en que se hicieron.</p>
+    <p class="lead">{{ rates.texts.lead }}</p>
   </div>
 
   @if (rates.loadError(); as error) {
@@ -76,7 +76,7 @@
           @if (status.error) {
             <p class="form-alert warn" role="status">
               <app-icon name="alert" />
-              <span>No pudimos consultar el BCV: {{ status.error }} La empresa sigue con la última tasa.</span>
+              <span>No pudimos consultar el BCV: {{ status.error }} {{ rates.texts.keepsLast }}</span>
             </p>
           }
           <div><button type="button" class="btn" [disabled]="rates.busy()" [attr.aria-busy]="working() === 'bcv'" (click)="refreshBcv()"><span>Actualizar ahora</span></button></div>
@@ -104,7 +104,7 @@
       <div class="customer" role="status">
         <app-icon name="eye" />
         <div>
-          <p class="head">Tus clientes ven los precios en bolívares con esta tasa:</p>
+          <p class="head">{{ rates.texts.inUse }}</p>
           <p class="amount">{{ formatRate(rate.bsPerUsd) }} <span>por USD</span></p>
           <p class="origin">
             {{ rate.source === 'bcv' ? 'Tasa vigente del BCV' : 'Tasa personalizada' }}, desde el {{ formatIsoDay(rate.effectiveDate) }}.
@@ -123,7 +123,7 @@
         </div>
       </div>
     } @else {
-      <p class="form-alert warn"><app-icon name="alert" />Aún no hay tasa: tus clientes ven solo precios en USD.</p>
+      <p class="form-alert warn"><app-icon name="alert" />{{ rates.texts.noRate }}</p>
     }
 
     <div class="history">
