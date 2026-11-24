@@ -23,7 +23,7 @@ export const PREVIEW_PLANS: CompanyPlan[] = [
   PREVIEW_PLAN,
 ];
 
-const STATES: readonly BillingState[] = ['awaiting_first_payment', 'active', 'due_soon', 'grace', 'suspended'];
+const STATES: readonly BillingState[] = ['awaiting_first_payment', 'active', 'due_soon', 'grace', 'suspended', 'in_review'];
 const RATE = (today: string) => ({ bsPerUsd: '410.55000000', effectiveDate: today });
 
 /** What GET /tenants/:id/subscription would answer, for the state «?estado=» asks for. */

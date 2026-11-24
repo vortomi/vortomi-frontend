@@ -22,7 +22,7 @@ export const PREVIEW_PLAN = {
 export function previewSubscription(today: Day, state: BillingState): SubscriptionView {
   const plan = PREVIEW_PLAN;
   const first = state === 'awaiting_first_payment';
-  const nextDueOn = { awaiting_first_payment: today, active: addDays(today, 20), due_soon: addDays(today, 5), grace: addDays(today, -1), suspended: addDays(today, -3) }[state];
+  const nextDueOn = { awaiting_first_payment: today, active: addDays(today, 20), due_soon: addDays(today, 5), grace: addDays(today, -1), suspended: addDays(today, -3), in_review: addDays(today, -1) }[state];
   const owes = state !== 'active';
   return {
     state,
@@ -38,5 +38,28 @@ export function previewSubscription(today: Day, state: BillingState): Subscripti
       ? { id: 'charge-1', planName: plan.name, basePriceCents: plan.priceCents, discounts: plan.discounts, months: 1, discountPercent: 0, amountCents: plan.priceCents, paidCents: 0, dueOn: nextDueOn }
       : null,
     rate: { bsPerUsd: '410.55000000', effectiveDate: today },
+    inReview:
+      state === 'in_review'
+        ? {
+            id: 'payment-1',
+            status: 'in_review',
+            months: 1,
+            methodId: 'method-pago-movil',
+            methodName: 'Pago móvil',
+            methodType: 'pago_movil',
+            currency: 'VES',
+            payer: { bank: '0102 · Banco de Venezuela', phone: '0414-1234567', document: 'V-18456789' },
+            reference: '000451287',
+            paidOn: today,
+            amount: '32433.45',
+            bsPerUsd: '410.55000000',
+            amountUsdCents: plan.priceCents,
+            hasProof: true,
+            rejectionReason: null,
+            rejectionNote: null,
+            submittedAt: `${today}T15:00:00.000Z`,
+            reviewedAt: null,
+          }
+        : null,
   };
 }

@@ -53,7 +53,8 @@ export function countdownTarget(s: Pick<SubscriptionView, 'state' | 'nextDueOn' 
   return suspension ? { at: suspensionAt(s.suspendsOn), suspension } : { at: dueAt(s.nextDueOn), suspension };
 }
 
-export type Tone = 'ok' | 'soon' | 'overdue';
+/** 'review': a payment in review covers the debt (blue, nothing counts down). */
+export type Tone = 'ok' | 'soon' | 'overdue' | 'review';
 
 /** The colour of each state: amber while there is still time, red once it is overdue. */
 export const STATE_TONE: Record<BillingState, Tone> = {
@@ -62,6 +63,7 @@ export const STATE_TONE: Record<BillingState, Tone> = {
   due_soon: 'soon',
   grace: 'overdue',
   suspended: 'overdue',
+  in_review: 'review',
 };
 
 export const STATE_TEXT: Record<BillingState, string> = {
@@ -70,6 +72,7 @@ export const STATE_TEXT: Record<BillingState, string> = {
   due_soon: 'Por vencer',
   grace: 'Vencido',
   suspended: 'Suspendida',
+  in_review: 'Pago en revisión',
 };
 
 /** The last day to pay without being suspended. */
@@ -80,7 +83,7 @@ const daysUntil = (today: Day, day: Day): number => Math.round((Date.parse(`${da
 
 /** The menu's short count: «2 d», «Hoy», «!»; nothing while the company is up to date. */
 export function subscriptionBadge(s: SubscriptionView, today: Day): string | null {
-  if (s.state === 'active') return null;
+  if (s.state === 'active' || s.state === 'in_review') return null;
   if (s.state === 'grace' || s.state === 'suspended') return '!';
   const days = daysUntil(today, s.state === 'awaiting_first_payment' ? lastPayDay(s) : s.nextDueOn);
   return days <= 0 ? 'Hoy' : `${days} d`;
@@ -99,6 +102,7 @@ export function subscriptionNotice(s: SubscriptionView, money: (cents: number) =
   const owed = money(s.owedCents);
   switch (s.state) {
     case 'active':
+    case 'in_review':
       return null;
     case 'awaiting_first_payment':
       return {

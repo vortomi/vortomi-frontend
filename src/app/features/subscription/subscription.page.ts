@@ -6,7 +6,7 @@ import type { SubscriptionView } from '../../shared/api/subscriptions';
 import { Skeleton } from '../../shared/ui/skeleton';
 import { Toaster } from '../../shared/ui/toaster';
 import { SubscriptionData } from './subscription.data';
-import { SubscriptionPayments } from './subscription-payments';
+import { SubscriptionPaymentList } from './subscription-payments';
 import { SubscriptionPlans } from './subscription-plans';
 import { SubscriptionSummary } from './subscription-summary';
 
@@ -20,7 +20,7 @@ const TABS: Tab[] = ['summary', 'plans', 'payments'];
  */
 @Component({
   selector: 'app-subscription-page',
-  imports: [Icon, Skeleton, SubscriptionPayments, SubscriptionPlans, SubscriptionSummary],
+  imports: [Icon, Skeleton, SubscriptionPaymentList, SubscriptionPlans, SubscriptionSummary],
   template: `
     <header class="page-top">
       <h1>Suscripción</h1>

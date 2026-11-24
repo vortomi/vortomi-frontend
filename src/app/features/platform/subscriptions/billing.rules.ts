@@ -11,6 +11,7 @@ export const STATE_FILTERS: { id: StateFilter; label: string }[] = [
   { id: 'active', label: 'Al día' },
   { id: 'due_soon', label: 'Por vencer' },
   { id: 'grace', label: 'En gracia' },
+  { id: 'in_review', label: 'Pago en revisión' },
   { id: 'suspended', label: 'Suspendidas' },
   { id: 'none', label: 'Sin plan' },
 ];
@@ -33,6 +34,8 @@ export function stateLabel(row: Pick<SubscriptionRow, 'state' | 'nextDueOn'>, to
     }
     case 'suspended':
       return { text: 'Suspendida', tone: 'red' };
+    case 'in_review':
+      return { text: 'Pago en revisión', tone: 'blue' };
     case 'none':
       return { text: 'Sin plan', tone: 'neutral' };
   }
@@ -56,8 +59,8 @@ export function billingFigures(rows: SubscriptionRow[]): BillingFigures {
   };
 }
 
-/** What needs the team first: suspended, in grace, awaiting, due soon, up to date, without a plan. */
-const ORDER: Record<RowState, number> = { suspended: 0, grace: 1, awaiting_first_payment: 2, due_soon: 3, active: 4, none: 5 };
+/** What needs the team first: suspended, in grace, awaiting, a payment to review, due soon, up to date, without a plan. */
+const ORDER: Record<RowState, number> = { suspended: 0, grace: 1, awaiting_first_payment: 2, in_review: 3, due_soon: 4, active: 5, none: 6 };
 
 export function sortRows(rows: SubscriptionRow[]): SubscriptionRow[] {
   return [...rows].sort(

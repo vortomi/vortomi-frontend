@@ -1,0 +1,156 @@
+@use 'mixins';
+
+// «Reportar pago» (mockups web-39 and web-40): where to pay on the left, the method's form on the right.
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.back {
+  margin-right: 4px;
+}
+
+.page-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  > * {
+    flex-shrink: 0;
+  }
+}
+
+.form-alert {
+  align-items: flex-start;
+}
+
+.form-alert.reject {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+  border-color: color-mix(in srgb, var(--color-danger) 40%, transparent);
+}
+
+.pay {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.owe {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  p {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+  }
+
+  b {
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  small {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+  }
+}
+
+.months {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+
+  button {
+    padding: 6px 2px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+
+    &.on {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 1px var(--color-primary);
+      background: var(--color-primary-softer);
+      color: var(--color-primary-text);
+      font-weight: 600;
+    }
+  }
+}
+
+.form {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  h2 {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  label em {
+    font-style: normal;
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+}
+
+.coverage {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  line-height: 1.45;
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
+  --icon-size: 16px;
+
+  app-icon {
+    flex: none;
+    margin-top: 1px;
+  }
+
+  &.partial {
+    background: var(--color-warning-soft);
+    color: var(--color-warning-text);
+  }
+}
+
+.choose {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 8px;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--color-text-muted);
+
+  .flip {
+    transform: scaleX(-1);
+  }
+}
+
+@include mixins.below-tablet {
+  .pay {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,107 @@
+<header class="page-top">
+  <a class="back icon-btn" routerLink="/subscription" aria-label="Volver a Suscripción"><app-icon name="back" /></a>
+  <h1>{{ editing() ? 'Corregir pago' : 'Reportar pago' }}</h1>
+  @if (data.subscription(); as s) {
+    <span class="sub">Plan {{ s.plan.name }} · {{ chosenMonths() }} {{ chosenMonths() === 1 ? 'mes' : 'meses' }}</span>
+  }
+</header>
+
+<div class="page-body">
+  @if (!ready()) {
+    <app-skeleton kind="form" />
+  } @else if (loadFailed()) {
+    <div class="form-alert" role="alert"><app-icon name="alert" />No pudimos cargar lo necesario para reportar tu pago. Vuelve a intentarlo.</div>
+  } @else if (!data.subscription()) {
+    <div class="form-alert warn" role="note"><app-icon name="info" /><span>Todavía no tienes un plan. <a class="link" routerLink="/subscription" [queryParams]="{ tab: 'plans' }">Elige tu plan</a> para poder pagarlo.</span></div>
+  } @else if (paymentId() && !editing()) {
+    <div class="form-alert warn" role="note"><app-icon name="info" /><span>Ese pago ya no se puede corregir: solo se corrige un pago rechazado. <a class="link" routerLink="/subscription" [queryParams]="{ tab: 'payments' }">Ver tus pagos</a></span></div>
+  } @else if (!editing() && data.subscription()!.inReview) {
+    <div class="form-alert info" role="note"><app-icon name="clock" /><span>Ya tienes un pago en revisión. Cuando lo revisemos podrás enviar otro.</span></div>
+  } @else if (!methods().length) {
+    <div class="form-alert warn" role="note"><app-icon name="info" /><span>Vortomi todavía no tiene métodos de pago. Comunícate con un agente autorizado de Vortomi.</span></div>
+  } @else {
+    <p class="form-alert warn window" role="note"><app-icon name="alert" />
+      <span><b>Reporta tu pago dentro de los {{ window }} días siguientes a hacerlo.</b> Pasado ese plazo podrías perderlo: tendrás que comunicarte con un agente autorizado de Vortomi.</span></p>
+    @if (rejection(); as r) {
+      <p class="form-alert reject" role="note"><app-icon name="alert" /><span><b>Motivo: {{ r.reason }}.</b>@if (r.note) { «{{ r.note }}» } Corrige lo que haga falta y vuelve a enviarlo.</span></p>
+    }
+
+    <div class="pay">
+      <div class="col">
+        <section class="card owe">
+          <p>{{ data.subscription()!.charge ? 'Debes' : 'Tu próximo período' }}</p>
+          <b>{{ dueText() ?? '—' }}</b>
+          <small>{{ chosenMonths() }} {{ chosenMonths() === 1 ? 'mes' : 'meses' }} del plan {{ data.subscription()!.plan.name }}</small>
+          @if (monthsEditable()) {
+            <div class="months" role="radiogroup" aria-label="Meses a pagar">
+              @for (option of periods; track option) {
+                <button type="button" role="radio" [class.on]="chosenMonths() === option" [attr.aria-checked]="chosenMonths() === option" (click)="chooseMonths(option)">
+                  {{ option }} {{ option === 1 ? 'mes' : 'meses' }}
+                </button>
+              }
+            </div>
+          }
+        </section>
+        <app-pay-method-picker [methods]="methods()" [selected]="method()" [amountText]="dueText()" [amountPlain]="duePlain()" (chosen)="chooseMethod($event)" />
+      </div>
+
+      <form class="card form" novalidate (submit)="send($event)">
+        @if (form(); as f) {
+          <h2>{{ f.title }}</h2>
+
+          @for (field of f.payer; track field.key) {
+            @let error = shown()['payer.' + field.key];
+            <div class="field" [class.has-error]="!!error">
+              <label>{{ field.label }}</label>
+              <app-field-value-input [kind]="asKind(field.kind)" [label]="field.label" [placeholder]="field.placeholder" [value]="payer()[field.key] ?? ''"
+                (changed)="setPayer(field.key, $event)" />
+              @if (error) { <p class="field-error">{{ error }}</p> } @else if (field.hint) { <p class="field-hint">{{ field.hint }}</p> }
+            </div>
+          }
+
+          <div class="field" [class.has-error]="!!shown()['paidOn']">
+            <label>Fecha del pago</label>
+            <app-date-picker [typeable]="true" label="Fecha del pago" [value]="paidOn()" [min]="oldest()" [max]="today()" [todayIso]="today()"
+              [invalid]="!!shown()['paidOn']" (picked)="paidOn.set($event)" />
+            @if (shown()['paidOn']; as error) { <p class="field-error">{{ error }}</p> } @else { <p class="field-hint">dd/mm/aaaa, o elígela en el calendario · hasta {{ window }} días atrás</p> }
+          </div>
+
+          @if (f.reference && method()!.referenceRule !== 'none') {
+            @let error = shown()['reference'];
+            <div class="field" [class.has-error]="!!error">
+              <label for="pay-reference">{{ f.reference.label }} @if (method()!.referenceRule === 'optional') { <em>(opcional)</em> }</label>
+              <input id="pay-reference" class="input mono" maxlength="60" autocomplete="off" [attr.inputmode]="f.reference.numeric ? 'numeric' : 'text'"
+                [placeholder]="f.reference.placeholder" [value]="reference()" (input)="typeReference($event)" />
+              @if (error) { <p class="field-error">{{ error }}</p> } @else { <p class="field-hint">{{ f.reference.hint }}</p> }
+            </div>
+          }
+
+          <div class="field" [class.has-error]="!!shown()['amount']">
+            <label for="pay-amount">{{ f.amountLabel }} ({{ method()!.currency === 'VES' ? 'Bs' : method()!.type === 'binance' ? 'USDT' : '$' }})</label>
+            <input id="pay-amount" class="input" inputmode="decimal" autocomplete="off" placeholder="0,00" [value]="amount()" (input)="typeAmount($event)" />
+            @if (shown()['amount']; as error) { <p class="field-error">{{ error }}</p> }
+            @else if (method()!.type === 'binance') { <p class="field-hint">1 USDT = 1 $</p> }
+          </div>
+
+          @if (coverage(); as c) {
+            <p class="coverage" [class.partial]="!c.full"><app-icon [name]="c.full ? 'check' : 'info'" /><span>{{ c.text }}</span></p>
+          }
+
+          <div class="field" [class.has-error]="!!shown()['proof']">
+            <app-proof-field [required]="method()!.receiptRule === 'required'" [kept]="!!editing()?.hasProof" [invalid]="!!shown()['proof']" (changed)="proof.set($event)" />
+            @if (shown()['proof']; as error) { <p class="field-error">{{ error }}</p> }
+          </div>
+
+          @if (serverError(); as message) {
+            <div class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</div>
+          }
+          <button type="submit" class="btn btn--primary btn--block" [disabled]="sending() || (attempted() && hasErrors())" [attr.aria-busy]="sending()">
+            {{ editing() ? 'Volver a enviar' : 'Enviar pago' }}
+          </button>
+        } @else {
+          <p class="choose"><app-icon name="arrow" class="flip" />Elige cómo pagaste para ver sus datos.</p>
+        }
+      </form>
+    </div>
+  }
+</div>

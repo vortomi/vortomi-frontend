@@ -4,7 +4,7 @@ import { API_CONFIG } from '../../core/api/api-config';
 import { Clock } from '../../core/clock';
 import { CompanyLock } from '../../core/company-lock';
 import { Session } from '../../core/session';
-import type { CompanySubscriptionView, SubscriptionView } from '../../shared/api/subscriptions';
+import type { CompanySubscriptionView, SubscriptionPayment, SubscriptionView } from '../../shared/api/subscriptions';
 import { formatUsdCents } from '../../shared/format/money';
 import type { CompanyPlan, Period } from './subscription.models';
 import { PREVIEW_PLANS, previewChoice, previewView } from './subscription.preview';
@@ -26,6 +26,8 @@ export class SubscriptionData {
   private readonly session = inject(Session);
   private readonly lock = inject(CompanyLock);
   private readonly live = inject(API_CONFIG).mode === 'api';
+  /** The preview reads «?estado=» once; what is done afterwards (a plan chosen, a payment sent) stays. */
+  private previewSeeded = false;
 
   readonly now = signal(this.clock.now());
   readonly today = computed(() => caracasDay(this.now()));
@@ -93,7 +95,8 @@ export class SubscriptionData {
     this.failed.set(false);
     try {
       if (!this.live) {
-        this.apply(previewView(this.today(), location.search));
+        if (!this.previewSeeded) this.apply(previewView(this.today(), location.search));
+        this.previewSeeded = true;
       } else {
         const tenantId = this.session.tenant()?.id;
         if (!tenantId) return;
@@ -122,6 +125,15 @@ export class SubscriptionData {
     }
     this.subscription.set(view);
     return view;
+  }
+
+  /** A payment just sent: in review now; it covers the debt or not. */
+  async afterPayment(payment: SubscriptionPayment): Promise<void> {
+    if (this.live) return this.load();
+    const s = this.subscription();
+    if (!s) return;
+    const covers = s.owedCents > 0 && payment.amountUsdCents >= s.owedCents;
+    this.subscription.set({ ...s, inReview: payment, state: covers ? 'in_review' : s.state });
   }
 
   async loadPlans(): Promise<void> {

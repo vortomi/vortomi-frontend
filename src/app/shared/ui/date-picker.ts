@@ -1,4 +1,4 @@
-import { Component, ElementRef, computed, inject, input, output, signal } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, input, output, signal } from '@angular/core';
 import { FloatingPanel } from './floating-panel';
 import { Icon } from './icon';
 
@@ -15,6 +15,25 @@ interface Day {
 const pad = (n: number) => String(n).padStart(2, '0');
 const isoOf = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;
 
+/** "10/11/2026" from "2026-11-10". */
+export const typedDate = (iso: string): string => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+
+/** "2026-11-10" from "10/11/2026", or null if it is not a real day. */
+export function parseTypedDate(text: string): string | null {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text);
+  if (!match) return null;
+  const [day, month, year] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  return isoOf(year, month - 1, day);
+}
+
+/** What is typed, with its slashes put in as the digits come: "1011" → "10/11". */
+function maskTypedDate(text: string): string {
+  const digits = text.replace(/\D/g, '').slice(0, 8);
+  return [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4)].filter(Boolean).join('/');
+}
+
 /** "10 de noviembre de 2026" from "2026-11-10". */
 export function longDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -24,18 +43,30 @@ export function longDate(iso: string): string {
 /**
  * Our own date field, in place of <input type="date"> (mockup web-14): the chosen day in words and
  * a month calendar. Works with "YYYY-MM-DD" strings, so no time zone gets in the way. Keyboard:
- * the calendar days are buttons (Tab / Enter); Escape closes.
+ * the calendar days are buttons (Tab / Enter); Escape closes. With `typeable`, the day can also be
+ * written (dd/mm/aaaa): a real day is picked as typed, even outside min/max (the form says why it
+ * does not fit); an unfinished or impossible one picks null.
  */
 @Component({
   selector: 'app-date-picker',
   imports: [Icon, FloatingPanel],
   host: { '(document:click)': 'onOutside($event)', '(keydown.escape)': 'close()' },
   template: `
+    @if (typeable()) {
+      <div class="trigger typed" [class.open]="open()" [class.invalid]="invalid()">
+        <input class="typed-input" inputmode="numeric" autocomplete="off" [placeholder]="'dd/mm/aaaa'" [attr.aria-label]="label()" [value]="typed()"
+          [disabled]="disabled()" (input)="onTyped($event)" />
+        <button type="button" class="cal" [disabled]="disabled()" aria-label="Abrir el calendario" aria-haspopup="dialog" [attr.aria-expanded]="open()" (click)="toggle()">
+          <app-icon name="calendar" class="ic" />
+        </button>
+      </div>
+    } @else {
     <button type="button" class="trigger" [class.open]="open()" [disabled]="disabled()" [attr.aria-label]="label()" aria-haspopup="dialog" [attr.aria-expanded]="open()" (click)="toggle()">
       <app-icon name="calendar" class="ic" />
       <span class="value" [class.placeholder]="!value()">{{ value() ? text(value()!) : placeholder() }}</span>
       <app-icon name="down" class="chev" />
     </button>
+    }
     @if (open()) {
       <div class="panel" appFloatingPanel="auto" role="dialog" [attr.aria-label]="label()">
         <div class="head">
@@ -82,6 +113,12 @@ export function longDate(iso: string): string {
     .grid button.on { background: var(--color-primary); color: var(--color-on-primary); font-weight: 600; }
     .grid button:disabled { color: var(--color-text-faint); opacity: 0.45; cursor: not-allowed; }
     .clear { margin-top: 10px; font-size: 13px; }
+    .typed { padding: 0 4px 0 12px; cursor: text; }
+    .typed:focus-within { outline: 0; border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); }
+    .typed.invalid { border-color: var(--color-danger); }
+    .typed-input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none; font: inherit; color: var(--color-text); font-variant-numeric: tabular-nums; }
+    .cal { width: 34px; height: 34px; border: 0; background: none; border-radius: var(--radius-sm); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+    .cal:hover { background: var(--color-surface-hover); }
   `,
 })
 export class DatePicker {
@@ -96,12 +133,35 @@ export class DatePicker {
   readonly disabled = input(false);
   /** Offers "Quitar fecha" (optional dates). */
   readonly clearable = input(false);
+  /** The day can be written (dd/mm/aaaa) as well as picked. */
+  readonly typeable = input(false);
+  /** Marks the field as wrong (the form's own check). */
+  readonly invalid = input(false);
   /** The day the calendar marks as today ("YYYY-MM-DD"); the browser's day when left out. */
   readonly todayIso = input<string | null>(null);
   readonly picked = output<string | null>();
 
   protected readonly weekdays = WEEKDAYS;
   protected readonly open = signal(false);
+  /** What is written in the typeable field. */
+  protected readonly typed = signal('');
+
+  constructor() {
+    // A day picked in the calendar (or set from outside) shows written; what is being typed stays.
+    effect(() => {
+      const value = this.value();
+      if (value && parseTypedDate(this.typed()) !== value) this.typed.set(typedDate(value));
+    });
+  }
+
+  protected onTyped(event: Event): void {
+    const field = event.target as HTMLInputElement;
+    const text = maskTypedDate(field.value);
+    field.value = text;
+    this.typed.set(text);
+    const iso = parseTypedDate(text);
+    if (iso !== this.value()) this.picked.emit(iso);
+  }
   /** First day of the month on screen. */
   private readonly view = signal({ year: 2026, month: 0 });
 
@@ -144,6 +204,7 @@ export class DatePicker {
   }
 
   protected pick(iso: string | null): void {
+    this.typed.set(iso ? typedDate(iso) : '');
     this.picked.emit(iso);
     this.close();
   }
@@ -151,7 +212,7 @@ export class DatePicker {
   protected close(): void {
     if (!this.open()) return;
     this.open.set(false);
-    this.host.nativeElement.querySelector<HTMLElement>('.trigger')?.focus();
+    this.host.nativeElement.querySelector<HTMLElement>(this.typeable() ? '.typed-input' : '.trigger')?.focus();
   }
 
   protected onOutside(event: MouseEvent): void {

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, linkedSignal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import type { SubscriptionView } from '../../shared/api/subscriptions';
 import { formatUsdCents, formatVes } from '../../shared/format/money';
 import { PERIODS, type Period } from './subscription.models';
@@ -6,11 +7,12 @@ import { amountToPay, inBolivares, priceFor } from './subscription.rules';
 
 /**
  * «Tu primer pago» (mockup web-37, frame 5): the company chooses how many months it pays (1 by
- * default), and sees the amount in dollars and, at Vortomi's rate, in bolívares. Reporting the
- * payment comes in stage 3 (documentations/18): the button is there, still off.
+ * default), and sees the amount in dollars and, at Vortomi's rate, in bolívares, and reports
+ * its payment with those months (stage 3, documentations/18 §5).
  */
 @Component({
   selector: 'app-subscription-pay',
+  imports: [RouterLink],
   template: `
     @let s = subscription();
     @let pay = amount();
@@ -36,7 +38,11 @@ import { amountToPay, inBolivares, priceFor } from './subscription.rules';
           }
         </div>
       </div>
-      <button type="button" class="btn btn--block" disabled>Reportar pago · disponible pronto</button>
+      @if (s.inReview) {
+        <button type="button" class="btn btn--block" disabled>Ya tienes un pago en revisión</button>
+      } @else {
+        <a class="btn btn--primary btn--block" routerLink="/subscription/pay" [queryParams]="{ months: months() }">Reportar pago</a>
+      }
     </section>
   `,
   styles: `

@@ -14,9 +14,10 @@ export type PlanDiscounts = Record<'1' | '3' | '6' | '12', number>;
 
 /**
  * Derived from the dates, never stored. Due day D: grace D+1 and D+2, suspended from 00:00 of D+3.
- * Before the first payment: 3 days from the day the plan was assigned.
+ * Before the first payment: 3 days from the day the plan was assigned. 'in_review': a payment in
+ * review covers the whole debt, so the company works as if it owed nothing until it is decided.
  */
-export type BillingState = 'awaiting_first_payment' | 'active' | 'due_soon' | 'grace' | 'suspended';
+export type BillingState = 'awaiting_first_payment' | 'active' | 'due_soon' | 'grace' | 'suspended' | 'in_review';
 
 /** What is being paid now: its price and discounts are fixed when the charge is made. */
 export interface SubscriptionCharge {
@@ -49,6 +50,59 @@ export interface SubscriptionView {
   charge: SubscriptionCharge | null;
   /** Vortomi's exchange rate, or null while it has none. */
   rate: { bsPerUsd: string; effectiveDate: Day } | null;
+  /** The payment the console is reviewing, if any. */
+  inReview: SubscriptionPayment | null;
+}
+
+export type PaymentCurrency = 'USD' | 'VES';
+export type ProofRule = 'required' | 'optional' | 'none';
+
+/** A method of Vortomi a company pays with (GET /tenants/:id/subscription/methods). */
+export interface PayableMethod {
+  id: Id;
+  type: string;
+  name: string;
+  currency: PaymentCurrency;
+  fields: { kind: string; label: string; value: string; copyable: boolean }[];
+  instructions: string;
+  referenceRule: ProofRule;
+  receiptRule: ProofRule;
+}
+
+/** A payment the company reported (GET /tenants/:id/subscription/payments). */
+export interface SubscriptionPayment {
+  id: Id;
+  status: 'in_review' | 'approved' | 'rejected';
+  months: number;
+  methodId: Id | null;
+  methodName: string;
+  methodType: string;
+  currency: PaymentCurrency;
+  /** Who paid, as the method's form asks it. */
+  payer: Record<string, string>;
+  reference: string | null;
+  paidOn: Day;
+  /** "1234.56" in the method's currency. */
+  amount: string;
+  bsPerUsd: string | null;
+  amountUsdCents: number;
+  hasProof: boolean;
+  rejectionReason: string | null;
+  rejectionNote: string | null;
+  submittedAt: string;
+  reviewedAt: string | null;
+}
+
+/** POST /tenants/:id/subscription/payments (and PUT to correct a rejected one). */
+export interface PaymentReport {
+  methodId: Id;
+  months: 1 | 3 | 6 | 12;
+  paidOn: Day;
+  amount: string;
+  reference?: string;
+  payer: Record<string, string>;
+  /** Left out when correcting: the receipt stays. */
+  proof?: { mimeType: string; data: string } | null;
 }
 
 /** GET /tenants/:id/subscription: the company's plan, or its trial while it has none (mockup web-38). */

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
-import type { SubscriptionView } from '../../shared/api/subscriptions';
-import { formatUsdCents } from '../../shared/format/money';
+import type { SubscriptionPayment, SubscriptionView } from '../../shared/api/subscriptions';
+import { formatAmount, formatUsdCents } from '../../shared/format/money';
 import { Icon } from '../../shared/ui/icon';
 import { SubscriptionCountdown } from './subscription-countdown';
 import { SubscriptionPay } from './subscription-pay';
@@ -30,10 +30,27 @@ import { STATE_TEXT, STATE_TONE, dayText } from './subscription.rules';
           <p class="line">Tu día de cobro: los {{ s.billingDay }} de cada mes · vence el {{ date(s.nextDueOn) }}</p>
         }
       </section>
-      @if (data.target(); as target) {
+      @if (s.state === 'in_review') {
+        <section class="held" aria-label="Tu pago está en revisión">
+          <span class="lbl">Tu pago está en revisión</span>
+          <ol class="steps">
+            <li class="done"><app-icon name="check" /><span>Enviado</span></li>
+            <li class="now"><app-icon name="clock" /><span>En revisión</span></li>
+            <li><app-icon name="check" /><span>Aprobado</span></li>
+          </ol>
+          <p class="next">Tu cuenta <b>no se suspende</b> mientras lo revisamos: cubre todo lo que debes.</p>
+        </section>
+      } @else if (data.target(); as target) {
         <app-subscription-countdown [now]="data.now()" [due]="target.at" [suspension]="target.suspension" [level]="target.suspension ? 'overdue' : tone" [monthlyCents]="s.plan.priceCents" />
       }
     </div>
+
+    @if (s.inReview; as p) {
+      <section class="received"><app-icon name="clock" />
+        <div><b>Recibimos tu pago: {{ paidText(p) }} por {{ p.methodName }}</b>
+          <span>@if (p.reference) { Referencia {{ p.reference }} · }{{ date(p.paidOn) }}. Lo revisamos y te avisamos aquí. Mientras esté en revisión no puedes enviar otro ni cambiarlo.</span></div>
+      </section>
+    }
 
     <app-subscription-pay [subscription]="s" />
 
@@ -58,6 +75,21 @@ import { STATE_TEXT, STATE_TONE, dayText } from './subscription.rules';
     .state { font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 99px; background: color-mix(in srgb, var(--color-on-primary) 20%, transparent); }
     .state.soon { background: var(--color-warning-soft); color: var(--color-warning-text); }
     .state.overdue { background: var(--color-danger-soft); color: var(--color-danger-text); }
+    .state.review { background: var(--color-info-soft); color: var(--color-info-text); }
+    /* Same shape as the countdown: a label, three tiles, a line under them. */
+    .held { display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; border-radius: var(--radius-lg); background: var(--color-surface);
+      border: 1px solid color-mix(in srgb, var(--color-info-text) 30%, transparent); }
+    .held .lbl { font-size: 13px; color: var(--color-info-text); font-weight: 600; }
+    .steps { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .steps li { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border-radius: var(--radius-md); font-size: 12px;
+      background: var(--color-surface-hover); color: var(--color-text-faint); --icon-size: 20px; }
+    .steps li.done { background: var(--color-success-soft); color: var(--color-success-text); }
+    .steps li.now { background: var(--color-info-soft); color: var(--color-info-text); font-weight: 600; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-info-text) 35%, transparent); }
+    .next { font-size: 13.5px; color: var(--color-text-2); }
+    .received { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-radius: var(--radius-lg); font-size: 13px; line-height: 1.45;
+      background: var(--color-info-soft); color: var(--color-info-text); --icon-size: 20px; }
+    .received b { display: block; font-size: 14px; }
+    .received span { color: var(--color-text-2); }
     .price { font-size: 14px; }
     .price b { font-size: 20px; }
     .line { font-size: 13px; opacity: 0.92; }
@@ -85,5 +117,10 @@ export class SubscriptionSummary {
 
   protected date(day: string): string {
     return dayText(day, true);
+  }
+
+  /** «92.435,33 Bs», «225,15 $»: in the method's currency. */
+  protected paidText(p: SubscriptionPayment): string {
+    return formatAmount(Number(p.amount), p.currency);
   }
 }

@@ -211,6 +211,19 @@ export const routes: Routes = [
         loadComponent: () => import('./features/subscription/subscription.page').then((m) => m.SubscriptionPage),
       },
       {
+        // Reporting a payment to Vortomi, and correcting a rejected one (mockups web-39 and web-40).
+        path: 'subscription/pay',
+        title: 'Reportar pago',
+        canActivate: [tenantAdminGuard],
+        loadComponent: () => import('./features/subscription/report-payment.page').then((m) => m.ReportPaymentPage),
+      },
+      {
+        path: 'subscription/payments/:paymentId/edit',
+        title: 'Corregir pago',
+        canActivate: [tenantAdminGuard],
+        loadComponent: () => import('./features/subscription/report-payment.page').then((m) => m.ReportPaymentPage),
+      },
+      {
         path: 'settings',
         title: 'Ajustes',
         canActivate: [tenantAdminGuard],
