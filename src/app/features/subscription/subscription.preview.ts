@@ -1,13 +1,13 @@
-import type { BillingState } from '../../shared/api/subscriptions';
-import { PREVIEW_PLAN } from '../../shared/api/subscriptions.preview';
-import type { CompanyPlan } from './subscription.models';
-
-export { previewSubscription } from '../../shared/api/subscriptions.preview';
+import type { BillingState, CompanySubscriptionView, SubscriptionView } from '../../shared/api/subscriptions';
+import { PREVIEW_PLAN, previewSubscription } from '../../shared/api/subscriptions.preview';
+import type { CompanyPlan, Period } from './subscription.models';
+import { addDays, priceFor } from './subscription.rules';
 
 /*
  * PREVIEW ONLY ('mock' mode, never deployed): Vortomi's plans and a company's subscription, so the
- * screens can be reviewed without a server. «?estado=» picks what the subscription looks like:
- * awaiting_first_payment (default), active, due_soon, grace, suspended or none.
+ * screens can be reviewed without a server. «?estado=» picks what the company looks like:
+ * trial (default: no plan, 5 days left), trial_over, none (no plan, no trial),
+ * awaiting_first_payment, active, due_soon, grace or suspended.
  */
 
 /** The preview's plans, as the console would list them. */
@@ -24,10 +24,27 @@ export const PREVIEW_PLANS: CompanyPlan[] = [
 ];
 
 const STATES: readonly BillingState[] = ['awaiting_first_payment', 'active', 'due_soon', 'grace', 'suspended'];
+const RATE = (today: string) => ({ bsPerUsd: '410.55000000', effectiveDate: today });
 
-/** The state «?estado=» asks for; null for «none» (a company without a plan). */
-export function previewState(search: string): BillingState | null {
-  const asked = new URLSearchParams(search).get('estado');
-  if (asked === 'none') return null;
-  return STATES.find((s) => s === asked) ?? 'awaiting_first_payment';
+/** What GET /tenants/:id/subscription would answer, for the state «?estado=» asks for. */
+export function previewView(today: string, search: string): CompanySubscriptionView {
+  const asked = new URLSearchParams(search).get('estado') ?? 'trial';
+  const state = STATES.find((s) => s === asked);
+  if (state) return { subscription: previewSubscription(today, state), trialEndsOn: addDays(today, -20), enforced: true, rate: RATE(today) };
+  const trialEndsOn = asked === 'trial_over' ? addDays(today, -1) : asked === 'none' ? null : addDays(today, 4);
+  return { subscription: null, trialEndsOn, enforced: true, rate: RATE(today) };
+}
+
+/** What choosing a plan would answer: its first charge, for the months chosen, due today. */
+export function previewChoice(plan: CompanyPlan, months: Period, today: string, rate: SubscriptionView['rate']): SubscriptionView {
+  const base = previewSubscription(today, 'awaiting_first_payment');
+  const price = priceFor(plan, months);
+  return {
+    ...base,
+    plan: { id: plan.id, name: plan.name, description: plan.description, priceCents: plan.priceCents, discounts: plan.discounts, benefits: plan.benefits },
+    origin: 'company',
+    owedCents: price.totalCents,
+    charge: { ...base.charge!, planName: plan.name, basePriceCents: plan.priceCents, discounts: plan.discounts, months, discountPercent: price.discountPercent, amountCents: price.totalCents },
+    rate,
+  };
 }

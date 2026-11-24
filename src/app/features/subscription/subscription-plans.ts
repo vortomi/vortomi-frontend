@@ -1,18 +1,21 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
+import type { SubscriptionView } from '../../shared/api/subscriptions';
 import { formatUsdCents } from '../../shared/format/money';
 import { Icon } from '../../shared/ui/icon';
 import { Skeleton } from '../../shared/ui/skeleton';
+import { ChoosePlanDialog } from './choose-plan.dialog';
 import { type CompanyPlan, PERIODS, type Period } from './subscription.models';
 import { SubscriptionData } from './subscription.data';
 import { priceFor } from './subscription.rules';
 
 /**
- * Suscripción → Planes (mockup web-35, step 3): Vortomi's active plans, with what each costs per
- * month, in total and how much it saves for the months chosen. Nothing can be chosen yet.
+ * Suscripción → Planes (mockups web-35 and web-38): Vortomi's active plans, with what each costs
+ * per month, in total and how much it saves for the months shown. A company without a plan chooses
+ * one here itself; with a plan, its own is marked (changing it comes later).
  */
 @Component({
   selector: 'app-subscription-plans',
-  imports: [Icon, Skeleton],
+  imports: [ChoosePlanDialog, Icon, Skeleton],
   template: `
     <div class="segmented" role="tablist" aria-label="Meses a pagar">
       @for (option of periods; track option) {
@@ -44,12 +47,19 @@ import { priceFor } from './subscription.rules';
             <ul>
               @for (benefit of plan.benefits; track $index) { <li><app-icon name="check" />{{ benefit }}</li> }
             </ul>
-            <button type="button" class="btn btn--block" disabled>{{ mine ? 'Es tu plan actual' : 'Pronto disponible' }}</button>
+            @if (!data.subscription()) {
+              <button type="button" class="btn btn--primary btn--block" [disabled]="!data.loaded()" (click)="picked.set(plan)">Elegir este plan</button>
+            } @else {
+              <button type="button" class="btn btn--block" disabled>{{ mine ? 'Es tu plan actual' : 'Cambiar de plan · pronto' }}</button>
+            }
           </article>
         }
       </div>
-      <p class="form-alert info"><app-icon name="info" />Por ahora solo puedes ver los planes. Para cambiar de plan, escríbenos a soporte.</p>
+      @if (data.subscription()) {
+        <p class="form-alert info"><app-icon name="info" />Para cambiar de plan, escríbenos a soporte.</p>
+      }
     }
+    <app-choose-plan-dialog [open]="!!picked()" [plan]="picked()" [initialMonths]="months()" (closed)="picked.set(null)" (chosen)="onChosen($event)" />
   `,
   styles: `
     :host { display: flex; flex-direction: column; gap: 16px; }
@@ -57,7 +67,7 @@ import { priceFor } from './subscription.rules';
     .segmented i { font-style: normal; font-size: 11.5px; font-weight: 700; color: var(--color-success-text); margin-left: 4px; }
     .form-alert { align-items: center; }
     .grow { flex: 1; }
-    .plans { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; align-items: start; }
+    .plans { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; align-items: stretch; }
     .plan { position: relative; padding: 18px 18px 16px; display: flex; flex-direction: column; gap: 6px; }
     .plan.mine { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); }
     .mark { position: absolute; top: -10px; left: 16px; padding: 1px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; text-transform: uppercase;
@@ -72,6 +82,7 @@ import { priceFor } from './subscription.rules';
     li { display: flex; align-items: flex-start; gap: 8px; --icon-size: 15px; }
     li app-icon { color: var(--color-success); margin-top: 2px; flex: none; }
     .plan.mine .btn:disabled { opacity: 1; color: var(--color-primary-text); background: var(--color-primary-softer); border-color: transparent; }
+    .plan > .btn { margin-top: auto; }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -79,6 +90,10 @@ export class SubscriptionPlans {
   protected readonly data = inject(SubscriptionData);
   protected readonly periods = PERIODS;
   protected readonly months = signal<Period>(1);
+  /** The plan whose «Elegir el plan» is open. */
+  protected readonly picked = signal<CompanyPlan | null>(null);
+  /** The company chose its plan: the page shows its summary. */
+  readonly chosen = output<SubscriptionView>();
 
   /** «hasta −20 %» on each period: the best discount any plan gives for it. */
   private readonly best = computed(() => {
@@ -88,6 +103,11 @@ export class SubscriptionPlans {
 
   constructor() {
     void this.data.loadPlans();
+  }
+
+  protected onChosen(view: SubscriptionView): void {
+    this.picked.set(null);
+    this.chosen.emit(view);
   }
 
   protected bestDiscount(months: Period): number {

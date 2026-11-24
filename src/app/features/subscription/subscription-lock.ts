@@ -20,18 +20,24 @@ import { dayText } from './subscription.rules';
         <h2>Tu cuenta está suspendida</h2>
         @if (data.subscription(); as s) {
           <p>Tu plan venció el {{ date(s.nextDueOn) }} y no recibimos el pago. Debes {{ money(s.owedCents) }}.</p>
+        } @else if (data.trialEndsOn(); as endsOn) {
+          <p>Tu prueba terminó el {{ date(endsOn) }} y todavía no elegiste un plan.</p>
         } @else {
           <p>La cuenta de tu empresa está suspendida por falta de pago.</p>
         }
         <ul>
           <li>Los mensajes de tus clientes <b>se siguen guardando</b>.</li>
           <li>El bot <b>no responde</b> mientras tanto.</li>
-          <li>Al pagar, todo vuelve a funcionar solo.</li>
+          <li>{{ data.subscription() ? 'Al pagar' : 'Al elegir tu plan' }}, todo vuelve a funcionar solo.</li>
         </ul>
         @if (admin()) {
-          <a class="btn btn--primary" routerLink="/subscription">Ir a Suscripción</a>
+          @if (data.subscription()) {
+            <a class="btn btn--primary" routerLink="/subscription">Ir a Suscripción</a>
+          } @else {
+            <a class="btn btn--primary" routerLink="/subscription" [queryParams]="{ tab: 'plans' }">Elegir mi plan</a>
+          }
         } @else {
-          <p class="ask">Pide al dueño o a un administrador que pague desde Suscripción.</p>
+          <p class="ask">Pide al dueño o a un administrador que {{ data.subscription() ? 'pague' : 'elija el plan' }} desde Suscripción.</p>
         }
       </section>
     </div>

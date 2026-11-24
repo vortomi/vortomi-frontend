@@ -67,7 +67,7 @@ export class PlatformSubscriptions {
     const base = previewSubscription(caracasToday(this.clock.now()), 'awaiting_first_payment');
     const { id, name, description, priceCents, discounts, benefits } = plan;
     const charge = { ...base.charge!, planName: name, basePriceCents: priceCents, discounts, amountCents: priceCents };
-    const view: SubscriptionView = { ...base, enforced: false, plan: { id, name, description, priceCents, discounts, benefits }, owedCents: priceCents, charge };
+    const view: SubscriptionView = { ...base, origin: 'console', enforced: false, plan: { id, name, description, priceCents, discounts, benefits }, owedCents: priceCents, charge };
     this.previewViews().set(tenantId, view);
     return view;
   }

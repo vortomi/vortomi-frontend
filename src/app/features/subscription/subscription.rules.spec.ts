@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { tenantOfUrl } from '../../core/api/company-lock.interceptor';
 import type { BillingState } from '../../shared/api/subscriptions';
 import { formatUsdCents } from '../../shared/format/money';
-import { previewState, previewSubscription } from './subscription.preview';
+import { previewSubscription } from '../../shared/api/subscriptions.preview';
+import { PREVIEW_PLANS, previewChoice, previewView } from './subscription.preview';
 import {
   amountToPay,
   countdown,
@@ -15,6 +16,9 @@ import {
   subscriptionEvents,
   subscriptionNotice,
   suspensionAt,
+  trialBadge,
+  trialDaysLeft,
+  trialNotice,
 } from './subscription.rules';
 
 const TODAY = '2026-12-01';
@@ -65,6 +69,23 @@ describe('the reminders', () => {
   });
 });
 
+describe('the trial, while the company has no plan', () => {
+  it('counts the days left, today included', () => {
+    expect(trialDaysLeft('2026-12-05', TODAY)).toBe(5);
+    expect(trialDaysLeft('2026-12-01', TODAY)).toBe(1);
+    expect(trialDaysLeft('2026-11-30', TODAY)).toBe(0);
+    expect(trialBadge('2026-12-05', TODAY)).toBe('5 d');
+    expect(trialBadge('2026-12-01', TODAY)).toBe('Hoy');
+    expect(trialBadge('2026-11-30', TODAY)).toBe('!');
+  });
+
+  it('asks to choose a plan, and once it is over a company locked out cannot close it', () => {
+    expect(trialNotice('2026-12-05', TODAY, true)).toMatchObject({ tone: 'soon', title: 'Elige tu plan.', detail: 'Te quedan 5 días de prueba (hasta el 5 dic).', dismissable: true });
+    expect(trialNotice('2026-11-30', TODAY, true)).toMatchObject({ tone: 'overdue', title: 'Tu prueba terminó.', dismissable: false });
+    expect(trialNotice('2026-11-30', TODAY, false)).toMatchObject({ title: 'Tu prueba terminó el 30 nov.', dismissable: true });
+  });
+});
+
 describe('what to pay', () => {
   it('applies the discount of the months chosen to the charge’s own price', () => {
     expect(priceFor({ priceCents: 7900, discounts: { '1': 0, '3': 5, '6': 10, '12': 20 } }, 12)).toEqual({
@@ -94,9 +115,14 @@ describe('the timeline and the preview', () => {
   });
 
   it('picks the preview state from the address', () => {
-    expect(previewState('?estado=grace')).toBe('grace');
-    expect(previewState('?estado=none')).toBeNull();
-    expect(previewState('')).toBe('awaiting_first_payment');
+    expect(previewView(TODAY, '?estado=grace').subscription?.state).toBe('grace');
+    expect(previewView(TODAY, '?estado=none')).toMatchObject({ subscription: null, trialEndsOn: null });
+    expect(previewView(TODAY, '')).toMatchObject({ subscription: null, trialEndsOn: '2026-12-05' });
+  });
+
+  it('a plan the company chooses carries the months it chose', () => {
+    const view = previewChoice(PREVIEW_PLANS[1]!, 3, TODAY, null);
+    expect(view).toMatchObject({ origin: 'company', owedCents: 22515, charge: { months: 3, discountPercent: 5, amountCents: 22515 } });
   });
 
   it('knows which company a call was about', () => {

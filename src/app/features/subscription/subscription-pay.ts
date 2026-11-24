@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, linkedSignal } from '@angular/core';
 import type { SubscriptionView } from '../../shared/api/subscriptions';
 import { formatUsdCents, formatVes } from '../../shared/format/money';
 import { PERIODS, type Period } from './subscription.models';
@@ -65,7 +65,8 @@ import { amountToPay, inBolivares, priceFor } from './subscription.rules';
 export class SubscriptionPay {
   readonly subscription = input.required<SubscriptionView>();
   protected readonly periods = PERIODS;
-  protected readonly months = signal<Period>(1);
+  /** Starts at the months the company chose with its plan (1 by default); it may change them here. */
+  protected readonly months = linkedSignal<Period>(() => PERIODS.find((p) => p === this.subscription().charge?.months) ?? 1);
 
   protected readonly amount = computed(() => amountToPay(this.subscription(), this.months()));
 

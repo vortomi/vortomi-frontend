@@ -123,6 +123,28 @@ export function subscriptionNotice(s: SubscriptionView, money: (cents: number) =
   }
 }
 
+/** Days of trial left, today included (0 once it is over). */
+export const trialDaysLeft = (trialEndsOn: Day, today: Day): number => Math.max(0, daysUntil(today, trialEndsOn) + 1);
+
+/** The menu's count while a company without a plan is in its trial: «5 d», «Hoy», then «!». */
+export function trialBadge(trialEndsOn: Day, today: Day): string {
+  const left = trialDaysLeft(trialEndsOn, today);
+  if (left === 0) return '!';
+  return left === 1 ? 'Hoy' : `${left} d`;
+}
+
+/** The banner of a company without a plan (mockup web-38, frame 1). */
+export function trialNotice(trialEndsOn: Day, today: Day, enforced: boolean): Notice {
+  const left = trialDaysLeft(trialEndsOn, today);
+  if (left > 0) {
+    const days = left === 1 ? 'Hoy es tu último día de prueba.' : `Te quedan ${left} días de prueba (hasta el ${dayText(trialEndsOn)}).`;
+    return { tone: 'soon', title: 'Elige tu plan.', detail: days, dismissable: true };
+  }
+  return enforced
+    ? { tone: 'overdue', title: 'Tu prueba terminó.', detail: 'Elige tu plan para seguir usando Vortomi.', dismissable: false }
+    : { tone: 'overdue', title: `Tu prueba terminó el ${dayText(trialEndsOn)}.`, detail: 'Elige tu plan para seguir usando Vortomi.', dismissable: true };
+}
+
 export interface PeriodPrice {
   discountPercent: number;
   /** What a month comes to with the discount. */

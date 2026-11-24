@@ -20,7 +20,11 @@ const DISMISSED_KEY = 'vortomi-subscription-banner';
       <div class="notice" [class.overdue]="n.tone === 'overdue'" role="status">
         <app-icon [name]="n.tone === 'overdue' ? 'alert' : 'clock'" />
         <p><b>{{ n.title }}</b> {{ n.detail }}</p>
-        <a class="btn btn--sm" routerLink="/subscription">Ir a Suscripción</a>
+        @if (data.subscription()) {
+          <a class="btn btn--sm" routerLink="/subscription">Ir a Suscripción</a>
+        } @else {
+          <a class="btn btn--sm" routerLink="/subscription" [queryParams]="{ tab: 'plans' }">Elegir plan</a>
+        }
         @if (n.dismissable) {
           <button type="button" class="icon-btn" aria-label="Cerrar el aviso hasta mañana" (click)="dismiss()"><app-icon name="x" /></button>
         }

@@ -37,6 +37,8 @@ export interface SubscriptionView {
   enforced: boolean;
   plan: { id: Id; name: string; description: string; priceCents: number; discounts: PlanDiscounts; benefits: string[] };
   assignedAt: string;
+  /** Chosen by the company itself, or assigned by Vortomi's console as an exception. */
+  origin: 'company' | 'console';
   /** Set by the first payment; null before it. */
   billingDay: number | null;
   nextDueOn: Day;
@@ -47,6 +49,15 @@ export interface SubscriptionView {
   charge: SubscriptionCharge | null;
   /** Vortomi's exchange rate, or null while it has none. */
   rate: { bsPerUsd: string; effectiveDate: Day } | null;
+}
+
+/** GET /tenants/:id/subscription: the company's plan, or its trial while it has none (mockup web-38). */
+export interface CompanySubscriptionView {
+  subscription: SubscriptionView | null;
+  /** The last day of its trial to choose a plan; null for a company that never had one. */
+  trialEndsOn: Day | null;
+  enforced: boolean;
+  rate: SubscriptionView['rate'];
 }
 
 /** A row of Suscripciones → Cobros: every company, with or without a plan. */

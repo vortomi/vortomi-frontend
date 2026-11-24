@@ -10,8 +10,9 @@ import { dayText, stateLabel } from './billing.rules';
 import { PlatformSubscriptions } from './platform-subscriptions';
 
 /**
- * «Suscripción» on a company's page in the console (mockup web-37, frames 1 and 3): without a
- * plan, the way to assign one; with it, what it owes, until when, and its billing day.
+ * «Suscripción» on a company's page in the console (mockups web-37 and web-38): without a plan,
+ * the way to assign one as an exception (companies choose their own); with it, who chose it, what
+ * it owes, until when, and its billing day.
  */
 @Component({
   selector: 'app-tenant-subscription-box',
@@ -30,7 +31,7 @@ import { PlatformSubscriptions } from './platform-subscriptions';
     } @else if (subscription(); as s) {
       <dl class="kv">
         <dt>Plan</dt><dd>{{ s.plan.name }} · {{ money(s.plan.priceCents) }} al mes</dd>
-        <dt>Asignado</dt><dd>{{ assignedOn(s) }}</dd>
+        <dt>{{ s.origin === 'company' ? 'Elegido' : 'Asignado' }}</dt><dd>{{ assignedOn(s) }} · {{ s.origin === 'company' ? 'por la empresa' : 'por Vortomi' }}</dd>
         @if (s.owedCents > 0) {
           <dt>Se suspende</dt><dd class="bad">{{ date(s.suspendsOn) }}, 00:00</dd>
         } @else {

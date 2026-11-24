@@ -29,6 +29,7 @@ export function previewSubscription(today: Day, state: BillingState): Subscripti
     enforced: true,
     plan: { id: plan.id, name: plan.name, description: plan.description, priceCents: plan.priceCents, discounts: plan.discounts, benefits: plan.benefits },
     assignedAt: `${first ? today : addDays(today, -40)}T14:00:00.000Z`,
+    origin: 'company',
     billingDay: first ? null : Number(nextDueOn.slice(8, 10)),
     nextDueOn,
     suspendsOn: addDays(nextDueOn, 3),

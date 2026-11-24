@@ -1,7 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Icon } from '../../shared/ui/icon';
+import type { SubscriptionView } from '../../shared/api/subscriptions';
 import { Skeleton } from '../../shared/ui/skeleton';
+import { Toaster } from '../../shared/ui/toaster';
 import { SubscriptionData } from './subscription.data';
 import { SubscriptionPayments } from './subscription-payments';
 import { SubscriptionPlans } from './subscription-plans';
@@ -11,8 +14,8 @@ type Tab = 'summary' | 'plans' | 'payments';
 const TABS: Tab[] = ['summary', 'plans', 'payments'];
 
 /**
- * Suscripción (mockups web-35 and web-37): the company's plan, what it owes and until when
- * (Resumen), Vortomi's plans (Planes) and its payments (Pagos). Owner and admins only; it stays
+ * Suscripción (mockups web-35, web-37 and web-38): the company's plan, what it owes and until when
+ * (Resumen), Vortomi's plans, where it chooses its own (Planes), and its payments (Pagos). Owner and admins only; it stays
  * open while the company is suspended for not paying: it is where it pays.
  */
 @Component({
@@ -30,7 +33,7 @@ const TABS: Tab[] = ['summary', 'plans', 'payments'];
         <button type="button" role="tab" [class.on]="tab() === 'payments'" [attr.aria-selected]="tab() === 'payments'" (click)="show('payments')">Pagos</button>
       </nav>
       @switch (tab()) {
-        @case ('plans') { <app-subscription-plans /> }
+        @case ('plans') { <app-subscription-plans (chosen)="onChosen($event)" /> }
         @case ('payments') { <app-subscription-payments /> }
         @default {
           @if (data.failed()) {
@@ -44,7 +47,8 @@ const TABS: Tab[] = ['summary', 'plans', 'payments'];
             <div class="card none">
               <app-icon name="calendar" />
               <h2>Todavía no tienes un plan</h2>
-              <p>Cuando Vortomi te asigne tu plan, aquí verás cuánto pagar, hasta cuándo y lo que incluye. Mientras tanto, no se te cobra nada.</p>
+              <p>Elige el plan que mejor le queda a tu negocio. Pagas 1 mes o varios con descuento, y tu primer pago fija tu día de cobro.</p>
+              <button type="button" class="btn btn--primary" (click)="show('plans')">Ver los planes</button>
             </div>
           }
         }
@@ -67,12 +71,21 @@ export class SubscriptionPage {
   protected readonly data = inject(SubscriptionData);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly toaster = inject(Toaster);
 
   protected readonly tab = signal<Tab>(this.tabFromUrl());
 
   constructor() {
     // Fresh on every visit: a payment approved or a plan assigned shows at once.
     void this.data.load();
+    // A link to ?tab=plans (the banner's «Elegir plan») while already here moves the tab too.
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(() => this.tab.set(this.tabFromUrl()));
+  }
+
+  /** Plan chosen: back to the summary, now with what to pay and until when. */
+  protected onChosen(view: SubscriptionView): void {
+    this.show('summary');
+    this.toaster.show(`Elegiste el plan ${view.plan.name}.`);
   }
 
   /** Each tab keeps its place in the address (?tab=), without a new history step. */

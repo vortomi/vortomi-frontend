@@ -4,19 +4,20 @@ import { API_CONFIG } from '../../core/api/api-config';
 import { Clock } from '../../core/clock';
 import { CompanyLock } from '../../core/company-lock';
 import { Session } from '../../core/session';
-import type { SubscriptionView } from '../../shared/api/subscriptions';
+import type { CompanySubscriptionView, SubscriptionView } from '../../shared/api/subscriptions';
 import { formatUsdCents } from '../../shared/format/money';
-import type { CompanyPlan } from './subscription.models';
-import { PREVIEW_PLANS, previewState, previewSubscription } from './subscription.preview';
-import { caracasDay, countdownTarget, subscriptionBadge, subscriptionNotice } from './subscription.rules';
+import type { CompanyPlan, Period } from './subscription.models';
+import { PREVIEW_PLANS, previewChoice, previewView } from './subscription.preview';
+import { caracasDay, countdownTarget, subscriptionBadge, subscriptionNotice, trialBadge, trialDaysLeft, trialNotice } from './subscription.rules';
 
 /** The countdown moves in minutes: a tick every 15 s keeps it on time without waste. */
 const TICK_MS = 15_000;
 
 /**
- * The company's Suscripción (mockup web-37): its plan, what it owes and until when, from
- * GET /tenants/:id/subscription; and Vortomi's active plans. Only the company's owner and admins
- * read it. The banner, the menu count and the lock screen come from here.
+ * The company's Suscripción (mockups web-37 and web-38): its plan, what it owes and until when, or
+ * its trial while it has no plan, from GET /tenants/:id/subscription; Vortomi's active plans; and
+ * choosing its plan itself. Only the company's owner and admins read it. The banner, the menu count
+ * and the lock screen come from here.
  */
 @Injectable({ providedIn: 'root' })
 export class SubscriptionData {
@@ -31,6 +32,12 @@ export class SubscriptionData {
 
   /** null: the company has no plan yet. */
   readonly subscription = signal<SubscriptionView | null>(null);
+  /** The last day of its trial to choose a plan (only matters while it has none). */
+  readonly trialEndsOn = signal<string | null>(null);
+  /** Whether a company past its dates is really locked out (BILLING_ENFORCEMENT). */
+  readonly enforced = signal(false);
+  /** Vortomi's rate, for the bolívares; there even without a plan, for choosing one. */
+  readonly rate = signal<SubscriptionView['rate']>(null);
   readonly loaded = signal(false);
   readonly failed = signal(false);
 
@@ -38,19 +45,29 @@ export class SubscriptionData {
     const s = this.subscription();
     return s ? countdownTarget(s) : null;
   });
+  /** Without a plan, the trial's days left (0 once it is over); null with a plan or no trial. */
+  readonly trialLeft = computed(() => {
+    const endsOn = this.trialEndsOn();
+    return this.subscription() || !endsOn ? null : trialDaysLeft(endsOn, this.today());
+  });
   /** The menu's «2 d» for the company's admins. */
   readonly badge = computed(() => {
     const s = this.subscription();
-    return s ? subscriptionBadge(s, this.today()) : null;
+    if (s) return subscriptionBadge(s, this.today());
+    const endsOn = this.trialEndsOn();
+    return endsOn ? trialBadge(endsOn, this.today()) : null;
   });
   readonly notice = computed(() => {
     const s = this.subscription();
-    return s ? subscriptionNotice(s, formatUsdCents) : null;
+    if (s) return subscriptionNotice(s, formatUsdCents);
+    const endsOn = this.trialEndsOn();
+    return endsOn ? trialNotice(endsOn, this.today(), this.enforced()) : null;
   });
-  /** Suspended for not paying, and the rule enforced: everything but Suscripción is closed. */
+  /** Suspended (for not paying, or with the trial over and no plan) and the rule enforced. */
   readonly locked = computed(() => {
     const s = this.subscription();
-    return s?.state === 'suspended' && s.enforced;
+    if (s) return s.state === 'suspended' && s.enforced;
+    return this.enforced() && this.trialLeft() === 0;
   });
 
   readonly plans = signal<CompanyPlan[]>([]);
@@ -65,7 +82,7 @@ export class SubscriptionData {
       const tenantId = this.session.tenant()?.id;
       const admin = this.session.isTenantAdmin();
       untracked(() => {
-        this.subscription.set(null);
+        this.apply({ subscription: null, trialEndsOn: null, enforced: false, rate: null });
         this.loaded.set(false);
         if (tenantId && admin) void this.load();
       });
@@ -76,15 +93,13 @@ export class SubscriptionData {
     this.failed.set(false);
     try {
       if (!this.live) {
-        const state = previewState(location.search);
-        this.subscription.set(state ? previewSubscription(this.today(), state) : null);
+        this.apply(previewView(this.today(), location.search));
       } else {
         const tenantId = this.session.tenant()?.id;
         if (!tenantId) return;
-        const { subscription } = await this.api.get<{ subscription: SubscriptionView | null }>(this.api.company(tenantId, 'subscription'));
-        this.subscription.set(subscription);
-        // The lock follows the server: on while suspended, off once paid.
-        if (subscription?.state === 'suspended' && subscription.enforced) this.lock.markUnpaid(tenantId);
+        this.apply(await this.api.get<CompanySubscriptionView>(this.api.company(tenantId, 'subscription')));
+        // The lock follows the server: on while suspended, off once it chose and paid.
+        if (this.locked()) this.lock.markUnpaid(tenantId);
         else this.lock.clear(tenantId);
       }
     } catch {
@@ -92,6 +107,21 @@ export class SubscriptionData {
     } finally {
       this.loaded.set(true);
     }
+  }
+
+  /** The company chooses its plan and the months it means to pay (mockup web-38): its first charge, due today. */
+  async choose(plan: CompanyPlan, months: Period): Promise<SubscriptionView> {
+    let view: SubscriptionView;
+    if (!this.live) {
+      view = previewChoice(plan, months, this.today(), this.rate());
+    } else {
+      const tenantId = this.session.tenant()?.id;
+      if (!tenantId) throw new Error('No company in the session');
+      view = (await this.api.post<{ subscription: SubscriptionView }>(this.api.company(tenantId, 'subscription'), { planId: plan.id, months })).subscription;
+      this.lock.clear(tenantId);
+    }
+    this.subscription.set(view);
+    return view;
   }
 
   async loadPlans(): Promise<void> {
@@ -109,5 +139,12 @@ export class SubscriptionData {
     } finally {
       this.plansLoaded.set(true);
     }
+  }
+
+  private apply(view: CompanySubscriptionView): void {
+    this.subscription.set(view.subscription);
+    this.trialEndsOn.set(view.trialEndsOn);
+    this.enforced.set(view.enforced);
+    this.rate.set(view.rate);
   }
 }
