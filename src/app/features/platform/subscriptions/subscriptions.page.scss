@@ -42,6 +42,34 @@
 
 }
 
+// Cobros' sortable headers: «Pagado en total» and «Último pago», highest first.
+.sort {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  --icon-size: 13px;
+
+  app-icon {
+    opacity: 0.35;
+  }
+
+  &.on {
+    color: var(--color-primary-text);
+
+    app-icon {
+      opacity: 1;
+    }
+  }
+}
+
 .segmented {
   align-self: flex-start;
   max-width: 100%;

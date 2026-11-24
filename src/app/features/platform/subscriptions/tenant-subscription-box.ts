@@ -12,6 +12,7 @@ import { AssignPlanDialog } from './assign-plan.dialog';
 import { addDays, dayText, exemptionReasonLabel, stateLabel } from './billing.rules';
 import { ExemptCompanyDialog } from './exempt-company.dialog';
 import { PlatformSubscriptions } from './platform-subscriptions';
+import { TenantPaymentHistory } from './tenant-payment-history';
 
 /**
  * «Suscripción» on a company's page in the console (mockups web-37, web-38 and web-49): without a
@@ -21,7 +22,7 @@ import { PlatformSubscriptions } from './platform-subscriptions';
  */
 @Component({
   selector: 'app-tenant-subscription-box',
-  imports: [AssignPlanDialog, Dialog, ExemptCompanyDialog, Icon, Pill, RouterLink],
+  imports: [AssignPlanDialog, Dialog, ExemptCompanyDialog, Icon, Pill, RouterLink, TenantPaymentHistory],
   template: `
     <h2>Suscripción<span class="spacer"></span>
       @if (loaded() && !failed()) {
@@ -72,6 +73,7 @@ import { PlatformSubscriptions } from './platform-subscriptions';
         </div>
       </div>
     }
+    @if (loaded() && !failed()) { <app-tenant-payment-history class="history" [tenantId]="tenantId()" /> }
     <app-assign-plan-dialog [open]="assigning()" [tenantId]="tenantId()" [tenantName]="tenantName()" (closed)="assigning.set(false)" (assigned)="onAssigned($event)" />
     <app-exempt-company-dialog [open]="exempting()" [tenantId]="tenantId()" [tenantName]="tenantName()" [today]="today" [current]="exemption()"
       [owedCents]="subscription()?.owedCents ?? 0" (closed)="exempting.set(false)" (saved)="onExempted($event)" />
@@ -110,6 +112,7 @@ import { PlatformSubscriptions } from './platform-subscriptions';
     .steps app-icon { flex: none; margin-top: 2px; color: var(--color-success); }
     .hint { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; line-height: 1.5; color: var(--color-text-muted); --icon-size: 15px; }
     .hint app-icon { flex: none; margin-top: 2px; }
+    .history { margin-top: 14px; }
   `,
   host: { class: 'card' },
 })

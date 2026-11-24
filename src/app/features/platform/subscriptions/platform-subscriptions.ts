@@ -3,7 +3,8 @@ import { ApiClient } from '../../../core/api/api-client';
 import { API_CONFIG } from '../../../core/api/api-config';
 import { Clock } from '../../../core/clock';
 import type { Id } from '../../../shared/api/models';
-import type { BillingState, ExemptionInput, ExemptionView, SubscriptionRow, SubscriptionView } from '../../../shared/api/subscriptions';
+import type { BillingState, ExemptionInput, ExemptionView, PaymentHistory, SubscriptionRow, SubscriptionSummary, SubscriptionView, SummaryPeriod } from '../../../shared/api/subscriptions';
+import { previewHistory, previewSummary, previewTotals } from './platform-subscriptions.preview';
 import { Session } from '../../../core/session';
 import { previewSubscription } from '../../../shared/api/subscriptions.preview';
 import { PlatformData } from '../platform.data';
@@ -35,7 +36,7 @@ export class PlatformSubscriptions {
   async list(): Promise<SubscriptionRow[]> {
     if (this.live) return (await this.api.get<{ items: SubscriptionRow[] }>('platform/subscriptions')).items;
     const views = this.previewViews();
-    return this.platform
+    const rows = this.platform
       .rows()
       .filter((r) => r.tenant.status !== 'draft')
       .map(({ tenant }): SubscriptionRow => {
@@ -51,9 +52,46 @@ export class PlatformSubscriptions {
           owedCents: s?.owedCents ?? 0,
           state: exemption ? 'exempt' : (s?.state ?? 'none'),
           exemption: exemption ? { reason: exemption.reason, endsOn: exemption.endsOn } : null,
+          paidTotalCents: 0,
+          paymentsCount: 0,
+          lastPaidOn: null,
+          lastPaidCents: null,
         };
       })
       .sort((a, b) => a.tenantName.localeCompare(b.tenantName, 'es'));
+    const totals = previewTotals(this.today(), rows);
+    return rows.map((row) => {
+      const t = totals.get(row.tenantId);
+      return t ? { ...row, paidTotalCents: t.total, paymentsCount: t.count, lastPaidOn: t.last?.paidOn ?? null, lastPaidCents: t.last?.receivedCents ?? null } : row;
+    });
+  }
+
+  /** Suscripciones → Resumen (mockup web-51) for a period. */
+  async summary(period: SummaryPeriod): Promise<SubscriptionSummary> {
+    if (this.live) return this.api.get<SubscriptionSummary>(`platform/subscriptions/summary?period=${period}`);
+    return previewSummary(this.today(), period, await this.list());
+  }
+
+  /** The approved payments of the period, as a file for Excel. */
+  async incomeFile(period: SummaryPeriod): Promise<Blob> {
+    if (this.live) return this.api.blob(`platform/subscriptions/income.csv?period=${period}`);
+    return new Blob(['Fecha del pago;Empresa;Meses;Método;Referencia;Moneda;Monto;Tasa (Bs/$);Monto en dólares;Recibo\n'], { type: 'text/csv' });
+  }
+
+  /** A company's approved payments, for its page. */
+  async history(tenantId: Id): Promise<PaymentHistory> {
+    if (this.live) return this.api.get<PaymentHistory>(`platform/tenants/${encodeURIComponent(tenantId)}/subscription/history`);
+    return previewHistory(this.today(), await this.list(), tenantId);
+  }
+
+  /** Vortomi's receipt of an approved payment, a PDF. */
+  async receipt(tenantId: Id, paymentId: Id): Promise<Blob> {
+    if (!this.live) throw new Error('No receipts in the preview');
+    return this.api.blob(`platform/tenants/${encodeURIComponent(tenantId)}/subscription-payments/${encodeURIComponent(paymentId)}/receipt`);
+  }
+
+  private today(): string {
+    return caracasToday(this.clock.now());
   }
 
   /** null: the company has no plan yet. */

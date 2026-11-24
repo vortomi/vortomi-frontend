@@ -10,25 +10,28 @@ import { Skeleton } from '../../../shared/ui/skeleton';
 import { PaymentMethodList } from '../../payment-methods/payment-method-list';
 import { PAYMENT_METHODS_HOST } from '../../payment-methods/payment-methods.host';
 import { PlanList } from '../plans/plan-list';
+import { BillingSummary } from './billing-summary';
 import { PaymentReviewList } from './payment-review-list';
 import { PlatformPaymentReview } from './platform-payment-review';
 import { STATE_FILTERS, type StateFilter, billingFigures, dayText, exemptionLine, matchesFilter, sortRows, stateLabel } from './billing.rules';
 import { PlatformSubscriptions } from './platform-subscriptions';
 
-type Tab = 'charges' | 'payments' | 'plans' | 'methods';
-const TABS: Tab[] = ['charges', 'payments', 'plans', 'methods'];
+type Tab = 'summary' | 'charges' | 'payments' | 'plans' | 'methods';
+const TABS: Tab[] = ['summary', 'charges', 'payments', 'plans', 'methods'];
+type SortKey = 'state' | 'paid' | 'last';
 
 /** Caracas has no summer time: always UTC-4. */
 const caracasToday = (now: Date) => new Date(now.getTime() - 4 * 3_600_000).toISOString().slice(0, 10);
 
 /**
- * Console → Suscripciones (mockups web-32 and web-37): what each company owes and who is up to
- * date (Cobros), Vortomi's plans, and where companies pay Vortomi. The console manages; it never
+ * Console → Suscripciones (mockups web-32, web-37 and web-51): income and what is owed (Resumen),
+ * what each company owes, has paid and who is up to date (Cobros), Vortomi's plans, and where
+ * companies pay Vortomi. The console manages; it never
  * records payments (companies report theirs from their panel, stage 3). A row opens the company.
  */
 @Component({
   selector: 'app-subscriptions-page',
-  imports: [Avatar, Icon, PaymentMethodList, PaymentReviewList, Pill, PlanList, RouterLink, Skeleton],
+  imports: [Avatar, BillingSummary, Icon, PaymentMethodList, PaymentReviewList, Pill, PlanList, RouterLink, Skeleton],
   templateUrl: './subscriptions.page.html',
   styleUrls: ['../platform-pages.scss', './subscriptions.page.scss'],
 })
@@ -52,7 +55,18 @@ export class SubscriptionsPage {
   private readonly today = caracasToday(inject(Clock).now());
 
   protected readonly figures = computed(() => billingFigures(this.items()));
-  protected readonly rows = computed(() => sortRows(this.items().filter((r) => matchesFilter(r, this.filter()))));
+  /** Cobros sorts by state (the default), by the total paid or by the last payment, highest first. */
+  protected readonly sort = signal<SortKey>('state');
+  protected readonly rows = computed(() => {
+    const rows = sortRows(this.items().filter((r) => matchesFilter(r, this.filter())));
+    if (this.sort() === 'paid') return [...rows].sort((a, b) => b.paidTotalCents - a.paidTotalCents);
+    if (this.sort() === 'last') return [...rows].sort((a, b) => (b.lastPaidOn ?? '').localeCompare(a.lastPaidOn ?? ''));
+    return rows;
+  });
+
+  protected sortBy(key: SortKey): void {
+    this.sort.set(this.sort() === key ? 'state' : key);
+  }
 
   constructor() {
     void this.load();
@@ -94,11 +108,11 @@ export class SubscriptionsPage {
   /** Each tab keeps its place in the address (?tab=), without a new history step. */
   protected showTab(tab: Tab): void {
     this.tab.set(tab);
-    void this.router.navigate([], { queryParams: { tab: tab === 'charges' ? null : tab }, queryParamsHandling: 'merge', replaceUrl: true });
+    void this.router.navigate([], { queryParams: { tab: tab === 'summary' ? null : tab }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
   private tabFromUrl(): Tab {
     const tab = this.route.snapshot.queryParamMap.get('tab');
-    return TABS.find((t) => t === tab) ?? 'charges';
+    return TABS.find((t) => t === tab) ?? 'summary';
   }
 }

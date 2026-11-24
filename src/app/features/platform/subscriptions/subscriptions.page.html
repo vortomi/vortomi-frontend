@@ -11,13 +11,16 @@
 
 <div class="page-body">
   <nav class="tabs-line" role="tablist" aria-label="Secciones de suscripciones">
+    <button type="button" role="tab" [class.on]="tab() === 'summary'" [attr.aria-selected]="tab() === 'summary'" (click)="showTab('summary')">Resumen</button>
     <button type="button" role="tab" [class.on]="tab() === 'charges'" [attr.aria-selected]="tab() === 'charges'" (click)="showTab('charges')">Cobros</button>
     <button type="button" role="tab" [class.on]="tab() === 'payments'" [attr.aria-selected]="tab() === 'payments'" (click)="showTab('payments')">Pagos@if (review.pending()) { <span class="tab-count">{{ review.pending() }}</span> }</button>
     <button type="button" role="tab" [class.on]="tab() === 'plans'" [attr.aria-selected]="tab() === 'plans'" (click)="showTab('plans')">Planes</button>
     <button type="button" role="tab" [class.on]="tab() === 'methods'" [attr.aria-selected]="tab() === 'methods'" (click)="showTab('methods')">Métodos de pago</button>
   </nav>
 
-  @if (tab() === 'charges') {
+  @if (tab() === 'summary') {
+    <app-billing-summary (payments)="showTab('payments')" />
+  } @else if (tab() === 'charges') {
     @if (failed()) {
       <div class="form-alert" role="alert"><app-icon name="alert" /><span class="grow">No pudimos cargar los cobros.</span>
         <button type="button" class="btn btn--sm" (click)="load()"><span>Reintentar</span></button></div>
@@ -43,7 +46,10 @@
       <div class="card table-card">
         <table class="data-table">
           <thead>
-            <tr><th>Empresa</th><th>Día de cobro</th><th>Próximo vencimiento</th><th class="num">Debe</th><th>Estado</th></tr>
+            <tr><th>Empresa</th><th>Día de cobro</th><th>Próximo vencimiento</th><th class="num">Debe</th>
+              <th class="num"><button type="button" class="sort" [class.on]="sort() === 'paid'" [attr.aria-pressed]="sort() === 'paid'" (click)="sortBy('paid')">Pagado en total<app-icon name="down" /></button></th>
+              <th><button type="button" class="sort" [class.on]="sort() === 'last'" [attr.aria-pressed]="sort() === 'last'" (click)="sortBy('last')">Último pago<app-icon name="down" /></button></th>
+              <th>Estado</th></tr>
           </thead>
           <tbody>
             @for (row of rows(); track row.tenantId) {
@@ -63,11 +69,13 @@
                   } @else { <span class="muted">—</span> }
                 </td>
                 <td class="num">{{ row.state === 'none' || row.state === 'exempt' ? '—' : money(row.owedCents) }}</td>
+                <td class="num">{{ money(row.paidTotalCents) }}@if (row.paymentsCount) { <small class="sub">{{ row.paymentsCount }} {{ row.paymentsCount === 1 ? 'pago' : 'pagos' }}</small> }</td>
+                <td>@if (row.lastPaidOn) { {{ date(row.lastPaidOn) }}<small class="sub">{{ money(row.lastPaidCents ?? 0) }}</small> } @else { <span class="muted">—</span> }</td>
                 <td><app-pill [tone]="s.tone" [dot]="true">{{ s.text }}</app-pill>
                   @if (row.exemption; as e) { <small class="sub">{{ exemptionLine(e) }}</small> }</td>
               </tr>
             } @empty {
-              <tr><td colspan="5" class="empty-state">Ninguna empresa con este filtro.</td></tr>
+              <tr><td colspan="7" class="empty-state">Ninguna empresa con este filtro.</td></tr>
             }
           </tbody>
         </table>

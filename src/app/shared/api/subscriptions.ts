@@ -134,6 +134,64 @@ export interface SubscriptionRow {
   state: BillingState | 'none';
   /** Its exemption while it lasts. */
   exemption: { reason: ExemptionReason; endsOn: Day | null } | null;
+  /** What its approved payments add up to (what really arrived), and how many. */
+  paidTotalCents: number;
+  paymentsCount: number;
+  /** Its latest approved payment. */
+  lastPaidOn: Day | null;
+  lastPaidCents: number | null;
+}
+
+/** The period Suscripciones → Resumen looks at (mockup web-51). */
+export type SummaryPeriod = 'month' | 'year' | '12m' | 'all';
+
+/** A month («2026-11») or, for «Este mes», a day («2026-11-24»), with what came in. */
+export interface IncomeBucket {
+  key: string;
+  cents: number;
+  count: number;
+}
+
+/** An approved payment, as Resumen lists the latest. */
+export interface RecentPayment {
+  id: Id;
+  tenantId: Id;
+  tenantName: string;
+  planName: string | null;
+  months: number;
+  paidOn: Day;
+  methodName: string;
+  reference: string | null;
+  currency: PaymentCurrency;
+  /** What really arrived, in dollar cents. */
+  receivedCents: number;
+  /** The same in its own currency («92435.33»). */
+  receivedAmount: string;
+  receiptNumber: number | null;
+}
+
+/** GET /platform/subscriptions/summary: income is approved payments, on the day they were paid. */
+export interface SubscriptionSummary {
+  period: { id: SummaryPeriod; from: Day; to: Day };
+  income: { thisMonthCents: number; previousMonthCents: number; periodCents: number; periodVes: string; periodCount: number; firstPaidOn: Day | null };
+  recurringCents: number;
+  owedCents: number;
+  overdueCents: number;
+  overdueCompanies: number;
+  companies: { upToDate: number; awaitingFirst: number; overdue: number; exempt: number; trial: number; noPlan: number };
+  walletCents: number;
+  review: { count: number; cents: number };
+  buckets: IncomeBucket[];
+  byMethod: { methodName: string; currency: PaymentCurrency; cents: number; ves: string; count: number }[];
+  upcoming: { tenantId: Id; tenantName: string; dueOn: Day; cents: number }[];
+  recent: RecentPayment[];
+}
+
+/** A company's approved payments (GET /platform/tenants/:id/subscription/history). */
+export interface PaymentHistory {
+  totalCents: number;
+  count: number;
+  items: { id: Id; paidOn: Day; months: number; methodName: string; currency: PaymentCurrency; receivedCents: number; receivedAmount: string; coversTo: Day | null; receiptNumber: number | null }[];
 }
 
 /** Why Vortomi exempts a company from paying (mockup web-49). */

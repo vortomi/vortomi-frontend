@@ -45,6 +45,10 @@ describe('an exemption in the console', () => {
     owedCents: 0,
     state,
     exemption: null,
+    paidTotalCents: 0,
+    paymentsCount: 0,
+    lastPaidOn: null,
+    lastPaidCents: null,
   });
 
   it('is a teal «Exonerada», with its reason and end', () => {

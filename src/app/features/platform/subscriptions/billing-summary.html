@@ -1,0 +1,105 @@
+<div class="bar">
+  <div class="segmented" role="tablist" aria-label="Período">
+    @for (option of periods; track option.id) {
+      <button type="button" role="tab" [class.on]="period() === option.id" [attr.aria-selected]="period() === option.id" (click)="period.set(option.id)">{{ option.label }}</button>
+    }
+  </div>
+  <span class="grow"></span>
+  <button type="button" class="btn btn--sm" [disabled]="downloading()" [attr.aria-busy]="downloading()" (click)="download()">
+    <app-icon name="download" /><span>Descargar ingresos (Excel)</span>
+  </button>
+</div>
+
+@if (failed()) {
+  <div class="form-alert" role="alert"><app-icon name="alert" /><span class="grow">No pudimos cargar el resumen.</span>
+    <button type="button" class="btn btn--sm" (click)="load()"><span>Reintentar</span></button></div>
+} @else if (summary(); as s) {
+  <div class="kpis">
+    <div class="card kpi"><p>Ingresos de {{ monthName }}</p><b>{{ money(s.income.thisMonthCents) }}</b>
+      @if (change(); as c) { <small [class.up]="c.up" [class.down]="!c.up">{{ c.text }}</small> } @else { <small>Sin ingresos todavía</small> }</div>
+    <div class="card kpi"><p>{{ periodTitle() }}</p><b>{{ money(s.income.periodCents) }}</b>
+      <small>{{ s.income.periodCount }} {{ s.income.periodCount === 1 ? 'pago' : 'pagos' }}@if (s.income.periodVes !== '0.00') { · {{ bs(s.income.periodVes) }} en bolívares }</small></div>
+    <div class="card kpi"><p>Ingreso mensual recurrente</p><b>{{ money(s.recurringCents) }}</b><small>Lo que suman al mes los planes pagados hoy</small></div>
+    <div class="card kpi"><p>Por cobrar</p><b>{{ money(s.owedCents) }}</b>
+      @if (s.overdueCents) {
+        <small class="down">{{ money(s.overdueCents) }} vencidos ({{ s.overdueCompanies }} {{ s.overdueCompanies === 1 ? 'empresa' : 'empresas' }})</small>
+      } @else { <small>Nada vencido</small> }</div>
+  </div>
+
+  <div class="row">
+    <section class="card box">
+      <h3>Ingresos por {{ period() === 'month' ? 'día' : 'mes' }}<span class="note">en dólares · los bolívares a la tasa de cada pago</span></h3>
+      <app-income-chart [buckets]="s.buckets" [current]="current()" />
+    </section>
+    <section class="card box">
+      <h3>Empresas<span class="note">hoy</span></h3>
+      <ul class="states">
+        <li><span class="dot ok"></span>Al día<b>{{ s.companies.upToDate }}</b></li>
+        <li><span class="dot soon"></span>Esperando su primer pago<b>{{ s.companies.awaitingFirst }}</b></li>
+        <li><span class="dot bad"></span>En gracia o suspendidas<b>{{ s.companies.overdue }}</b></li>
+        <li><span class="dot teal"></span>Exoneradas<b>{{ s.companies.exempt }}</b></li>
+        <li><span class="dot gray"></span>En prueba gratis<b>{{ s.companies.trial }}</b></li>
+        @if (s.companies.noPlan) { <li><span class="dot gray"></span>Sin plan<b>{{ s.companies.noPlan }}</b></li> }
+      </ul>
+      <ul class="states extra">
+        <li>Saldo a favor de las empresas<b>{{ money(s.walletCents) }}</b></li>
+        <li>Pagos por revisar<b>{{ s.review.count }}@if (s.review.count) { · {{ money(s.review.cents) }} }</b></li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="row">
+    <section class="card box">
+      <h3>Últimos ingresos<button type="button" class="link" (click)="payments.emit()">Ver todos los pagos →</button></h3>
+      @if (s.recent.length) {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Fecha</th><th>Empresa</th><th>Método</th><th class="num">Monto</th><th>Recibo</th></tr></thead>
+            <tbody>
+              @for (p of s.recent; track p.id) {
+                <tr>
+                  <td class="nowrap">{{ date(p.paidOn) }}</td>
+                  <td><a class="name" [routerLink]="['/platform/tenants', p.tenantId]">{{ p.tenantName }}</a>
+                    <small>{{ p.planName ?? '—' }} · {{ p.months }} {{ p.months === 1 ? 'mes' : 'meses' }}</small></td>
+                  <td>{{ p.methodName }}@if (p.reference) { <small>Ref. {{ p.reference }}</small> }</td>
+                  <td class="num">{{ money(p.receivedCents) }}@if (p.currency === 'VES') { <small>{{ bs(p.receivedAmount) }}</small> }</td>
+                  <td class="nowrap">{{ p.receiptNumber ? receipt(p.receiptNumber) : '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="empty">Todavía no hay pagos aprobados.</p>
+      }
+    </section>
+    <section class="card box">
+      <h3>Por método<span class="note">{{ period() === 'month' ? 'este mes' : period() === 'year' ? 'este año' : period() === '12m' ? '12 meses' : 'todo' }}</span></h3>
+      @if (s.byMethod.length) {
+        <ul class="methods">
+          @for (m of s.byMethod; track m.methodName + m.currency) {
+            <li>
+              <span class="name">{{ m.methodName }}</span>
+              <span class="track"><span class="fill" [style.width.%]="width(m.cents)"></span></span>
+              <b>{{ money(m.cents) }}@if (m.currency === 'VES') { <small>{{ bs(m.ves) }}</small> }</b>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="empty">Sin ingresos en este período.</p>
+      }
+      <h3 class="sub">Vencen en los próximos 30 días</h3>
+      @if (s.upcoming.length) {
+        <ul class="states">
+          @for (u of s.upcoming; track u.tenantId) {
+            <li><a class="name" [routerLink]="['/platform/tenants', u.tenantId]">{{ date(u.dueOn) }} · {{ u.tenantName }}</a><b>{{ money(u.cents) }}</b></li>
+          }
+        </ul>
+      } @else {
+        <p class="empty">Nada vence en los próximos 30 días.</p>
+      }
+    </section>
+  </div>
+} @else {
+  <app-skeleton kind="cards" [rows]="3" />
+}
