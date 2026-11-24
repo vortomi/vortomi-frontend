@@ -1,21 +1,31 @@
-import type { CompanyPlan, Day, Period, SubscriptionPayment } from './subscription.models';
+import type { BillingState, Day, PlanDiscounts, SubscriptionView } from '../../shared/api/subscriptions';
+import type { Period } from './subscription.models';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
-/** Reminders start this many days before the plan is due (mockup web-35, step 2). */
-export const REMINDER_DAYS = 7;
-
 /** Caracas has no summer time: always UTC-4. */
 const CARACAS_OFFSET = '-04:00';
 
-/** The moment the plan is due: 11:59 p. m. of its last day, Caracas time. */
-export const dueAt = (endsOn: Day): Date => new Date(`${endsOn}T23:59:00${CARACAS_OFFSET}`);
+/** The moment a charge is due: 11:59 p. m. of its day, Caracas time. */
+export const dueAt = (day: Day): Date => new Date(`${day}T23:59:00${CARACAS_OFFSET}`);
+
+/** The moment an unpaid company is suspended: 00:00 of its day, Caracas time. */
+export const suspensionAt = (day: Day): Date => new Date(`${day}T00:00:00${CARACAS_OFFSET}`);
 
 /** «2026-12-21» for a moment, in Caracas. */
 export function caracasDay(moment: Date): Day {
   return new Date(moment.getTime() - 4 * HOUR).toISOString().slice(0, 10);
+}
+
+export const addDays = (day: Day, days: number): Day => new Date(Date.parse(`${day}T00:00:00Z`) + days * DAY).toISOString().slice(0, 10);
+
+/** «3 dic», or «3 dic 2026» with the year. */
+export function dayText(day: Day, year = false): string {
+  return new Intl.DateTimeFormat('es-VE', { day: 'numeric', month: 'short', ...(year ? { year: 'numeric' } : {}), timeZone: 'UTC' })
+    .format(new Date(`${day}T12:00:00Z`))
+    .replace('.', '');
 }
 
 export interface Countdown {
@@ -26,8 +36,8 @@ export interface Countdown {
   past: boolean;
 }
 
-export function countdown(now: Date, due: Date): Countdown {
-  const diff = due.getTime() - now.getTime();
+export function countdown(now: Date, target: Date): Countdown {
+  const diff = target.getTime() - now.getTime();
   const left = Math.abs(diff);
   return {
     days: Math.floor(left / DAY),
@@ -37,42 +47,80 @@ export function countdown(now: Date, due: Date): Countdown {
   };
 }
 
-export type ReminderLevel = 'ok' | 'soon' | 'overdue';
-
-export interface Reminder {
-  level: ReminderLevel;
-  /** Whole days left (soon) or since it was due (overdue). */
-  days: number;
+/** What the countdown aims at: the suspension while something is overdue or unpaid, else the next due day. */
+export function countdownTarget(s: Pick<SubscriptionView, 'state' | 'nextDueOn' | 'suspendsOn'>): { at: Date; suspension: boolean } {
+  const suspension = s.state === 'awaiting_first_payment' || s.state === 'grace' || s.state === 'suspended';
+  return suspension ? { at: suspensionAt(s.suspendsOn), suspension } : { at: dueAt(s.nextDueOn), suspension };
 }
 
-/** Up to date, due within REMINDER_DAYS, or overdue. */
-export function reminderOf(now: Date, due: Date): Reminder {
-  const diff = due.getTime() - now.getTime();
-  if (diff < 0) return { level: 'overdue', days: Math.floor(-diff / DAY) };
-  const days = Math.floor(diff / DAY);
-  return { level: days < REMINDER_DAYS ? 'soon' : 'ok', days };
+export type Tone = 'ok' | 'soon' | 'overdue';
+
+/** The colour of each state: amber while there is still time, red once it is overdue. */
+export const STATE_TONE: Record<BillingState, Tone> = {
+  awaiting_first_payment: 'soon',
+  active: 'ok',
+  due_soon: 'soon',
+  grace: 'overdue',
+  suspended: 'overdue',
+};
+
+export const STATE_TEXT: Record<BillingState, string> = {
+  awaiting_first_payment: 'Esperando tu primer pago',
+  active: 'Al día',
+  due_soon: 'Por vencer',
+  grace: 'Vencido',
+  suspended: 'Suspendida',
+};
+
+/** The last day to pay without being suspended. */
+export const lastPayDay = (s: Pick<SubscriptionView, 'suspendsOn'>): Day => addDays(s.suspendsOn, -1);
+
+/** Whole days from today to a day (0 today, negative once passed). */
+const daysUntil = (today: Day, day: Day): number => Math.round((Date.parse(`${day}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / DAY);
+
+/** The menu's short count: «2 d», «Hoy», «!»; nothing while the company is up to date. */
+export function subscriptionBadge(s: SubscriptionView, today: Day): string | null {
+  if (s.state === 'active') return null;
+  if (s.state === 'grace' || s.state === 'suspended') return '!';
+  const days = daysUntil(today, s.state === 'awaiting_first_payment' ? lastPayDay(s) : s.nextDueOn);
+  return days <= 0 ? 'Hoy' : `${days} d`;
 }
 
-/** «Vence en 6 días», «Vence hoy», «Venció hace 2 días». */
-export function reminderText(reminder: Reminder): string {
-  if (reminder.level === 'overdue') return reminder.days === 0 ? 'Venció hoy' : `Venció hace ${plural(reminder.days, 'día')}`;
-  return reminder.days === 0 ? 'Vence hoy' : `Vence en ${plural(reminder.days, 'día')}`;
+export interface Notice {
+  tone: Exclude<Tone, 'ok'>;
+  title: string;
+  detail: string;
+  /** A company locked out cannot hide it: it is the way out. */
+  dismissable: boolean;
 }
 
-/** The menu's short count: «6 d», «Hoy», «!». */
-export function reminderBadge(reminder: Reminder): string | null {
-  if (reminder.level === 'ok') return null;
-  if (reminder.level === 'overdue') return '!';
-  return reminder.days === 0 ? 'Hoy' : `${reminder.days} d`;
-}
-
-const toUtc = (day: Day): number => Date.parse(`${day}T00:00:00Z`);
-
-/** How much of the period paid already went by. */
-export function periodProgress(startsOn: Day, endsOn: Day, today: Day): { elapsed: number; total: number; percent: number } {
-  const total = Math.max(1, Math.round((toUtc(endsOn) - toUtc(startsOn)) / DAY));
-  const elapsed = Math.min(total, Math.max(0, Math.round((toUtc(today) - toUtc(startsOn)) / DAY)));
-  return { elapsed, total, percent: Math.round((elapsed / total) * 100) };
+/** The banner above every panel screen (mockup web-37, frames 5 and 6); null while up to date. */
+export function subscriptionNotice(s: SubscriptionView, money: (cents: number) => string): Notice | null {
+  const owed = money(s.owedCents);
+  switch (s.state) {
+    case 'active':
+      return null;
+    case 'awaiting_first_payment':
+      return {
+        tone: 'soon',
+        title: `Haz tu primer pago antes del ${dayText(lastPayDay(s))}.`,
+        detail: `Si no, el ${dayText(s.suspendsOn)} tu cuenta se suspende.`,
+        dismissable: true,
+      };
+    case 'due_soon':
+      return { tone: 'soon', title: `Tu plan ${s.plan.name} vence el ${dayText(s.nextDueOn)}.`, detail: 'Paga a tiempo para que el bot siga respondiendo.', dismissable: true };
+    case 'grace':
+      return {
+        tone: 'overdue',
+        title: `Tu plan venció el ${dayText(s.nextDueOn)}. Debes ${owed}.`,
+        detail: `Paga antes del ${dayText(s.suspendsOn)} o tu cuenta se suspende.`,
+        dismissable: true,
+      };
+    case 'suspended':
+      return s.enforced
+        ? { tone: 'overdue', title: 'Tu cuenta está suspendida por falta de pago.', detail: `Debes ${owed}.`, dismissable: false }
+        : { tone: 'overdue', title: `Tu pago está vencido desde el ${dayText(s.nextDueOn)}.`, detail: `Debes ${owed}.`, dismissable: true };
+  }
 }
 
 export interface PeriodPrice {
@@ -83,66 +131,54 @@ export interface PeriodPrice {
   savedCents: number;
 }
 
-/** A plan paid for `months`: its discount applies to the base price of every month. */
-export function priceFor(plan: Pick<CompanyPlan, 'priceCents' | 'discounts'>, months: Period): PeriodPrice {
-  const discountPercent = plan.discounts[String(months) as keyof CompanyPlan['discounts']] ?? 0;
-  const fullCents = plan.priceCents * months;
+/** A price paid for `months`: its discount applies to the base price of every month. */
+export function priceFor(price: { priceCents: number; discounts: PlanDiscounts }, months: Period): PeriodPrice {
+  const discountPercent = price.discounts[String(months) as keyof PlanDiscounts] ?? 0;
+  const fullCents = price.priceCents * months;
   const totalCents = Math.round((fullCents * (100 - discountPercent)) / 100);
   return { discountPercent, totalCents, monthlyCents: Math.round(totalCents / months), savedCents: fullCents - totalCents };
 }
 
-export interface YearTotals {
-  paidCents: number;
-  payments: number;
-  savedCents: number;
+/**
+ * What the company pays now for `months`: the charge's own price and discounts (fixed when it was
+ * made), less what it already paid of it. Without a charge (nothing owed), the plan's price today.
+ */
+export function amountToPay(s: Pick<SubscriptionView, 'plan' | 'charge'>, months: Period): PeriodPrice & { dueCents: number } {
+  const source = s.charge ? { priceCents: s.charge.basePriceCents, discounts: s.charge.discounts } : s.plan;
+  const price = priceFor(source, months);
+  return { ...price, dueCents: Math.max(0, price.totalCents - (s.charge?.paidCents ?? 0)) };
 }
 
-/** What the approved payments of `year` add up to, and what their discounts saved. */
-export function yearTotals(payments: SubscriptionPayment[], year: string): YearTotals {
-  const approved = payments.filter((p) => p.status === 'approved' && p.paidOn.startsWith(year));
-  return {
-    paidCents: approved.reduce((sum, p) => sum + p.amountCents, 0),
-    payments: approved.length,
-    savedCents: approved.reduce((sum, p) => sum + savedBy(p), 0),
-  };
+/** Dollars in bolívares at Vortomi's rate, rounded to the céntimo. */
+export function inBolivares(cents: number, bsPerUsd: string): number {
+  return Math.round((cents / 100) * Number(bsPerUsd) * 100) / 100;
 }
 
-/** What a payment saved: the full price it would have been without its discount. */
-export function savedBy(payment: SubscriptionPayment): number {
-  if (!payment.discountPercent) return 0;
-  return Math.round((payment.amountCents * 100) / (100 - payment.discountPercent)) - payment.amountCents;
+export interface SubscriptionEvent {
+  on: Day;
+  kind: 'assigned' | 'due' | 'suspension';
+  title: string;
+  detail: string;
 }
 
-export interface TimelineBar {
-  label: string;
-  plan: string;
-  /** Percent from the left and width, within the months shown. */
-  left: number;
-  width: number;
-  current: boolean;
-}
+/** On the same day, what comes later in the story goes first. */
+const EVENT_ORDER: Record<SubscriptionEvent['kind'], number> = { suspension: 0, due: 1, assigned: 2 };
 
-/** The months the timeline shows («may» … «dic») and where each paid period sits in them. */
-export function timeline(payments: SubscriptionPayment[], until: Day, today: Day): { months: string[]; bars: TimelineBar[]; todayAt: number } {
-  const first = payments.length ? payments[payments.length - 1]!.from : today;
-  const start = `${first.slice(0, 7)}-01`;
-  const endMonth = new Date(`${until.slice(0, 7)}-01T00:00:00Z`);
-  endMonth.setUTCMonth(endMonth.getUTCMonth() + 1);
-  const end = endMonth.toISOString().slice(0, 10);
-  const span = toUtc(end) - toUtc(start);
-  const at = (day: Day) => Math.min(100, Math.max(0, ((toUtc(day) - toUtc(start)) / span) * 100));
-  const months: string[] = [];
-  for (const cursor = new Date(`${start}T00:00:00Z`); cursor.toISOString().slice(0, 10) < end; cursor.setUTCMonth(cursor.getUTCMonth() + 1)) {
-    months.push(new Intl.DateTimeFormat('es-VE', { month: 'short', timeZone: 'UTC' }).format(cursor).replace('.', ''));
+/** «Tu suscripción en el tiempo», from its real dates: newest first. */
+export function subscriptionEvents(s: SubscriptionView, money: (cents: number) => string): SubscriptionEvent[] {
+  const events: SubscriptionEvent[] = [
+    { on: caracasDay(new Date(s.assignedAt)), kind: 'assigned', title: `Plan ${s.plan.name} asignado`, detail: `${money(s.plan.priceCents)} al mes` },
+  ];
+  if (s.owedCents > 0) {
+    events.push({
+      on: s.nextDueOn,
+      kind: 'due',
+      title: s.billingDay === null ? 'Tu primer pago' : 'Tu próximo pago',
+      detail: `${money(s.owedCents)} · elige 1, 3, 6 o 12 meses al pagar`,
+    });
+    events.push({ on: s.suspendsOn, kind: 'suspension', title: 'Se suspende si no pagas', detail: 'A las 12:00 a. m. Tus mensajes se guardan; el bot deja de responder.' });
+  } else {
+    events.push({ on: s.nextDueOn, kind: 'due', title: 'Tu próximo pago', detail: `Desde ${money(s.plan.priceCents)} al mes` });
   }
-  const bars = [...payments].reverse().map((p) => ({
-    label: `${p.planName}${p.months > 1 ? ` · ${p.months} meses` : ''}`,
-    plan: p.planName,
-    left: at(p.from),
-    width: Math.max(2, at(p.to) - at(p.from)),
-    current: p.from <= today && today < p.to,
-  }));
-  return { months, bars, todayAt: at(today) };
+  return events.sort((a, b) => b.on.localeCompare(a.on) || EVENT_ORDER[a.kind] - EVENT_ORDER[b.kind]);
 }
-
-const plural = (n: number, word: string): string => `${n} ${n === 1 ? word : `${word}s`}`;

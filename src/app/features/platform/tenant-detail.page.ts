@@ -26,6 +26,7 @@ import { percentChange, timeAgo } from './tenant-list.rules';
 import { Clock } from '../../core/clock';
 import type { ApiChannelApps } from '../../shared/api/contract';
 import { appsCheckedText, sortedApps } from './channel-apps.rules';
+import { TenantSubscriptionBox } from './subscriptions/tenant-subscription-box';
 
 const TZ = 'America/Caracas';
 
@@ -42,7 +43,7 @@ const SETUP_TEXT: Record<SetupStep, { title: string; detail?: (count: number) =>
 /** One company seen from the console: data, numbers, team, usage and audit. No conversations. */
 @Component({
   selector: 'app-tenant-detail-page',
-  imports: [RouterLink, Avatar, Icon, Pill, ResetLinkDialog, RowMenu, Skeleton, InvitationLinkDialog, TenantEditDialog, ChangeNumberDialog, ActivityChart],
+  imports: [RouterLink, Avatar, Icon, Pill, ResetLinkDialog, RowMenu, Skeleton, InvitationLinkDialog, TenantEditDialog, ChangeNumberDialog, ActivityChart, TenantSubscriptionBox],
   templateUrl: './tenant-detail.page.html',
   styleUrl: './tenant-detail.page.scss',
 })

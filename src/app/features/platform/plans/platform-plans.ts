@@ -26,6 +26,16 @@ const PREVIEW_PLANS: Plan[] = [
     isActive: true,
     companies: 0,
   },
+  {
+    id: 'plan-pro',
+    name: 'Profesional',
+    description: 'Para empresas con varias sucursales y mucho movimiento.',
+    priceCents: 14900,
+    discounts: { '1': 0, '3': 5, '6': 10, '12': 20 },
+    benefits: ['Números sin límite', 'Agente de ventas con IA', 'Soporte prioritario'],
+    isActive: true,
+    companies: 0,
+  },
 ];
 
 /**

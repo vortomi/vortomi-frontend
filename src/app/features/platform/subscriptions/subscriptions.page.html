@@ -10,13 +10,6 @@
 </header>
 
 <div class="page-body">
-  @if (store.isSample && tab() === 'charges') {
-    <div class="form-alert warn sample" role="note">
-      <app-icon name="info" />
-      <span><b>Datos de ejemplo.</b> Todavía no hay cobros reales: las empresas, los precios y los pagos de Cobros son de muestra. Lo que hagas aquí se borra al recargar la página. Los planes y los métodos de pago sí son reales.</span>
-    </div>
-  }
-
   <nav class="tabs-line" role="tablist" aria-label="Secciones de suscripciones">
     <button type="button" role="tab" [class.on]="tab() === 'charges'" [attr.aria-selected]="tab() === 'charges'" (click)="showTab('charges')">Cobros</button>
     <button type="button" role="tab" [class.on]="tab() === 'plans'" [attr.aria-selected]="tab() === 'plans'" (click)="showTab('plans')">Planes</button>
@@ -24,48 +17,60 @@
   </nav>
 
   @if (tab() === 'charges') {
-    @let f = figures();
-    <div class="kpis">
-      <div class="card kpi"><span class="ic blue"><app-icon name="dollar" /></span><div><p>Cobro mensual</p><b>{{ money(f.monthlyCents) }}</b><small>{{ f.paying }} {{ f.paying === 1 ? 'empresa paga' : 'empresas pagan' }}</small></div></div>
-      <div class="card kpi"><span class="ic green"><app-icon name="check" /></span><div><p>Cobrado este mes</p><b>{{ money(f.collectedCents) }}</b><small>{{ f.collectedFrom }} {{ f.collectedFrom === 1 ? 'empresa' : 'empresas' }}</small></div></div>
-      <div class="card kpi"><span class="ic amber"><app-icon name="clock" /></span><div><p>Por cobrar</p><b [class.bad]="f.overdue > 0">{{ money(f.owedCents) }}</b><small>{{ f.overdue ? f.overdue + (f.overdue === 1 ? ' atrasada' : ' atrasadas') : 'Ninguna atrasada' }}</small></div></div>
-      <div class="card kpi"><span class="ic violet"><app-icon name="sparkles" /></span><div><p>En prueba gratis</p><b>{{ f.trials }}</b><small>{{ f.firstTrialEndsIn === null ? 'Ninguna' : f.firstTrialEndsIn === 0 ? 'Una termina hoy' : 'La primera termina en ' + f.firstTrialEndsIn + (f.firstTrialEndsIn === 1 ? ' día' : ' días') }}</small></div></div>
-    </div>
+    @if (failed()) {
+      <div class="form-alert" role="alert"><app-icon name="alert" /><span class="grow">No pudimos cargar los cobros.</span>
+        <button type="button" class="btn btn--sm" (click)="load()"><span>Reintentar</span></button></div>
+    } @else if (!loaded()) {
+      <app-skeleton kind="table" [rows]="4" />
+    } @else {
+      @let f = figures();
+      <div class="kpis">
+        <div class="card kpi"><span class="ic blue"><app-icon name="dollar" /></span><div><p>Por cobrar</p><b>{{ money(f.owedCents) }}</b></div></div>
+        <div class="card kpi"><span class="ic amber"><app-icon name="clock" /></span><div><p>Esperando primer pago</p><b>{{ f.awaiting }}</b></div></div>
+        <div class="card kpi"><span class="ic red"><app-icon name="alert" /></span><div><p>En gracia</p><b [class.bad]="f.grace > 0">{{ f.grace }}</b></div></div>
+        <div class="card kpi"><span class="ic violet"><app-icon name="lock" /></span><div><p>Suspendidas</p><b [class.bad]="f.suspended > 0">{{ f.suspended }}</b></div></div>
+      </div>
 
-    <div class="segmented" role="tablist" aria-label="Filtrar por estado">
-      @for (option of filters; track option.id) {
-        <button type="button" role="tab" [class.on]="filter() === option.id" [attr.aria-selected]="filter() === option.id" (click)="filter.set(option.id)">
-          {{ option.label }} · {{ count(option.id) }}
-        </button>
-      }
-    </div>
+      <div class="segmented" role="tablist" aria-label="Filtrar por estado">
+        @for (option of filters; track option.id) {
+          <button type="button" role="tab" [class.on]="filter() === option.id" [attr.aria-selected]="filter() === option.id" (click)="filter.set(option.id)">
+            {{ option.label }}@if (option.id === 'all') { · {{ count('all') }} }
+          </button>
+        }
+      </div>
 
-    <div class="card table-card">
-      <table class="data-table">
-        <thead>
-          <tr><th>Empresa</th><th>Plan</th><th class="num">Cuota</th><th>Próximo cobro</th><th>Estado</th></tr>
-        </thead>
-        <tbody>
-          @for (sub of rows(); track sub.id) {
-            @let s = status(sub);
-            <tr class="clickable" tabindex="0" (click)="open(sub)" (keydown.enter)="open(sub)">
-              <td>
-                <div class="company">
-                  <app-avatar class="logo" [name]="sub.companyName" [seed]="sub.id" />
-                  <div><p>{{ sub.companyName }}</p><span>{{ sub.companyLine }}</span></div>
-                </div>
-              </td>
-              <td>{{ planText[sub.plan].text }}</td>
-              <td class="num">{{ fee(sub) }}</td>
-              <td class="muted">{{ nextCharge(sub) }}</td>
-              <td><app-pill [tone]="s.tone" [dot]="true">{{ s.text }}</app-pill></td>
-            </tr>
-          } @empty {
-            <tr><td colspan="5" class="empty-state">Ninguna empresa con este filtro.</td></tr>
-          }
-        </tbody>
-      </table>
-    </div>
+      <div class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr><th>Empresa</th><th>Día de cobro</th><th>Próximo vencimiento</th><th class="num">Debe</th><th>Estado</th></tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.tenantId) {
+              @let s = state(row);
+              <tr class="clickable" tabindex="0" (click)="open(row)" (keydown.enter)="open(row)">
+                <td>
+                  <div class="company">
+                    <app-avatar class="logo" [name]="row.tenantName" [seed]="row.tenantId" />
+                    <div><p>{{ row.tenantName }}</p><span>{{ row.planName ?? '—' }}</span></div>
+                  </div>
+                </td>
+                <td class="muted">{{ row.billingDay ? 'Los ' + row.billingDay : '—' }}</td>
+                <td>
+                  @if (row.nextDueOn) {
+                    {{ row.billingDay ? date(row.nextDueOn) : 'Primer pago' }}
+                    @if (row.owedCents > 0 && row.suspendsOn) { <small class="sub">se suspende el {{ date(row.suspendsOn) }}</small> }
+                  } @else { <span class="muted">—</span> }
+                </td>
+                <td class="num">{{ row.state === 'none' ? '—' : money(row.owedCents) }}</td>
+                <td><app-pill [tone]="s.tone" [dot]="true">{{ s.text }}</app-pill></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="empty-state">Ninguna empresa con este filtro.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
   } @else if (tab() === 'plans') {
     <app-plan-list />
   } @else {

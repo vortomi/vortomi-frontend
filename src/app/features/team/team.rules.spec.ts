@@ -13,7 +13,7 @@ const m = (userId: string, role: Membership['role'], status: Membership['status'
 const team = [m('usr_admin', 'admin'), m('usr_agent', 'agent'), m('usr_new', 'agent', 'invited')];
 
 describe('team rules', () => {
-  it('counts pending invitations as used seats', () => {
+  it('counts pending invitations as people on the team', () => {
     expect(seatsUsed(team)).toBe(3);
   });
 
@@ -27,9 +27,8 @@ describe('team rules', () => {
     expect(memberChangeError(team, 'usr_agent', { kind: 'remove' }, 'usr_agent')).toContain('ti mismo');
   });
 
-  it('blocks invitations beyond the plan or for people already in the team', () => {
-    expect(inviteError(team, 'basic', null)).toContain('plan');
-    expect(inviteError(team, 'team', 'usr_agent')).toContain('ya está');
-    expect(inviteError(team, 'team', null)).toBeNull();
+  it('blocks invitations for people already in the team (no plan limits the team)', () => {
+    expect(inviteError(team, 'usr_agent')).toContain('ya está');
+    expect(inviteError(team, null)).toBeNull();
   });
 });

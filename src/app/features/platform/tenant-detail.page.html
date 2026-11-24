@@ -182,6 +182,9 @@
       </div>
 
       <div class="col">
+        @if (r.tenant.status !== 'draft') {
+          <app-tenant-subscription-box [tenantId]="r.tenant.id" [tenantName]="r.tenant.name" />
+        }
         <section class="card box">
           <h2>Contacto principal</h2>
           @if (owner(); as o) {

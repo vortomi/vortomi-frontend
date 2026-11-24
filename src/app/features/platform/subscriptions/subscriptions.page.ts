@@ -1,89 +1,89 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { TENANT_PLAN } from '../../../shared/api/labels';
-import { formatShortDate } from '../../../shared/format/date-time';
+import { Clock } from '../../../core/clock';
+import type { SubscriptionRow } from '../../../shared/api/subscriptions';
 import { formatUsdCents } from '../../../shared/format/money';
 import { Avatar } from '../../../shared/ui/avatar';
 import { Icon } from '../../../shared/ui/icon';
 import { Pill } from '../../../shared/ui/pill';
+import { Skeleton } from '../../../shared/ui/skeleton';
 import { PaymentMethodList } from '../../payment-methods/payment-method-list';
 import { PAYMENT_METHODS_HOST } from '../../payment-methods/payment-methods.host';
 import { PlanList } from '../plans/plan-list';
-import type { Subscription } from './subscription.models';
-import { type StatusFilter, billingFigures, billingStatus, matchesFilter, statusLabel } from './subscription.rules';
-import { SubscriptionsStore } from './subscriptions.store';
+import { STATE_FILTERS, type StateFilter, billingFigures, dayText, matchesFilter, sortRows, stateLabel } from './billing.rules';
+import { PlatformSubscriptions } from './platform-subscriptions';
 
 type Tab = 'charges' | 'plans' | 'methods';
 const TABS: Tab[] = ['charges', 'plans', 'methods'];
 
+/** Caracas has no summer time: always UTC-4. */
+const caracasToday = (now: Date) => new Date(now.getTime() - 4 * 3_600_000).toISOString().slice(0, 10);
+
 /**
- * Console → Suscripciones (mockup web-32, option A: a fixed fee per plan). What each company pays
- * and who is up to date, the plans, and where companies pay Vortomi. The console manages; it never
- * records payments (companies report theirs from their panel, later). Charges are sample data until
- * billing exists; the plans (PlanList) and the payment methods (PaymentMethodList) are real.
+ * Console → Suscripciones (mockups web-32 and web-37): what each company owes and who is up to
+ * date (Cobros), Vortomi's plans, and where companies pay Vortomi. The console manages; it never
+ * records payments (companies report theirs from their panel, stage 3). A row opens the company.
  */
 @Component({
   selector: 'app-subscriptions-page',
-  imports: [Avatar, Icon, PaymentMethodList, Pill, PlanList, RouterLink],
+  imports: [Avatar, Icon, PaymentMethodList, Pill, PlanList, RouterLink, Skeleton],
   templateUrl: './subscriptions.page.html',
   styleUrls: ['../platform-pages.scss', './subscriptions.page.scss'],
 })
 export class SubscriptionsPage {
-  protected readonly store = inject(SubscriptionsStore);
+  private readonly subscriptions = inject(PlatformSubscriptions);
   protected readonly methodsHost = inject(PAYMENT_METHODS_HOST);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
   /** From ?tab=, so coming back from the payment method editor lands on its tab. */
   protected readonly tab = signal<Tab>(this.tabFromUrl());
-  protected readonly filter = signal<StatusFilter>('all');
-  protected readonly planText = TENANT_PLAN;
+  protected readonly filter = signal<StateFilter>('all');
+  protected readonly filters = STATE_FILTERS;
 
-  protected readonly filters: { id: StatusFilter; label: string }[] = [
-    { id: 'all', label: 'Todas' },
-    { id: 'paid', label: 'Al día' },
-    { id: 'due_soon', label: 'Por vencer' },
-    { id: 'overdue', label: 'Atrasadas' },
-    { id: 'trial', label: 'En prueba' },
-  ];
+  protected readonly items = signal<SubscriptionRow[]>([]);
+  protected readonly loaded = signal(false);
+  protected readonly failed = signal(false);
 
   /** Read once: the page is not left open across midnight for anything that matters here. */
-  private readonly today = signal(this.store.today());
+  private readonly today = caracasToday(inject(Clock).now());
 
-  protected readonly figures = computed(() => billingFigures(this.store.subscriptions(), this.store.plans(), this.today()));
+  protected readonly figures = computed(() => billingFigures(this.items()));
+  protected readonly rows = computed(() => sortRows(this.items().filter((r) => matchesFilter(r, this.filter()))));
 
-  /** Overdue first, then the ones due soonest; the internal company last. */
-  protected readonly rows = computed(() =>
-    this.store
-      .subscriptions()
-      .filter((sub) => matchesFilter(billingStatus(sub, this.today()), this.filter()))
-      .sort((a, b) => rank(a) - rank(b) || a.nextChargeOn.localeCompare(b.nextChargeOn)),
-  );
-
-  protected count(filter: StatusFilter): number {
-    return this.store.subscriptions().filter((sub) => matchesFilter(billingStatus(sub, this.today()), filter)).length;
+  constructor() {
+    void this.load();
   }
 
-  protected status(sub: Subscription) {
-    return statusLabel(sub, this.today());
+  protected async load(): Promise<void> {
+    this.failed.set(false);
+    try {
+      this.items.set(await this.subscriptions.list());
+    } catch {
+      this.failed.set(true);
+    } finally {
+      this.loaded.set(true);
+    }
   }
 
-  protected fee(sub: Subscription): string {
-    return sub.plan === 'internal' ? '—' : formatUsdCents(this.store.terms(sub.plan).priceCents);
+  protected count(filter: StateFilter): number {
+    return this.items().filter((r) => matchesFilter(r, filter)).length;
   }
 
-  /** The trial's end is its first charge; the internal company has none. */
-  protected nextCharge(sub: Subscription): string {
-    if (sub.plan === 'internal') return '—';
-    return formatShortDate(`${sub.nextChargeOn}T12:00:00Z`, 'UTC');
+  protected state(row: SubscriptionRow) {
+    return stateLabel(row, this.today);
+  }
+
+  protected date(day: string): string {
+    return dayText(day);
   }
 
   protected money(cents: number): string {
     return formatUsdCents(cents);
   }
 
-  protected open(sub: Subscription): void {
-    void this.router.navigate(['/platform/subscriptions', sub.id]);
+  protected open(row: SubscriptionRow): void {
+    void this.router.navigate(['/platform/tenants', row.tenantId]);
   }
 
   /** Each tab keeps its place in the address (?tab=), without a new history step. */
@@ -96,9 +96,4 @@ export class SubscriptionsPage {
     const tab = this.route.snapshot.queryParamMap.get('tab');
     return TABS.find((t) => t === tab) ?? 'charges';
   }
-}
-
-function rank(sub: Subscription): number {
-  if (sub.plan === 'internal') return 3;
-  return sub.trialEndsOn ? 2 : 1;
 }

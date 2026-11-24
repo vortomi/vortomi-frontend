@@ -1,9 +1,9 @@
 <div class="sec-title">
   <h2>Equipo</h2>
-  <span class="muted sm">{{ seats().used }} de {{ seats().total }} usuarios del plan</span>
+  <span class="muted sm">{{ people() }} {{ people() === 1 ? 'persona' : 'personas' }}</span>
   <span class="spacer"></span>
   @if (session.isTenantAdmin()) {
-    <button type="button" class="btn btn--primary" [disabled]="seats().used >= seats().total" (click)="inviting.set(true)">
+    <button type="button" class="btn btn--primary" (click)="inviting.set(true)">
       <app-icon name="plus" /><span>Invitar persona</span>
     </button>
   }

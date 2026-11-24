@@ -1,5 +1,8 @@
 import { Component, computed, effect, inject, untracked } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map } from 'rxjs';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { CompanyLock } from '../core/company-lock';
 import { Session } from '../core/session';
 import { Workspace } from '../core/workspace';
 import { InboxData } from '../features/inbox/inbox.data';
@@ -8,6 +11,7 @@ import { OrdersQueue } from '../features/orders/orders-queue';
 import { SetupData } from '../features/setup/setup.data';
 import { SubscriptionBanner } from '../features/subscription/subscription-banner';
 import { SubscriptionData } from '../features/subscription/subscription.data';
+import { SubscriptionLock } from '../features/subscription/subscription-lock';
 import { Icon } from '../shared/ui/icon';
 import { type NavBadge, type NavItem, TENANT_NAV, WARNING_BADGES } from './nav';
 import { ChannelBanner } from './channel-banner';
@@ -21,7 +25,7 @@ import { BrandMark } from '../shared/ui/brand-mark';
 /** Frame of the company panel (app.<domain>): sidebar on desktop, bottom bar on phones. */
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, ChannelBanner, SubscriptionBanner, TenantSwitcher, UsageMeter, UserMenu, ThemeToggle, BrandMark],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, ChannelBanner, SubscriptionBanner, SubscriptionLock, TenantSwitcher, UsageMeter, UserMenu, ThemeToggle, BrandMark],
   templateUrl: './app-layout.html',
   styleUrl: './app-layout.scss',
 })
@@ -35,6 +39,23 @@ export class AppLayout {
   private readonly setup = inject(SetupData);
   private readonly subscription = inject(SubscriptionData);
   private readonly router = inject(Router);
+  private readonly lock = inject(CompanyLock);
+
+  private readonly url = toSignal(
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map((e) => e.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
+  protected readonly admin = this.session.isTenantAdmin;
+  /** Suspended for not paying (documentations/18): every entry but Suscripción shows a lock. */
+  protected readonly locked = computed(() => {
+    const tenantId = this.session.tenant()?.id;
+    return this.subscription.locked() || (!!tenantId && this.lock.isUnpaid(tenantId));
+  });
+  /** Suscripción stays open: it is where the company pays. */
+  protected readonly lockedHere = computed(() => this.locked() && !this.isOpenWhileLocked(this.url()));
 
   constructor() {
     // A company's admin who never did nor skipped the welcome gets it before the panel.
@@ -59,6 +80,10 @@ export class AppLayout {
     outOfStock: this.inventory.items().filter((i) => i.status === 'out').length,
     subscription: this.subscription.badge(),
   }));
+
+  protected isOpenWhileLocked(path: string): boolean {
+    return path === '/subscription' || path.startsWith('/subscription?') || path.startsWith('/subscription/');
+  }
 
   protected warns(kind: NavBadge | undefined): boolean {
     return !!kind && WARNING_BADGES.includes(kind);

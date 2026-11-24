@@ -19,7 +19,6 @@ import { MemberAccessDialog } from './member-access.dialog';
 import { TeamAccess, resetBlockText, teamEventLine } from './team-access';
 import type { MemberAccess } from './team-remote';
 import { type PendingInvitation, TeamActions, type TeamMemberRow } from './team.actions';
-import { PLAN_SEATS } from './team.rules';
 
 /**
  * «Equipo» of Canales y equipo (mockups web-6 and web-30): who works in the company, their role and
@@ -48,7 +47,7 @@ export class TeamSection {
   protected readonly loaded = signal(false);
 
   protected readonly admin = computed(() => this.session.isTenantAdmin());
-  protected readonly seats = computed(() => ({ used: this.team.seatsUsed(), total: PLAN_SEATS[this.session.tenant()?.plan ?? 'basic'] }));
+  protected readonly people = this.team.seatsUsed;
   protected readonly active = computed(() => this.team.members().filter((m) => m.membership.status === 'active'));
   protected readonly disabled = computed(() => this.team.members().filter((m) => m.membership.status === 'disabled'));
   protected readonly history = computed(() => this.access.access()?.history ?? []);

@@ -1,9 +1,8 @@
-// Pure team rules: seats per plan and changes that would lock a company out of itself.
-import type { Id, Membership, TenantPlan } from '../../shared/api/models';
+// Pure team rules: who is on the team and changes that would lock a company out of itself. No plan
+// limits the number of people (documentations/18): a limit may come back later with a plan.
+import type { Id, Membership } from '../../shared/api/models';
 
-/** People per plan (labels.ts shows the same numbers). Pending invitations take a seat. */
-export const PLAN_SEATS: Record<TenantPlan, number> = { internal: 10, basic: 2, team: 5 };
-
+/** People on the team, pending invitations included. */
 export function seatsUsed(memberships: Membership[]): number {
   return memberships.filter((m) => m.status === 'active' || m.status === 'invited').length;
 }
@@ -23,8 +22,7 @@ export function memberChangeError(memberships: Membership[], target: Id, change:
   return null;
 }
 
-export function inviteError(memberships: Membership[], plan: TenantPlan, emailOwnerId: Id | null): string | null {
+export function inviteError(memberships: Membership[], emailOwnerId: Id | null): string | null {
   if (emailOwnerId && memberships.some((m) => m.userId === emailOwnerId)) return 'Esa persona ya está en el equipo o tiene una invitación pendiente.';
-  if (seatsUsed(memberships) >= PLAN_SEATS[plan]) return 'El plan ya no tiene usuarios libres. Quita a alguien o cambia de plan.';
   return null;
 }

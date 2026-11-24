@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Icon } from '../../shared/ui/icon';
+import { Skeleton } from '../../shared/ui/skeleton';
 import { SubscriptionData } from './subscription.data';
 import { SubscriptionPayments } from './subscription-payments';
 import { SubscriptionPlans } from './subscription-plans';
@@ -10,23 +11,19 @@ type Tab = 'summary' | 'plans' | 'payments';
 const TABS: Tab[] = ['summary', 'plans', 'payments'];
 
 /**
- * Suscripción (mockup web-35): the company's plan, its next payment and what it includes (Resumen),
- * Vortomi's plans (Planes) and its payments (Pagos). The company's own subscription is sample data
- * until companies are linked to plans; the screen says so. Owner and admins only.
+ * Suscripción (mockups web-35 and web-37): the company's plan, what it owes and until when
+ * (Resumen), Vortomi's plans (Planes) and its payments (Pagos). Owner and admins only; it stays
+ * open while the company is suspended for not paying: it is where it pays.
  */
 @Component({
   selector: 'app-subscription-page',
-  imports: [Icon, SubscriptionPayments, SubscriptionPlans, SubscriptionSummary],
+  imports: [Icon, Skeleton, SubscriptionPayments, SubscriptionPlans, SubscriptionSummary],
   template: `
     <header class="page-top">
       <h1>Suscripción</h1>
       <span class="sub">Tu plan, tus pagos y lo que incluye</span>
     </header>
     <div class="page-body">
-      @if (data.isSample && tab() !== 'plans') {
-        <p class="form-alert warn" role="note"><app-icon name="info" />
-          <span><b>Vista previa.</b> Tu plan, sus fechas, tus pagos y el uso que ves aquí son de ejemplo: así se verá esta sección cuando tu suscripción esté activa en Vortomi.</span></p>
-      }
       <nav class="tabs-line" role="tablist" aria-label="Secciones de la suscripción">
         <button type="button" role="tab" [class.on]="tab() === 'summary'" [attr.aria-selected]="tab() === 'summary'" (click)="show('summary')">Resumen</button>
         <button type="button" role="tab" [class.on]="tab() === 'plans'" [attr.aria-selected]="tab() === 'plans'" (click)="show('plans')">Planes</button>
@@ -35,7 +32,22 @@ const TABS: Tab[] = ['summary', 'plans', 'payments'];
       @switch (tab()) {
         @case ('plans') { <app-subscription-plans /> }
         @case ('payments') { <app-subscription-payments /> }
-        @default { <app-subscription-summary /> }
+        @default {
+          @if (data.failed()) {
+            <div class="form-alert" role="alert"><app-icon name="alert" /><span class="grow">No pudimos cargar tu suscripción.</span>
+              <button type="button" class="btn btn--sm" (click)="data.load()"><span>Reintentar</span></button></div>
+          } @else if (!data.loaded()) {
+            <app-skeleton kind="cards" [rows]="2" />
+          } @else if (data.subscription(); as s) {
+            <app-subscription-summary [subscription]="s" />
+          } @else {
+            <div class="card none">
+              <app-icon name="calendar" />
+              <h2>Todavía no tienes un plan</h2>
+              <p>Cuando Vortomi te asigne tu plan, aquí verás cuánto pagar, hasta cuándo y lo que incluye. Mientras tanto, no se te cobra nada.</p>
+            </div>
+          }
+        }
       }
     </div>
   `,
@@ -43,7 +55,12 @@ const TABS: Tab[] = ['summary', 'plans', 'payments'];
     :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
     .page-body { display: flex; flex-direction: column; gap: 16px; }
     .page-body > * { flex-shrink: 0; }
-    .form-alert { align-items: flex-start; }
+    .form-alert { align-items: center; }
+    .grow { flex: 1; }
+    .none { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 36px 24px; text-align: center; --icon-size: 28px; }
+    .none app-icon { color: var(--color-text-muted); }
+    .none h2 { font-size: 16px; font-weight: 600; }
+    .none p { max-width: 460px; font-size: 13.5px; color: var(--color-text-muted); line-height: 1.5; }
   `,
 })
 export class SubscriptionPage {
@@ -52,6 +69,11 @@ export class SubscriptionPage {
   private readonly route = inject(ActivatedRoute);
 
   protected readonly tab = signal<Tab>(this.tabFromUrl());
+
+  constructor() {
+    // Fresh on every visit: a payment approved or a plan assigned shows at once.
+    void this.data.load();
+  }
 
   /** Each tab keeps its place in the address (?tab=), without a new history step. */
   protected show(tab: Tab): void {

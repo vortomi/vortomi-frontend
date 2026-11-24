@@ -33,7 +33,7 @@ import { priceFor } from './subscription.rules';
       <div class="plans">
         @for (plan of data.plans(); track plan.id) {
           @let price = priceOf(plan);
-          @let mine = plan.name === data.subscription().planName;
+          @let mine = plan.id === data.subscription()?.plan?.id;
           <article class="card plan" [class.mine]="mine">
             @if (mine) { <span class="mark">Tu plan</span> }
             <h3>{{ plan.name }}</h3>

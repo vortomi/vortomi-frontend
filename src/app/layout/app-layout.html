@@ -14,9 +14,10 @@
     @for (group of groups(); track group.title) {
       <h6>{{ group.title }}</h6>
       @for (item of group.items; track item.path) {
-        <a [routerLink]="item.path" routerLinkActive="on">
-          <app-icon [name]="item.icon" />{{ item.label }}
-          @if (badge(item.badge); as count) {
+        @let shut = locked() && !isOpenWhileLocked(item.path);
+        <a [routerLink]="item.path" routerLinkActive="on" [class.shut]="shut">
+          <app-icon [name]="shut ? 'lock' : item.icon" />{{ item.label }}
+          @if (!shut && badge(item.badge); as count) {
             <span class="count" [class.warn]="warns(item.badge)">{{ count }}</span>
           }
         </a>
@@ -32,14 +33,19 @@
 <main class="main">
   <app-channel-banner />
   <app-subscription-banner />
-  <router-outlet />
+  @if (lockedHere()) {
+    <app-subscription-lock [admin]="admin()" />
+  } @else {
+    <router-outlet />
+  }
 </main>
 
 <nav class="tabbar" aria-label="Menú">
   @for (item of mobileItems(); track item.path) {
-    <a [routerLink]="item.path" routerLinkActive="on">
-      <app-icon [name]="item.icon" />{{ item.label }}
-      @if (badge(item.badge); as count) {
+    @let shut = locked() && !isOpenWhileLocked(item.path);
+    <a [routerLink]="item.path" routerLinkActive="on" [class.shut]="shut">
+      <app-icon [name]="shut ? 'lock' : item.icon" />{{ item.label }}
+      @if (!shut && badge(item.badge); as count) {
         <span class="count">{{ count }}</span>
       }
     </a>

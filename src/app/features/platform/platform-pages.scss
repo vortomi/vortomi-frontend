@@ -74,6 +74,11 @@
       background: var(--color-warning-soft);
       color: var(--color-warning-text);
     }
+
+    &.red {
+      background: var(--color-danger-soft);
+      color: var(--color-danger-text);
+    }
   }
 
   p {

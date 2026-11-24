@@ -78,11 +78,6 @@ export const PLATFORM_ROUTES: Routes = [
         title: 'Plan · Consola',
         loadComponent: () => import('./plans/plan-form.page').then((m) => m.PlanFormPage),
       },
-      {
-        path: ':subscriptionId',
-        title: 'Suscripción · Consola',
-        loadComponent: () => import('./subscriptions/subscription-detail.page').then((m) => m.SubscriptionDetailPage),
-      },
     ],
   },
   {

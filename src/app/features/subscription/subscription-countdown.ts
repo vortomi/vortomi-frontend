@@ -1,23 +1,23 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { formatUsdCents } from '../../shared/format/money';
-import { type ReminderLevel, countdown } from './subscription.rules';
+import { type Tone, countdown } from './subscription.rules';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
 /**
- * «Tu próximo pago en 27 días 14 horas 32 min» (mockup web-35): amber within the last 7 days,
- * red once the plan is due («Tu plan venció hace…»).
+ * «Tu próximo pago en 27 días 14 horas 32 min» (mockup web-35), or «Tu cuenta se suspende en…»
+ * while a payment is overdue or the first one is pending (mockup web-37, frame 5): amber or red.
  */
 @Component({
   selector: 'app-subscription-countdown',
   template: `
-    <span class="lbl">{{ parts().past ? 'Tu plan venció hace' : 'Tu próximo pago en' }}</span>
+    <span class="lbl">{{ parts().past ? (suspension() ? 'Tu cuenta está suspendida desde hace' : 'Tu plan venció hace') : suspension() ? 'Tu cuenta se suspende en' : 'Tu próximo pago en' }}</span>
     <div class="digits" role="timer" [attr.aria-label]="aria()">
       <div><b>{{ pad(parts().days) }}</b><span>{{ parts().days === 1 ? 'día' : 'días' }}</span></div>
       <div><b>{{ pad(parts().hours) }}</b><span>{{ parts().hours === 1 ? 'hora' : 'horas' }}</span></div>
       <div><b>{{ pad(parts().minutes) }}</b><span>min</span></div>
     </div>
-    <p class="next">El <b>{{ dueText() }}</b>@if (monthlyCents(); as cents) { · desde <b>{{ money(cents) }}</b> al mes }</p>
+    <p class="next">@if (suspension()) { El <b>{{ dueText() }}</b> a las 12:00 a. m. } @else { El <b>{{ dueText() }}</b>@if (monthlyCents(); as cents) { · desde <b>{{ money(cents) }}</b> al mes } }</p>
   `,
   styles: `
     :host { display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; background: var(--color-surface); border: 1px solid var(--color-border);
@@ -41,7 +41,9 @@ const pad = (n: number) => String(n).padStart(2, '0');
 export class SubscriptionCountdown {
   readonly now = input.required<Date>();
   readonly due = input.required<Date>();
-  readonly level = input<ReminderLevel>('ok');
+  /** The moment is the suspension, not the due day. */
+  readonly suspension = input(false);
+  readonly level = input<Tone>('ok');
   /** «desde 79,00 $ al mes» after the date; left out when null. */
   readonly monthlyCents = input<number | null>(null);
 
@@ -51,7 +53,7 @@ export class SubscriptionCountdown {
   );
   protected readonly aria = computed(() => {
     const p = this.parts();
-    return `${p.past ? 'Venció hace' : 'Faltan'} ${p.days} días, ${p.hours} horas y ${p.minutes} minutos`;
+    return `${p.past ? 'Pasaron' : 'Faltan'} ${p.days} días, ${p.hours} horas y ${p.minutes} minutos`;
   });
 
   protected pad(n: number): string {

@@ -97,3 +97,9 @@
     }
   }
 }
+
+/* Suspended for not paying: every entry but Suscripción shows a lock (mockup web-37, frame 6). */
+.nav a.shut,
+.tabbar a.shut {
+  color: var(--color-text-faint);
+}

@@ -104,7 +104,7 @@ export class TeamActions {
     if (!tenant) return { error: 'Sin empresa activa.' };
     const email = request.email.trim().toLowerCase();
     const existing = this.members().find((row) => row.user.email === email);
-    const error = inviteError(this.ruleMemberships(), tenant.plan, existing?.user.id ?? null);
+    const error = inviteError(this.ruleMemberships(), existing?.user.id ?? null);
     if (error) return { error };
     const clean = { ...request, email, name: request.name.trim(), canSeeOthers: request.role === 'admin' || request.canSeeOthers };
 

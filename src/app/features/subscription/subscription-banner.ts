@@ -3,28 +3,27 @@ import { RouterLink } from '@angular/router';
 import { readStored, writeStored } from '../../core/storage';
 import { Icon } from '../../shared/ui/icon';
 import { SubscriptionData } from './subscription.data';
-import { reminderText } from './subscription.rules';
 
 /** The day the banner was closed: it comes back the next day. */
 const DISMISSED_KEY = 'vortomi-subscription-banner';
 
 /**
- * Above every panel screen (mockup web-35, step 2): amber from 7 days before the plan is due, red
- * once it is due. Only for the company's admins, and only with real data or in the preview.
+ * Above every panel screen (mockup web-37, frames 5 and 6): amber while the first payment is
+ * pending or the plan is about to be due, red once it is overdue. Only for the company's admins
+ * (only they read the subscription). A company locked out cannot close it.
  */
 @Component({
   selector: 'app-subscription-banner',
   imports: [Icon, RouterLink],
   template: `
-    @if (shown(); as r) {
-      <div class="notice" [class.overdue]="r.level === 'overdue'" role="status">
-        <app-icon [name]="r.level === 'overdue' ? 'alert' : 'clock'" />
-        <p>
-          <b>{{ r.level === 'overdue' ? 'Tu plan ' + data.subscription().planName + ' ' + text(r).toLowerCase() + '.' : 'Tu plan ' + data.subscription().planName + ' ' + text(r).toLowerCase() + ' (' + dueDay() + ').' }}</b>
-          {{ r.level === 'overdue' ? 'Paga para que el bot siga respondiendo. Tus datos no se borran.' : 'Paga a tiempo para que el bot siga respondiendo.' }}
-        </p>
-        <a class="btn btn--sm" routerLink="/subscription">Ver suscripción</a>
-        <button type="button" class="icon-btn" aria-label="Cerrar el aviso hasta mañana" (click)="dismiss()"><app-icon name="x" /></button>
+    @if (shown(); as n) {
+      <div class="notice" [class.overdue]="n.tone === 'overdue'" role="status">
+        <app-icon [name]="n.tone === 'overdue' ? 'alert' : 'clock'" />
+        <p><b>{{ n.title }}</b> {{ n.detail }}</p>
+        <a class="btn btn--sm" routerLink="/subscription">Ir a Suscripción</a>
+        @if (n.dismissable) {
+          <button type="button" class="icon-btn" aria-label="Cerrar el aviso hasta mañana" (click)="dismiss()"><app-icon name="x" /></button>
+        }
       </div>
     }
   `,
@@ -45,16 +44,11 @@ export class SubscriptionBanner {
   private readonly dismissedOn = signal(readStored<string>(DISMISSED_KEY));
 
   protected readonly shown = computed(() => {
-    if (!this.data.badge()) return null;
-    if (this.dismissedOn() === this.data.today()) return null;
-    return this.data.reminder();
+    const notice = this.data.notice();
+    if (!notice) return null;
+    if (notice.dismissable && this.dismissedOn() === this.data.today()) return null;
+    return notice;
   });
-
-  protected readonly dueDay = computed(() =>
-    new Intl.DateTimeFormat('es-VE', { day: 'numeric', month: 'short', timeZone: 'America/Caracas' }).format(this.data.due()).replace('.', ''),
-  );
-
-  protected text = reminderText;
 
   protected dismiss(): void {
     writeStored(DISMISSED_KEY, this.data.today());
