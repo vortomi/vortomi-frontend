@@ -22,7 +22,7 @@ import {
 } from './subscription.rules';
 
 const TODAY = '2026-12-01';
-const sub = (state: BillingState) => previewSubscription(TODAY, state);
+const sub = (state: Exclude<BillingState, 'exempt'>) => previewSubscription(TODAY, state);
 
 describe('the moments that matter', () => {
   it('is due at 11:59 p. m. and suspends at 00:00, Caracas time', () => {

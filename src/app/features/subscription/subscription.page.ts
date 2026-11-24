@@ -9,6 +9,7 @@ import { SubscriptionData } from './subscription.data';
 import { SubscriptionPaymentList } from './subscription-payments';
 import { SubscriptionPlans } from './subscription-plans';
 import { SubscriptionSummary } from './subscription-summary';
+import { SubscriptionExempt } from './subscription-exempt';
 
 type Tab = 'summary' | 'plans' | 'payments';
 const TABS: Tab[] = ['summary', 'plans', 'payments'];
@@ -20,7 +21,7 @@ const TABS: Tab[] = ['summary', 'plans', 'payments'];
  */
 @Component({
   selector: 'app-subscription-page',
-  imports: [Icon, Skeleton, SubscriptionPaymentList, SubscriptionPlans, SubscriptionSummary],
+  imports: [Icon, Skeleton, SubscriptionExempt, SubscriptionPaymentList, SubscriptionPlans, SubscriptionSummary],
   template: `
     <header class="page-top">
       <h1>Suscripción</h1>
@@ -41,6 +42,8 @@ const TABS: Tab[] = ['summary', 'plans', 'payments'];
               <button type="button" class="btn btn--sm" (click)="data.load()"><span>Reintentar</span></button></div>
           } @else if (!data.loaded()) {
             <app-skeleton kind="cards" [rows]="2" />
+          } @else if (data.exemption(); as e) {
+            <app-subscription-exempt [endsOn]="e.endsOn" [subscription]="data.subscription()" (plans)="show('plans')" />
           } @else if (data.subscription(); as s) {
             <app-subscription-summary [subscription]="s" />
           } @else {

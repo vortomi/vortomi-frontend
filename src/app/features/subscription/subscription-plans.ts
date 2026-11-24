@@ -47,7 +47,9 @@ import { priceFor } from './subscription.rules';
             <ul>
               @for (benefit of plan.benefits; track $index) { <li><app-icon name="check" />{{ benefit }}</li> }
             </ul>
-            @if (!data.subscription()) {
+            @if (exemptForGood()) {
+              <button type="button" class="btn btn--block" disabled>Tu cuenta está exonerada</button>
+            } @else if (!data.subscription()) {
               <button type="button" class="btn btn--primary btn--block" [disabled]="!data.loaded()" (click)="picked.set(plan)">Elegir este plan</button>
             } @else {
               <button type="button" class="btn btn--block" disabled>{{ mine ? 'Es tu plan actual' : 'Cambiar de plan · pronto' }}</button>
@@ -55,7 +57,9 @@ import { priceFor } from './subscription.rules';
           </article>
         }
       </div>
-      @if (data.subscription()) {
+      @if (exemptForGood()) {
+        <p class="form-alert info"><app-icon name="info" />Vortomi te exoneró del pago: no necesitas elegir un plan.</p>
+      } @else if (data.subscription()) {
         <p class="form-alert info"><app-icon name="info" />Para cambiar de plan, escríbenos a soporte.</p>
       }
     }
@@ -92,6 +96,8 @@ export class SubscriptionPlans {
   protected readonly months = signal<Period>(1);
   /** The plan whose «Elegir el plan» is open. */
   protected readonly picked = signal<CompanyPlan | null>(null);
+  /** Exempt with no end: nothing to choose (the server refuses it too). */
+  protected readonly exemptForGood = computed(() => this.data.exemption()?.endsOn === null);
   /** The company chose its plan: the page shows its summary. */
   readonly chosen = output<SubscriptionView>();
 

@@ -19,7 +19,8 @@ export const PREVIEW_PLAN = {
   benefits: ['Números de WhatsApp sin límite', 'Personas sin límite', 'Agente de ventas con IA'],
 };
 
-export function previewSubscription(today: Day, state: BillingState): SubscriptionView {
+/** Every state but 'exempt': an exemption is separate from the subscription (mockup web-49). */
+export function previewSubscription(today: Day, state: Exclude<BillingState, 'exempt'>): SubscriptionView {
   const plan = PREVIEW_PLAN;
   const first = state === 'awaiting_first_payment';
   const nextDueOn = { awaiting_first_payment: today, active: addDays(today, 20), due_soon: addDays(today, 5), grace: addDays(today, -1), suspended: addDays(today, -3), in_review: addDays(today, -1) }[state];

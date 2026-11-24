@@ -16,8 +16,9 @@ export type PlanDiscounts = Record<'1' | '3' | '6' | '12', number>;
  * Derived from the dates, never stored. Due day D: grace D+1 and D+2, suspended from 00:00 of D+3.
  * Before the first payment: 3 days from the day the plan was assigned. 'in_review': a payment in
  * review covers the whole debt, so the company works as if it owed nothing until it is decided.
+ * 'exempt': Vortomi exempted it from paying (mockup web-49).
  */
-export type BillingState = 'awaiting_first_payment' | 'active' | 'due_soon' | 'grace' | 'suspended' | 'in_review';
+export type BillingState = 'awaiting_first_payment' | 'active' | 'due_soon' | 'grace' | 'suspended' | 'in_review' | 'exempt';
 
 /** What is being paid now: its price and discounts are fixed when the charge is made. */
 export interface SubscriptionCharge {
@@ -114,6 +115,8 @@ export interface CompanySubscriptionView {
   subscription: SubscriptionView | null;
   /** The last day of its trial to choose a plan; null for a company that never had one. */
   trialEndsOn: Day | null;
+  /** Its exemption from paying while it lasts: its last exempt day, or null with no end. */
+  exemption: { endsOn: Day | null } | null;
   enforced: boolean;
   rate: SubscriptionView['rate'];
 }
@@ -127,8 +130,32 @@ export interface SubscriptionRow {
   nextDueOn: Day | null;
   suspendsOn: Day | null;
   owedCents: number;
-  /** 'none': no plan yet. */
+  /** 'none': no plan yet (and not exempt). */
   state: BillingState | 'none';
+  /** Its exemption while it lasts. */
+  exemption: { reason: ExemptionReason; endsOn: Day | null } | null;
+}
+
+/** Why Vortomi exempts a company from paying (mockup web-49). */
+export type ExemptionReason = 'demo' | 'internal' | 'founder' | 'agreement' | 'other';
+
+/** A company's exemption, as the console sees it (GET /platform/tenants/:id/exemption). */
+export interface ExemptionView {
+  reason: ExemptionReason;
+  /** Vortomi's only: the company never sees it. */
+  note: string | null;
+  /** The last exempt day; null: no end. */
+  endsOn: Day | null;
+  forgivenCents: number;
+  grantedAt: string;
+  grantedByName: string | null;
+}
+
+/** «Exonerar del pago»: a reason, a note (needed for «other») and until when. */
+export interface ExemptionInput {
+  reason: ExemptionReason;
+  note: string | null;
+  endsOn: Day | null;
 }
 
 /** The balance in favour and its movements (GET /tenants/:id/subscription/wallet). */

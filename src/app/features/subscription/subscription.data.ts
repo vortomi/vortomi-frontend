@@ -8,7 +8,7 @@ import type { CompanySubscriptionView, SubscriptionPayment, SubscriptionView } f
 import { formatUsdCents } from '../../shared/format/money';
 import type { CompanyPlan, Period } from './subscription.models';
 import { PREVIEW_PLANS, previewChoice, previewView } from './subscription.preview';
-import { caracasDay, countdownTarget, subscriptionBadge, subscriptionNotice, trialBadge, trialDaysLeft, trialNotice } from './subscription.rules';
+import { caracasDay, countdownTarget, exemptionBadge, exemptionNotice, subscriptionBadge, subscriptionNotice, trialBadge, trialDaysLeft, trialNotice } from './subscription.rules';
 
 /** The countdown moves in minutes: a tick every 15 s keeps it on time without waste. */
 const TICK_MS = 15_000;
@@ -36,6 +36,8 @@ export class SubscriptionData {
   readonly subscription = signal<SubscriptionView | null>(null);
   /** The last day of its trial to choose a plan (only matters while it has none). */
   readonly trialEndsOn = signal<string | null>(null);
+  /** Its exemption from paying while it lasts (mockup web-49): nothing is charged, nothing locks. */
+  readonly exemption = signal<CompanySubscriptionView['exemption']>(null);
   /** Whether a company past its dates is really locked out (BILLING_ENFORCEMENT). */
   readonly enforced = signal(false);
   /** Vortomi's rate, for the bolívares; there even without a plan, for choosing one. */
@@ -54,12 +56,16 @@ export class SubscriptionData {
   });
   /** The menu's «2 d» for the company's admins. */
   readonly badge = computed(() => {
+    const exemption = this.exemption();
+    if (exemption) return exemptionBadge(exemption.endsOn, this.today());
     const s = this.subscription();
     if (s) return subscriptionBadge(s, this.today());
     const endsOn = this.trialEndsOn();
     return endsOn ? trialBadge(endsOn, this.today()) : null;
   });
   readonly notice = computed(() => {
+    const exemption = this.exemption();
+    if (exemption) return exemptionNotice(exemption.endsOn, this.today(), this.subscription());
     const s = this.subscription();
     if (s) return subscriptionNotice(s, formatUsdCents);
     const endsOn = this.trialEndsOn();
@@ -67,6 +73,7 @@ export class SubscriptionData {
   });
   /** Suspended (for not paying, or with the trial over and no plan) and the rule enforced. */
   readonly locked = computed(() => {
+    if (this.exemption()) return false;
     const s = this.subscription();
     if (s) return s.state === 'suspended' && s.enforced;
     return this.enforced() && this.trialLeft() === 0;
@@ -84,7 +91,7 @@ export class SubscriptionData {
       const tenantId = this.session.tenant()?.id;
       const admin = this.session.isTenantAdmin();
       untracked(() => {
-        this.apply({ subscription: null, trialEndsOn: null, enforced: false, rate: null });
+        this.apply({ subscription: null, trialEndsOn: null, exemption: null, enforced: false, rate: null });
         this.loaded.set(false);
         if (tenantId && admin) void this.load();
       });
@@ -156,6 +163,7 @@ export class SubscriptionData {
   private apply(view: CompanySubscriptionView): void {
     this.subscription.set(view.subscription);
     this.trialEndsOn.set(view.trialEndsOn);
+    this.exemption.set(view.exemption);
     this.enforced.set(view.enforced);
     this.rate.set(view.rate);
   }

@@ -12,7 +12,7 @@ import { PAYMENT_METHODS_HOST } from '../../payment-methods/payment-methods.host
 import { PlanList } from '../plans/plan-list';
 import { PaymentReviewList } from './payment-review-list';
 import { PlatformPaymentReview } from './platform-payment-review';
-import { STATE_FILTERS, type StateFilter, billingFigures, dayText, matchesFilter, sortRows, stateLabel } from './billing.rules';
+import { STATE_FILTERS, type StateFilter, billingFigures, dayText, exemptionLine, matchesFilter, sortRows, stateLabel } from './billing.rules';
 import { PlatformSubscriptions } from './platform-subscriptions';
 
 type Tab = 'charges' | 'payments' | 'plans' | 'methods';
@@ -72,6 +72,8 @@ export class SubscriptionsPage {
   protected count(filter: StateFilter): number {
     return this.items().filter((r) => matchesFilter(r, filter)).length;
   }
+
+  protected readonly exemptionLine = exemptionLine;
 
   protected state(row: SubscriptionRow) {
     return stateLabel(row, this.today);

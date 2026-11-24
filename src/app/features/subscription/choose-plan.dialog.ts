@@ -107,9 +107,16 @@ export class ChoosePlanDialog {
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
 
-  /** The first charge is due today: the last day to pay is 2 days later, the suspension 3. */
-  protected readonly lastDay = computed(() => dayText(addDays(this.data.today(), 2)));
-  protected readonly suspendDay = computed(() => dayText(addDays(this.data.today(), 3)));
+  /**
+   * The first charge is due today (for a company exempt until a day, the day after it): the last
+   * day to pay is 2 days later, the suspension 3.
+   */
+  private readonly firstDue = computed(() => {
+    const endsOn = this.data.exemption()?.endsOn;
+    return endsOn ? addDays(endsOn, 1) : this.data.today();
+  });
+  protected readonly lastDay = computed(() => dayText(addDays(this.firstDue(), 2)));
+  protected readonly suspendDay = computed(() => dayText(addDays(this.firstDue(), 3)));
 
   constructor() {
     effect(() => {

@@ -7,7 +7,7 @@ import { addDays, priceFor } from './subscription.rules';
  * PREVIEW ONLY ('mock' mode, never deployed): Vortomi's plans and a company's subscription, so the
  * screens can be reviewed without a server. «?estado=» picks what the company looks like:
  * trial (default: no plan, 5 days left), trial_over, none (no plan, no trial),
- * awaiting_first_payment, active, due_soon, grace or suspended.
+ * awaiting_first_payment, active, due_soon, grace or suspended; exempt, exempt_until or exempt_ending.
  */
 
 /** The preview's plans, as the console would list them. */
@@ -23,16 +23,19 @@ export const PREVIEW_PLANS: CompanyPlan[] = [
   PREVIEW_PLAN,
 ];
 
-const STATES: readonly BillingState[] = ['awaiting_first_payment', 'active', 'due_soon', 'grace', 'suspended', 'in_review'];
+const STATES: readonly Exclude<BillingState, 'exempt'>[] = ['awaiting_first_payment', 'active', 'due_soon', 'grace', 'suspended', 'in_review'];
 const RATE = (today: string) => ({ bsPerUsd: '410.55000000', effectiveDate: today });
 
 /** What GET /tenants/:id/subscription would answer, for the state «?estado=» asks for. */
 export function previewView(today: string, search: string): CompanySubscriptionView {
   const asked = new URLSearchParams(search).get('estado') ?? 'trial';
   const state = STATES.find((s) => s === asked);
-  if (state) return { subscription: previewSubscription(today, state), trialEndsOn: addDays(today, -20), enforced: true, rate: RATE(today) };
+  if (state) return { subscription: previewSubscription(today, state), trialEndsOn: addDays(today, -20), exemption: null, enforced: true, rate: RATE(today) };
+  // Exempt from paying (mockup web-49): with no end, until a day, or ending within the week.
+  const exemptUntil: Record<string, string | null> = { exempt: null, exempt_until: addDays(today, 90), exempt_ending: addDays(today, 4) };
+  if (asked in exemptUntil) return { subscription: null, trialEndsOn: addDays(today, -20), exemption: { endsOn: exemptUntil[asked] ?? null }, enforced: true, rate: RATE(today) };
   const trialEndsOn = asked === 'trial_over' ? addDays(today, -1) : asked === 'none' ? null : addDays(today, 4);
-  return { subscription: null, trialEndsOn, enforced: true, rate: RATE(today) };
+  return { subscription: null, trialEndsOn, exemption: null, enforced: true, rate: RATE(today) };
 }
 
 /** What choosing a plan would answer: its first charge, for the months chosen, due today. */

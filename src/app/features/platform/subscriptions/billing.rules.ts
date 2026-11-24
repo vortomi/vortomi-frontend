@@ -1,5 +1,5 @@
 import type { Tone } from '../../../shared/api/models';
-import type { BillingState, Day, SubscriptionRow } from '../../../shared/api/subscriptions';
+import type { BillingState, Day, ExemptionReason, SubscriptionRow } from '../../../shared/api/subscriptions';
 
 export type RowState = SubscriptionRow['state'];
 export type StateFilter = 'all' | RowState;
@@ -13,6 +13,7 @@ export const STATE_FILTERS: { id: StateFilter; label: string }[] = [
   { id: 'grace', label: 'En gracia' },
   { id: 'in_review', label: 'Pago en revisión' },
   { id: 'suspended', label: 'Suspendidas' },
+  { id: 'exempt', label: 'Exoneradas' },
   { id: 'none', label: 'Sin plan' },
 ];
 
@@ -39,6 +40,8 @@ export function stateLabel(row: Pick<SubscriptionRow, 'state' | 'nextDueOn'>, to
       return { text: 'Suspendida', tone: 'red' };
     case 'in_review':
       return { text: 'Pago en revisión', tone: 'blue' };
+    case 'exempt':
+      return { text: 'Exonerada', tone: 'teal' };
     case 'none':
       return { text: 'Sin plan', tone: 'neutral' };
   }
@@ -63,7 +66,7 @@ export function billingFigures(rows: SubscriptionRow[]): BillingFigures {
 }
 
 /** What needs the team first: suspended, in grace, awaiting, a payment to review, due soon, up to date, without a plan. */
-const ORDER: Record<RowState, number> = { suspended: 0, grace: 1, awaiting_first_payment: 2, in_review: 3, due_soon: 4, active: 5, none: 6 };
+const ORDER: Record<RowState, number> = { suspended: 0, grace: 1, awaiting_first_payment: 2, in_review: 3, due_soon: 4, active: 5, exempt: 6, none: 7 };
 
 export function sortRows(rows: SubscriptionRow[]): SubscriptionRow[] {
   return [...rows].sort(
@@ -72,6 +75,22 @@ export function sortRows(rows: SubscriptionRow[]): SubscriptionRow[] {
 }
 
 export const matchesFilter = (row: SubscriptionRow, filter: StateFilter): boolean => filter === 'all' || row.state === filter;
+
+/** Why a company is exempt (mockup web-49), in the order the console offers them. */
+export const EXEMPTION_REASONS: { value: ExemptionReason; label: string }[] = [
+  { value: 'demo', label: 'Cuenta de demostración' },
+  { value: 'internal', label: 'Cuenta interna de Vortomi' },
+  { value: 'founder', label: 'Cliente fundador' },
+  { value: 'agreement', label: 'Acuerdo comercial' },
+  { value: 'other', label: 'Otro' },
+];
+
+export const exemptionReasonLabel = (reason: ExemptionReason): string => EXEMPTION_REASONS.find((r) => r.value === reason)?.label ?? 'Otro';
+
+/** «Cliente fundador · hasta el 28 feb 2027», «Cuenta de demostración · sin fecha de fin». */
+export function exemptionLine(e: { reason: ExemptionReason; endsOn: Day | null }): string {
+  return `${exemptionReasonLabel(e.reason)} · ${e.endsOn ? 'hasta el ' + dayText(e.endsOn, true) : 'sin fecha de fin'}`;
+}
 
 /** «3 dic», or «3 dic 2026» with the year. */
 export function dayText(day: Day, year = false): string {

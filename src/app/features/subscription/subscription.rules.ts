@@ -64,6 +64,7 @@ export const STATE_TONE: Record<BillingState, Tone> = {
   grace: 'overdue',
   suspended: 'overdue',
   in_review: 'review',
+  exempt: 'ok',
 };
 
 export const STATE_TEXT: Record<BillingState, string> = {
@@ -73,6 +74,7 @@ export const STATE_TEXT: Record<BillingState, string> = {
   grace: 'Vencido',
   suspended: 'Suspendida',
   in_review: 'Pago en revisión',
+  exempt: 'Exonerada',
 };
 
 /** The last day to pay without being suspended. */
@@ -83,7 +85,7 @@ const daysUntil = (today: Day, day: Day): number => Math.round((Date.parse(`${da
 
 /** The menu's short count: «2 d», «Hoy», «!»; nothing while the company is up to date. */
 export function subscriptionBadge(s: SubscriptionView, today: Day): string | null {
-  if (s.state === 'active' || s.state === 'in_review') return null;
+  if (s.state === 'active' || s.state === 'in_review' || s.state === 'exempt') return null;
   if (s.state === 'grace' || s.state === 'suspended') return '!';
   const days = daysUntil(today, s.state === 'awaiting_first_payment' ? lastPayDay(s) : s.nextDueOn);
   return days <= 0 ? 'Hoy' : `${days} d`;
@@ -103,6 +105,7 @@ export function subscriptionNotice(s: SubscriptionView, money: (cents: number) =
   switch (s.state) {
     case 'active':
     case 'in_review':
+    case 'exempt':
       return null;
     case 'awaiting_first_payment':
       return {
@@ -125,6 +128,33 @@ export function subscriptionNotice(s: SubscriptionView, money: (cents: number) =
         ? { tone: 'overdue', title: 'Tu cuenta está suspendida por falta de pago.', detail: `Debes ${owed}.`, dismissable: false }
         : { tone: 'overdue', title: `Tu pago está vencido desde el ${dayText(s.nextDueOn)}.`, detail: `Debes ${owed}.`, dismissable: true };
   }
+}
+
+/** An exemption shows in the menu and the banner from 7 days before its last day (mockup web-49). */
+export const EXEMPTION_WARNING_DAYS = 7;
+
+/** Days of the exemption left, today included; null with no end. */
+export const exemptionDaysLeft = (endsOn: Day | null, today: Day): number | null => (endsOn === null ? null : Math.max(0, daysUntil(today, endsOn) + 1));
+
+const exemptionEnding = (endsOn: Day | null, today: Day): number | null => {
+  const left = exemptionDaysLeft(endsOn, today);
+  return left !== null && left <= EXEMPTION_WARNING_DAYS ? left : null;
+};
+
+/** The menu's count in the last 7 days of an exemption: «5 d», «Hoy»; nothing before. */
+export function exemptionBadge(endsOn: Day | null, today: Day): string | null {
+  const left = exemptionEnding(endsOn, today);
+  if (left === null) return null;
+  return left <= 1 ? 'Hoy' : `${left} d`;
+}
+
+/** The banner in the last 7 days of an exemption: choose a plan, or the first payment's day. */
+export function exemptionNotice(endsOn: Day | null, today: Day, s: Pick<SubscriptionView, 'plan'> | null): Notice | null {
+  if (exemptionEnding(endsOn, today) === null || endsOn === null) return null;
+  const title = `Tu exoneración del pago termina el ${dayText(endsOn)}.`;
+  return s
+    ? { tone: 'soon', title, detail: `Tu plan ${s.plan.name} se paga desde el ${dayText(addDays(endsOn, 1))}.`, dismissable: true }
+    : { tone: 'soon', title, detail: 'Elige tu plan para seguir usando Vortomi sin interrupciones.', dismissable: true };
 }
 
 /** Days of trial left, today included (0 once it is over). */

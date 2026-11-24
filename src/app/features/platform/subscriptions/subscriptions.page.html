@@ -62,8 +62,9 @@
                     @if (row.owedCents > 0 && row.suspendsOn) { <small class="sub">se suspende el {{ date(row.suspendsOn) }}</small> }
                   } @else { <span class="muted">—</span> }
                 </td>
-                <td class="num">{{ row.state === 'none' ? '—' : money(row.owedCents) }}</td>
-                <td><app-pill [tone]="s.tone" [dot]="true">{{ s.text }}</app-pill></td>
+                <td class="num">{{ row.state === 'none' || row.state === 'exempt' ? '—' : money(row.owedCents) }}</td>
+                <td><app-pill [tone]="s.tone" [dot]="true">{{ s.text }}</app-pill>
+                  @if (row.exemption; as e) { <small class="sub">{{ exemptionLine(e) }}</small> }</td>
               </tr>
             } @empty {
               <tr><td colspan="5" class="empty-state">Ninguna empresa con este filtro.</td></tr>
