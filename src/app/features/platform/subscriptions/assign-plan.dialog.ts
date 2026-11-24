@@ -47,7 +47,7 @@ const GAP = 14;
       } @else if (!plans().length) {
         <p class="form-alert warn"><app-icon name="info" />No hay planes activos. Créalos o actívalos en Suscripciones → Planes.</p>
       } @else {
-        <div class="track" #track [class.single]="plans().length === 1" role="radiogroup" aria-label="Planes" (scroll)="onScroll()">
+        <div class="track" #track role="radiogroup" aria-label="Planes" (scroll)="onScroll()">
           @for (plan of plans(); track plan.id) {
             @let on = picked() === plan.id;
             <app-plan-card role="radio" tabindex="0" [attr.aria-checked]="on" [class.on]="on" (click)="picked.set(plan.id)"
@@ -86,21 +86,25 @@ const GAP = 14;
       </ng-container>
     </app-dialog>
   `,
+  host: { '[style.--dialog-width]': 'dialogWidth()', '[style.--cols]': 'cols()' },
   styles: `
-    :host { --dialog-width: 820px; }
+    /* The dialog fits the plans: narrow for one, wide for three or more (set from the class). */
+    :host { --dialog-width: 820px; --cols: 3; }
     .head { display: flex; align-items: center; gap: 12px; }
     .lead { flex: 1; font-size: 13.5px; color: var(--color-text-muted); }
     .arrows { display: flex; gap: 6px; }
     .arrows .icon-btn { border: 1px solid var(--color-border); border-radius: 50%; width: 32px; height: 32px; display: grid; place-items: center; --icon-size: 16px; }
     .arrows .icon-btn:disabled { opacity: 0.4; cursor: default; }
 
-    /* Two cards at a time; more slide sideways and stop on each card. */
+    /* Up to three cards at a time, centred when fewer; more slide sideways and stop on each card. */
     .track { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none;
       padding: 4px 2px 6px; margin: -4px -2px 0; }
     .track::-webkit-scrollbar { display: none; }
-    .track.single app-plan-card { flex-basis: 100%; }
     /* Tall, narrow cards like the company's Suscripción → Planes: three at a time. */
-    app-plan-card { flex: 0 0 calc((100% - 28px) / 3); min-height: 340px; scroll-snap-align: start; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+    app-plan-card { flex: 0 0 calc((100% - (var(--cols) - 1) * 14px) / var(--cols)); max-width: 260px; min-height: 320px; scroll-snap-align: start; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+    /* Auto margins centre the cards without cutting the first one off when they overflow. */
+    app-plan-card:first-child { margin-left: auto; }
+    app-plan-card:last-child { margin-right: auto; }
     app-plan-card:hover { border-color: var(--color-border-strong, var(--color-text-faint)); }
     app-plan-card:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; }
     app-plan-card.on { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); background: color-mix(in srgb, var(--color-primary) 4%, var(--color-surface)); }
@@ -153,6 +157,9 @@ export class AssignPlanDialog {
   private readonly perView = signal(3);
 
   protected readonly chosen = computed(() => this.plans().find((p) => p.id === this.picked()) ?? null);
+  /** Cards side by side: as many plans as there are, up to three. */
+  protected readonly cols = computed(() => Math.min(3, Math.max(1, this.plans().length)));
+  protected readonly dialogWidth = computed(() => ({ 1: '440px', 2: '640px', 3: '820px' })[this.cols()] ?? '820px');
   protected readonly carousel = computed(() => this.plans().length > this.perView());
   protected readonly pages = computed(() => Math.max(1, this.plans().length - this.perView() + 1));
   protected readonly dots = computed(() => Array.from({ length: this.pages() }, (_, i) => i));
