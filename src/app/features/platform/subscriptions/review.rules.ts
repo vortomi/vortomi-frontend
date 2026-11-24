@@ -1,5 +1,6 @@
 import type { ReviewDetail } from '../../../shared/api/subscriptions';
 import { formatUsdCents } from '../../../shared/format/money';
+import { addMonthsOn } from '../../../shared/format/billing-dates';
 import { dayText } from './billing.rules';
 
 /** What each datum of a payment's payer is, as the console reads it. */
@@ -23,15 +24,7 @@ export const REJECTION_REASONS = [
   { value: 'other', label: 'Otro motivo' },
 ] as const;
 
-/** The due day `months` after `day`, on the billing day (31 → 28 in February). Same as the server. */
-export function addMonthsOn(day: string, months: number, billingDay: number): string {
-  const year = Number(day.slice(0, 4));
-  const month = Number(day.slice(5, 7)) - 1 + months;
-  const first = new Date(Date.UTC(year, month, 1));
-  const last = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
-  first.setUTCDate(Math.min(billingDay, last));
-  return first.toISOString().slice(0, 10);
-}
+export { addMonthsOn } from '../../../shared/format/billing-dates';
 
 /** What approving does (mockup web-41, frame 3), for the cents that really arrived. */
 export function approvalSteps(d: ReviewDetail, receivedCents: number): string[] {

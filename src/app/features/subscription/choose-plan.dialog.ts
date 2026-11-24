@@ -6,7 +6,8 @@ import { Dialog } from '../../shared/ui/dialog';
 import { Icon } from '../../shared/ui/icon';
 import { SubscriptionData } from './subscription.data';
 import type { CompanyPlan, Period } from './subscription.models';
-import { addDays, dayText, inBolivares, priceFor } from './subscription.rules';
+import { addMonthsOn, longDay } from '../../shared/format/billing-dates';
+import { addDays, inBolivares, priceFor } from './subscription.rules';
 
 /**
  * «Elegir el plan» (mockups web-38 and web-50): the company confirms the plan for the months it
@@ -46,8 +47,9 @@ import { addDays, dayText, inBolivares, priceFor } from './subscription.rules';
           <div class="form-alert" role="alert"><app-icon name="alert" />{{ message }}</div>
         }
         <p class="note"><app-icon name="info" />
-          <span>Tienes hasta el <b>{{ lastDay() }} a las 11:59 p. m.</b> para pagar; si no, el {{ suspendDay() }} tu cuenta se suspende. Tu día de cobro
-            será el de tu primer pago. Puedes cambiar los meses al pagar.</span></p>
+          <span>@if (trialLeft(); as left) { Estás usando una versión de prueba de 7 días ({{ left === 1 ? 'hoy es el último día' : 'te quedan ' + left + ' días' }}); p} @else { P}aga el plan antes
+            del <b>{{ lastDay() }} a las 11:59 p. m.</b> para continuar disfrutando de nuestros servicios. El día en que realices el pago será el día de
+            cobro de cada mes@if (nextIfToday(); as next) {: si pagas hoy, el próximo cobro será el <b>{{ next }}</b>}.</span></p>
 
         <ng-container dialog-actions>
           <button type="button" class="btn" [disabled]="saving()" (click)="closed.emit()">Cancelar</button>
@@ -100,8 +102,20 @@ export class ChoosePlanDialog {
     const endsOn = this.data.exemption()?.endsOn;
     return endsOn ? addDays(endsOn, 1) : this.data.today();
   });
-  protected readonly lastDay = computed(() => dayText(addDays(this.firstDue(), 2)));
-  protected readonly suspendDay = computed(() => dayText(addDays(this.firstDue(), 3)));
+  /** «26 de noviembre»: the last day to pay without being suspended (the day the plan is due, plus the grace). */
+  protected readonly lastDay = computed(() => longDay(addDays(this.firstDue(), 2)));
+  /** Days of its 7-day trial left, today included; 0 or null once over or without one (mockup web-38). */
+  protected readonly trialLeft = computed(() => (this.data.exemption() ? 0 : (this.data.trialLeft() ?? 0)));
+  /**
+   * The next charge if it pays today: the day of the payment becomes its billing day, the months
+   * chosen later (trial days left do not count). None while exempt: it pays after the exemption.
+   */
+  protected readonly nextIfToday = computed(() => {
+    if (this.data.exemption()) return null;
+    const today = this.data.today();
+    const next = addMonthsOn(today, this.months(), Number(today.slice(8, 10)));
+    return longDay(next, next.slice(0, 4) !== today.slice(0, 4));
+  });
 
   constructor() {
     effect(() => {
