@@ -1,14 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, input, linkedSignal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { SubscriptionView } from '../../shared/api/subscriptions';
 import { formatUsdCents, formatVes } from '../../shared/format/money';
 import { PERIODS, type Period } from './subscription.models';
-import { amountToPay, inBolivares, priceFor } from './subscription.rules';
+import { amountToPay, inBolivares } from './subscription.rules';
 
 /**
- * «Tu primer pago» (mockup web-37, frame 5): what the charge already made comes to (its months were
- * chosen with the plan and are not asked again), in dollars and, at Vortomi's rate, in bolívares,
- * and «Reportar pago». Only with nothing owed (paying ahead) are the months chosen here.
+ * «Tu primer pago» / «Tu próximo pago» (mockup web-37, frame 5): with a charge, what it comes to
+ * (its months were chosen with the plan and are not asked again), as a sum, in dollars and, at
+ * Vortomi's rate, in bolívares, and «Reportar pago». With nothing owed, only «Adelantar pago»: the
+ * months are chosen on Reportar pago.
  */
 @Component({
   selector: 'app-subscription-pay',
@@ -16,74 +17,74 @@ import { amountToPay, inBolivares, priceFor } from './subscription.rules';
   template: `
     @let s = subscription();
     @let pay = amount();
-    <section class="card box">
-      <h3>{{ s.billingDay === null ? 'Tu primer pago' : 'Tu próximo pago' }}</h3>
-      @if (s.charge) {
+    @if (s.charge) {
+      <section class="card box">
+        <h3>{{ s.billingDay === null ? 'Tu primer pago' : 'Tu próximo pago' }}</h3>
         <p class="for">{{ months() }} {{ months() === 1 ? 'mes' : 'meses' }} del plan {{ s.plan.name }}</p>
-      } @else {
-        <div class="months" role="radiogroup" aria-label="Meses a pagar">
-          @for (option of periods; track option) {
-            @let price = priceOf(option);
-            <button type="button" role="radio" [class.on]="months() === option" [attr.aria-checked]="months() === option" (click)="months.set(option)">
-              <b>{{ option }} {{ option === 1 ? 'mes' : 'meses' }}</b>
-              <small>{{ option === 1 ? money(price.totalCents) : price.discountPercent ? '−' + price.discountPercent + ' %' : money(price.totalCents) }}</small>
-            </button>
-          }
-        </div>
-      }
-      <div class="amounts">
-        <div><p>En dólares</p><b>{{ money(pay.dueCents) }}</b>@if (pay.savedCents) { <small>Ahorras {{ money(pay.savedCents) }}</small> }</div>
-        <div>
-          <p>En bolívares</p>
-          @if (s.rate; as rate) {
-            <b>{{ bs(pay.dueCents, rate.bsPerUsd) }}</b><small>tasa de Vortomi de hoy</small>
+        <!-- The plan's price first; the discount, and what was already paid, at the end (mockup web-50). -->
+        <div class="sum">
+          <p class="row base"><span>Precio del plan</span><span>{{ money(base()) }} / mes</span></p>
+          <p class="row"><span>{{ months() }} {{ months() === 1 ? 'mes' : 'meses' }} × {{ money(base()) }}</span><span>{{ money(pay.totalCents + pay.savedCents) }}</span></p>
+          @if (pay.savedCents) {
+            <p class="row off"><span>Descuento −{{ pay.discountPercent }} %</span><span>−{{ money(pay.savedCents) }}</span></p>
           } @else {
-            <b class="none">—</b><small>Vortomi todavía no publica su tasa</small>
+            <p class="row none"><span>Sin descuento</span><span>—</span></p>
+          }
+          @if (s.charge?.paidCents; as paid) { <p class="row off"><span>Ya pagado</span><span>−{{ money(paid) }}</span></p> }
+          <p class="row pay"><span>Total a pagar</span><b>{{ money(pay.dueCents) }}</b></p>
+          @if (s.rate; as rate) {
+            <p class="row bs"><span>En bolívares<small>tasa de Vortomi de hoy: {{ rateText(rate.bsPerUsd) }}</small></span><b>{{ bs(pay.dueCents, rate.bsPerUsd) }}</b></p>
+          } @else {
+            <p class="row bs"><span>En bolívares<small>Vortomi todavía no publica su tasa</small></span><b class="none">—</b></p>
           }
         </div>
-      </div>
+        @if (s.inReview) {
+          <button type="button" class="btn btn--block" disabled>Ya tienes un pago en revisión</button>
+        } @else {
+          <a class="btn btn--primary btn--block" routerLink="/subscription/pay">Reportar pago</a>
+        }
+      </section>
+    } @else {
+      <!-- Nothing owed: only the way to pay ahead; its months are chosen on Reportar pago. -->
       @if (s.inReview) {
-        <button type="button" class="btn btn--block" disabled>Ya tienes un pago en revisión</button>
+        <button type="button" class="btn ahead" disabled>Ya tienes un pago en revisión</button>
       } @else {
-        <a class="btn btn--primary btn--block" routerLink="/subscription/pay" [queryParams]="{ months: months() }">Reportar pago</a>
+        <a class="btn btn--primary ahead" routerLink="/subscription/pay">Adelantar pago</a>
       }
-    </section>
+    }
   `,
   styles: `
+    :host { display: flex; flex-direction: column; }
+    .ahead { align-self: flex-end; }
     .box { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
     h3 { font-size: 15px; font-weight: 600; }
     .for { font-size: 13.5px; color: var(--color-text-muted); margin-top: -6px; }
-    .months { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-    .months button { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 4px; border: 1px solid var(--color-border);
-      border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); cursor: pointer; font: inherit; }
-    .months button b { font-size: 13.5px; font-weight: 600; }
-    .months button small { font-size: 12px; color: var(--color-text-muted); }
-    .months button.on { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); background: var(--color-primary-softer); color: var(--color-primary-text); }
-    .months button.on small { color: inherit; }
-    .amounts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-    .amounts div { padding: 10px 14px; border-radius: var(--radius-md); background: var(--color-surface-hover); display: flex; flex-direction: column; gap: 2px; }
-    .amounts p { font-size: 12.5px; color: var(--color-text-muted); }
-    .amounts b { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-    .amounts b.none { color: var(--color-text-muted); }
-    .amounts small { font-size: 12px; color: var(--color-text-muted); }
-    @media (max-width: 600px) {
-      .months { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .amounts { grid-template-columns: 1fr; }
-    }
+    .sum { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md);
+      font-variant-numeric: tabular-nums; }
+    .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 13.5px; color: var(--color-text-2); }
+    .row.base { color: var(--color-text); }
+    .row.off { color: var(--color-success-text); font-weight: 600; }
+    .row.none { color: var(--color-text-faint); }
+    .row.pay { padding-top: 8px; margin-top: 2px; border-top: 1px solid var(--color-border); font-size: 15px; font-weight: 700; color: var(--color-text); }
+    .row.pay b { font-size: 20px; }
+    .row.bs b { font-size: 15px; color: var(--color-text); }
+    .row.bs b.none { color: var(--color-text-muted); }
+    .row.bs small { display: block; font-size: 12px; color: var(--color-text-muted); }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SubscriptionPay {
   readonly subscription = input.required<SubscriptionView>();
-  protected readonly periods = PERIODS;
-  /** The charge's months (chosen with the plan); only with nothing owed are they chosen here. */
-  protected readonly months = linkedSignal<Period>(() => PERIODS.find((p) => p === this.subscription().charge?.months) ?? 1);
+  /** The charge's months, chosen with the plan. */
+  protected readonly months = computed<Period>(() => PERIODS.find((p) => p === this.subscription().charge?.months) ?? 1);
 
   protected readonly amount = computed(() => amountToPay(this.subscription(), this.months()));
+  /** The monthly price the sum starts from: the charge's (fixed when it was made), or the plan's today. */
+  protected readonly base = computed(() => this.subscription().charge?.basePriceCents ?? this.subscription().plan.priceCents);
 
-  protected priceOf(months: Period) {
-    const s = this.subscription();
-    return priceFor(s.charge ? { priceCents: s.charge.basePriceCents, discounts: s.charge.discounts } : s.plan, months);
+  /** «410,55 Bs/$». */
+  protected rateText(rate: string): string {
+    return `${new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(rate))} Bs/$`;
   }
 
   protected money(cents: number): string {
