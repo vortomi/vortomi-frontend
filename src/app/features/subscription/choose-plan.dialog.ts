@@ -5,13 +5,14 @@ import { formatUsdCents, formatVes } from '../../shared/format/money';
 import { Dialog } from '../../shared/ui/dialog';
 import { Icon } from '../../shared/ui/icon';
 import { SubscriptionData } from './subscription.data';
-import { type CompanyPlan, PERIODS, type Period } from './subscription.models';
+import type { CompanyPlan, Period } from './subscription.models';
 import { addDays, dayText, inBolivares, priceFor } from './subscription.rules';
 
 /**
- * «Elegir el plan» (mockup web-38, frame 3): the company confirms the plan and how many months it
- * means to pay (1 by default; it may change them when it pays), sees the total in dollars and
- * bolívares, and when it has to pay by. The dialog itself is the confirmation.
+ * «Elegir el plan» (mockups web-38 and web-50): the company confirms the plan for the months it
+ * chose on Planes (it may change them when it pays). The price reads as a sum, the discount applied
+ * at the end: the plan's price, months × price, the discount, what it pays, and in bolívares; then
+ * when it has to pay by. The dialog itself is the confirmation.
  */
 @Component({
   selector: 'app-choose-plan-dialog',
@@ -19,33 +20,26 @@ import { addDays, dayText, inBolivares, priceFor } from './subscription.rules';
   template: `
     @if (plan(); as p) {
       <app-dialog [open]="open()" [title]="'Elegir el plan ' + p.name" [locked]="saving()" (closed)="closed.emit()">
+        @let total = priceOf(p, months());
         <div class="mini">
           <div class="text"><b>{{ p.name }}</b>@if (p.description) { <span>{{ p.description }}</span> }</div>
-          <p class="price">{{ money(p.priceCents) }} <small>/ mes</small></p>
+          <span class="chip">{{ months() }} {{ months() === 1 ? 'mes' : 'meses' }}</span>
         </div>
 
-        <p class="label">¿Cuántos meses quieres pagar?</p>
-        <div class="months" role="radiogroup" aria-label="Meses a pagar">
-          @for (option of periods; track option) {
-            @let price = priceOf(p, option);
-            <button type="button" role="radio" [class.on]="months() === option" [attr.aria-checked]="months() === option" (click)="months.set(option)">
-              <b>{{ option }} {{ option === 1 ? 'mes' : 'meses' }}</b>
-              <small>{{ price.discountPercent ? '−' + price.discountPercent + ' %' : money(price.totalCents) }}</small>
-            </button>
+        <div class="sum">
+          <p class="row base"><span>Precio del plan</span><span>{{ money(p.priceCents) }} / mes</span></p>
+          <p class="row"><span>{{ months() }} {{ months() === 1 ? 'mes' : 'meses' }} × {{ money(p.priceCents) }}</span><span>{{ money(total.totalCents + total.savedCents) }}</span></p>
+          @if (total.savedCents) {
+            <p class="row off"><span>Descuento −{{ total.discountPercent }} %</span><span>−{{ money(total.savedCents) }}</span></p>
+          } @else {
+            <p class="row none"><span>Sin descuento</span><span>—</span></p>
           }
-        </div>
-
-        @let total = priceOf(p, months());
-        <div class="amounts">
-          <div><p>Total</p><b>{{ money(total.totalCents) }}</b>@if (total.savedCents) { <small>Ahorras {{ money(total.savedCents) }}</small> }</div>
-          <div>
-            <p>En bolívares</p>
-            @if (data.rate(); as rate) {
-              <b>{{ bs(total.totalCents, rate.bsPerUsd) }}</b><small>tasa de Vortomi de hoy</small>
-            } @else {
-              <b class="none">—</b><small>Vortomi todavía no publica su tasa</small>
-            }
-          </div>
+          <p class="row pay"><span>Total a pagar</span><b>{{ money(total.totalCents) }}</b></p>
+          @if (data.rate(); as rate) {
+            <p class="row bs"><span>En bolívares<small>tasa de Vortomi de hoy: {{ rateText(rate.bsPerUsd) }}</small></span><b>{{ bs(total.totalCents, rate.bsPerUsd) }}</b></p>
+          } @else {
+            <p class="row bs"><span>En bolívares<small>Vortomi todavía no publica su tasa</small></span><b class="none">—</b></p>
+          }
         </div>
 
         @if (error(); as message) {
@@ -68,29 +62,21 @@ import { addDays, dayText, inBolivares, priceFor } from './subscription.rules';
     .text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
     .text b { font-size: 15px; }
     .text span { font-size: 12.5px; color: var(--color-text-muted); line-height: 1.4; }
-    .price { font-size: 20px; font-weight: 700; white-space: nowrap; }
-    .price small { font-size: 12px; font-weight: 500; color: var(--color-text-muted); }
-    .label { font-size: 13px; font-weight: 600; }
-    .months { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-    .months button { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 4px; border: 1px solid var(--color-border);
-      border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); cursor: pointer; font: inherit; }
-    .months button b { font-size: 13px; font-weight: 600; }
-    .months button small { font-size: 12px; color: var(--color-text-muted); }
-    .months button.on { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); background: var(--color-primary-softer); color: var(--color-primary-text); }
-    .months button.on small { color: inherit; }
-    .amounts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-    .amounts div { padding: 10px 14px; border-radius: var(--radius-md); background: var(--color-surface-hover); display: flex; flex-direction: column; gap: 2px; }
-    .amounts p { font-size: 12.5px; color: var(--color-text-muted); }
-    .amounts b { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
-    .amounts b.none { color: var(--color-text-muted); }
-    .amounts small { font-size: 12px; color: var(--color-text-muted); }
+    .chip { flex: none; padding: 3px 12px; border-radius: 99px; font-size: 12.5px; font-weight: 700; background: var(--color-primary-softer); color: var(--color-primary-text); }
+    .sum { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+      font-variant-numeric: tabular-nums; }
+    .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 13.5px; color: var(--color-text-2); }
+    .row.base { color: var(--color-text); }
+    .row.off { color: var(--color-success-text); font-weight: 600; }
+    .row.none { color: var(--color-text-faint); }
+    .row.pay { padding-top: 8px; margin-top: 2px; border-top: 1px solid var(--color-border); font-size: 15px; font-weight: 700; color: var(--color-text); }
+    .row.pay b { font-size: 20px; }
+    .row.bs b { font-size: 15px; color: var(--color-text); }
+    .row.bs b.none { color: var(--color-text-muted); }
+    .row.bs small { display: block; font-size: 12px; color: var(--color-text-muted); }
     .note { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; line-height: 1.5; color: var(--color-text-muted); --icon-size: 15px; }
     .note app-icon { flex: none; margin-top: 2px; color: var(--color-info-text); }
     .note b { color: var(--color-text-2); font-weight: 600; }
-    @media (max-width: 520px) {
-      .months { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .amounts { grid-template-columns: 1fr; }
-    }
   `,
 })
 export class ChoosePlanDialog {
@@ -102,7 +88,6 @@ export class ChoosePlanDialog {
   readonly chosen = output<SubscriptionView>();
 
   protected readonly data = inject(SubscriptionData);
-  protected readonly periods = PERIODS;
   protected readonly months = signal<Period>(1);
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -147,6 +132,11 @@ export class ChoosePlanDialog {
 
   protected money(cents: number): string {
     return formatUsdCents(cents);
+  }
+
+  /** «410,55 Bs/$». */
+  protected rateText(rate: string): string {
+    return `${new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(rate))} Bs/$`;
   }
 
   protected bs(cents: number, rate: string): string {

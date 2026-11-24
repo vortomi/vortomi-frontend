@@ -92,7 +92,7 @@ import { priceFor } from './subscription.rules';
     .sum dd { text-align: right; padding-left: 12px; }
     .sum .off { color: var(--color-success-text); font-weight: 600; }
     .sum .none { color: var(--color-text-faint); }
-    .pay { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 8px; border-top: 1px dashed var(--color-border);
+    .pay { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 8px; border-top: 1px solid var(--color-border);
       font-size: 14.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
     .pay s { margin-right: 6px; font-size: 12.5px; font-weight: 500; color: var(--color-text-muted); }
     .desc { font-size: 13.5px; color: var(--color-text-2); line-height: 1.45; margin-top: 4px; }
