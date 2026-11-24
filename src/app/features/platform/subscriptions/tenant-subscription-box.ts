@@ -39,8 +39,7 @@ import { PlatformSubscriptions } from './platform-subscriptions';
         }
         <dt>Debe</dt><dd>{{ money(s.owedCents) }}</dd>
         <dt>Día de cobro</dt><dd>{{ s.billingDay === null ? 'Lo fija su primer pago' : 'Los ' + s.billingDay + ' de cada mes' }}</dd>
-        <!-- Overpayments go to the company's wallet once payments exist (stage 3): none yet. -->
-        <dt>Saldo a favor</dt><dd>{{ money(0) }}</dd>
+        <dt>Saldo a favor</dt><dd>{{ money(s.walletCents) }}</dd>
       </dl>
       <a class="btn btn--sm" routerLink="/platform/subscriptions">Ver en Suscripciones</a>
     } @else {

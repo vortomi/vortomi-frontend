@@ -1,4 +1,4 @@
-import type { BillingState, CompanySubscriptionView, SubscriptionView } from '../../shared/api/subscriptions';
+import type { BillingState, CompanySubscriptionView, SubscriptionPayment, SubscriptionView, Wallet } from '../../shared/api/subscriptions';
 import { PREVIEW_PLAN, previewSubscription } from '../../shared/api/subscriptions.preview';
 import type { CompanyPlan, Period } from './subscription.models';
 import { addDays, priceFor } from './subscription.rules';
@@ -47,4 +47,39 @@ export function previewChoice(plan: CompanyPlan, months: Period, today: string, 
     charge: { ...base.charge!, planName: plan.name, basePriceCents: plan.priceCents, discounts: plan.discounts, months, discountPercent: price.discountPercent, amountCents: price.totalCents },
     rate,
   };
+}
+
+const PAID: SubscriptionPayment = {
+  id: 'payment-paid',
+  status: 'approved',
+  months: 1,
+  methodId: 'method-zelle',
+  methodName: 'Zelle',
+  methodType: 'zelle',
+  currency: 'USD',
+  payer: { holder: 'Laura Méndez', email: 'laura@repuestosandinos.com' },
+  reference: 'ZX10001',
+  paidOn: '2026-11-04',
+  amount: '84.00',
+  bsPerUsd: null,
+  amountUsdCents: 8400,
+  hasProof: true,
+  rejectionReason: null,
+  rejectionNote: null,
+  submittedAt: '2026-11-04T15:00:00.000Z',
+  reviewedAt: '2026-11-04T18:00:00.000Z',
+  receiptNumber: 1,
+};
+
+const active = (search: string) => new URLSearchParams(search).get('estado') === 'active';
+
+/** The company's payments at the start of the preview: with «?estado=active», a month paid with 5 $ extra. */
+export function previewPayments(search: string): SubscriptionPayment[] {
+  return active(search) ? [PAID] : [];
+}
+
+/** Its wallet: those 5 $, the same as its subscription's walletCents. */
+export function previewWallet(search: string): Wallet {
+  if (!active(search)) return { balanceCents: 0, movements: [] };
+  return { balanceCents: 500, movements: [{ id: 'move-1', kind: 'excess', amountCents: 500, paymentId: PAID.id, chargeId: null, createdAt: '2026-11-04T18:00:00.000Z' }] };
 }

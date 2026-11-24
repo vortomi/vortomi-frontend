@@ -1,5 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
 import { PlatformData } from '../features/platform/platform.data';
+import { PlatformPaymentReview } from '../features/platform/subscriptions/platform-payment-review';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Icon } from '../shared/ui/icon';
 import { PLATFORM_NAV } from './nav';
@@ -30,6 +31,9 @@ import { BrandMark } from '../shared/ui/brand-mark';
         <h6>Plataforma</h6>
         @for (item of items; track item.path) {
           <a [routerLink]="item.path" routerLinkActive="on"><app-icon [name]="item.icon" />{{ item.label }}
+            @if (item.pendingPayments && payments.pending(); as count) {
+              <span class="count" [attr.aria-label]="count + ' pagos por revisar'">{{ count }}</span>
+            }
             @if (item.criticalAlerts && data.criticalAlerts(); as count) {
               <span class="count crit" [attr.aria-label]="count + ' alertas críticas'">{{ count }}</span>
             }
@@ -61,4 +65,12 @@ export class PlatformLayout {
   /** The same data the console pages load: the red count follows the alerts they read. */
   protected readonly data = inject(PlatformData);
   protected readonly items = PLATFORM_NAV;
+  /** Payments waiting for review: the count beside Suscripciones (mockup web-41), read every 2 minutes. */
+  protected readonly payments = inject(PlatformPaymentReview);
+
+  constructor() {
+    void this.payments.refreshPending();
+    const timer = setInterval(() => void this.payments.refreshPending(), 120_000);
+    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+  }
 }

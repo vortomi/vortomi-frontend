@@ -38,6 +38,7 @@ export function previewSubscription(today: Day, state: BillingState): Subscripti
       ? { id: 'charge-1', planName: plan.name, basePriceCents: plan.priceCents, discounts: plan.discounts, months: 1, discountPercent: 0, amountCents: plan.priceCents, paidCents: 0, dueOn: nextDueOn }
       : null,
     rate: { bsPerUsd: '410.55000000', effectiveDate: today },
+    walletCents: state === 'active' ? 500 : 0,
     inReview:
       state === 'in_review'
         ? {
@@ -59,7 +60,21 @@ export function previewSubscription(today: Day, state: BillingState): Subscripti
             rejectionNote: null,
             submittedAt: `${today}T15:00:00.000Z`,
             reviewedAt: null,
+            receiptNumber: null,
           }
         : null,
   };
+}
+
+/** The preview's receipt image ('mock' mode only): a drawn bank receipt. */
+export function previewProof(): Blob {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="460" viewBox="0 0 360 460">
+  <rect width="360" height="460" fill="#f8fafc"/><rect x="40" y="40" width="280" height="380" rx="14" fill="#fff" stroke="#e5e7eb"/>
+  <text x="60" y="90" font-family="Arial" font-size="18" font-weight="700" fill="#111827">Banco de Venezuela</text>
+  <text x="60" y="120" font-family="Arial" font-size="14" fill="#059669">Pago móvil exitoso</text>
+  <text x="60" y="170" font-family="Arial" font-size="13" fill="#374151">Referencia: 000451287</text>
+  <text x="60" y="200" font-family="Arial" font-size="13" fill="#374151">Monto: Bs 32.433,45</text>
+  <text x="60" y="230" font-family="Arial" font-size="13" fill="#374151">Destino: 0134 · Banesco</text>
+  <text x="60" y="260" font-family="Arial" font-size="13" fill="#374151">Fecha: 09/10/2026 10:42</text></svg>`;
+  return new Blob([svg], { type: 'image/svg+xml' });
 }

@@ -10,11 +10,13 @@ import { Skeleton } from '../../../shared/ui/skeleton';
 import { PaymentMethodList } from '../../payment-methods/payment-method-list';
 import { PAYMENT_METHODS_HOST } from '../../payment-methods/payment-methods.host';
 import { PlanList } from '../plans/plan-list';
+import { PaymentReviewList } from './payment-review-list';
+import { PlatformPaymentReview } from './platform-payment-review';
 import { STATE_FILTERS, type StateFilter, billingFigures, dayText, matchesFilter, sortRows, stateLabel } from './billing.rules';
 import { PlatformSubscriptions } from './platform-subscriptions';
 
-type Tab = 'charges' | 'plans' | 'methods';
-const TABS: Tab[] = ['charges', 'plans', 'methods'];
+type Tab = 'charges' | 'payments' | 'plans' | 'methods';
+const TABS: Tab[] = ['charges', 'payments', 'plans', 'methods'];
 
 /** Caracas has no summer time: always UTC-4. */
 const caracasToday = (now: Date) => new Date(now.getTime() - 4 * 3_600_000).toISOString().slice(0, 10);
@@ -26,13 +28,14 @@ const caracasToday = (now: Date) => new Date(now.getTime() - 4 * 3_600_000).toIS
  */
 @Component({
   selector: 'app-subscriptions-page',
-  imports: [Avatar, Icon, PaymentMethodList, Pill, PlanList, RouterLink, Skeleton],
+  imports: [Avatar, Icon, PaymentMethodList, PaymentReviewList, Pill, PlanList, RouterLink, Skeleton],
   templateUrl: './subscriptions.page.html',
   styleUrls: ['../platform-pages.scss', './subscriptions.page.scss'],
 })
 export class SubscriptionsPage {
   private readonly subscriptions = inject(PlatformSubscriptions);
   protected readonly methodsHost = inject(PAYMENT_METHODS_HOST);
+  protected readonly review = inject(PlatformPaymentReview);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 

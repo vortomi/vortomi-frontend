@@ -2,7 +2,9 @@ import { Injectable, inject, signal } from '@angular/core';
 import { ApiClient } from '../../core/api/api-client';
 import { API_CONFIG } from '../../core/api/api-config';
 import { Session } from '../../core/session';
-import type { PayableMethod, PaymentReport, SubscriptionPayment } from '../../shared/api/subscriptions';
+import type { PayableMethod, PaymentReport, SubscriptionPayment, Wallet } from '../../shared/api/subscriptions';
+import { previewProof } from '../../shared/api/subscriptions.preview';
+import { previewPayments, previewWallet } from './subscription.preview';
 
 /** The preview's methods ('mock' mode, never deployed), as the console would set them. */
 const PREVIEW_METHODS: PayableMethod[] = [
@@ -70,7 +72,8 @@ export class SubscriptionPayments {
   private readonly api = inject(ApiClient);
   private readonly session = inject(Session);
   private readonly live = inject(API_CONFIG).mode === 'api';
-  private preview: SubscriptionPayment[] = [];
+  /** «?estado=active» starts with a paid month whose extra went to the wallet. */
+  private preview: SubscriptionPayment[] = previewPayments(location.search);
 
   readonly items = signal<SubscriptionPayment[]>([]);
   readonly loaded = signal(false);
@@ -102,9 +105,22 @@ export class SubscriptionPayments {
     return payment;
   }
 
-  /** The receipt of a payment, as a file the browser opens. */
+  /** The receipt (comprobante) a payment was sent with. */
   proof(paymentId: string): Promise<Blob> {
+    if (!this.live) return Promise.resolve(previewProof());
     return this.api.blob(this.path(`subscription/payments/${encodeURIComponent(paymentId)}/proof`));
+  }
+
+  /** Vortomi's receipt (recibo) of an approved payment, a PDF. */
+  receipt(paymentId: string): Promise<Blob> {
+    if (!this.live) return Promise.reject(new Error('No receipts in the preview'));
+    return this.api.blob(this.path(`subscription/payments/${encodeURIComponent(paymentId)}/receipt`));
+  }
+
+  /** The balance in favour and its movements. */
+  async wallet(): Promise<Wallet> {
+    if (!this.live) return previewWallet(location.search);
+    return this.api.get<Wallet>(this.path('subscription/wallet'));
   }
 
   private path(rest: string): string {
@@ -134,6 +150,7 @@ export class SubscriptionPayments {
       rejectionNote: null,
       submittedAt: new Date().toISOString(),
       reviewedAt: null,
+      receiptNumber: null,
     };
     this.preview = [payment, ...this.preview.filter((p) => p.id !== payment.id)];
     this.items.set(this.preview);

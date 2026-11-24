@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
 import type { SubscriptionPayment, SubscriptionView } from '../../shared/api/subscriptions';
 import { formatAmount, formatUsdCents } from '../../shared/format/money';
+import { FileViewerDialog } from '../../shared/ui/file-viewer.dialog';
 import { Icon } from '../../shared/ui/icon';
+import { SubscriptionPayments } from './subscription-payments.data';
 import { SubscriptionCountdown } from './subscription-countdown';
 import { SubscriptionPay } from './subscription-pay';
 import { SubscriptionTimeline } from './subscription-timeline';
@@ -15,7 +17,7 @@ import { STATE_TEXT, STATE_TONE, dayText } from './subscription.rules';
  */
 @Component({
   selector: 'app-subscription-summary',
-  imports: [Icon, SubscriptionCountdown, SubscriptionPay, SubscriptionTimeline],
+  imports: [FileViewerDialog, Icon, SubscriptionCountdown, SubscriptionPay, SubscriptionTimeline],
   template: `
     @let s = subscription();
     @let tone = toneOf[s.state];
@@ -49,7 +51,12 @@ import { STATE_TEXT, STATE_TONE, dayText } from './subscription.rules';
       <section class="received"><app-icon name="clock" />
         <div><b>Recibimos tu pago: {{ paidText(p) }} por {{ p.methodName }}</b>
           <span>@if (p.reference) { Referencia {{ p.reference }} · }{{ date(p.paidOn) }}. Lo revisamos y te avisamos aquí. Mientras esté en revisión no puedes enviar otro ni cambiarlo.</span></div>
+        @if (p.hasProof) { <button type="button" class="btn btn--sm view" (click)="viewing.set(true)">Ver comprobante</button> }
       </section>
+      @if (viewing()) {
+        <app-file-viewer-dialog [open]="true" [title]="'Comprobante · ' + p.methodName + (p.reference ? ' ' + p.reference : '')" [load]="proofOf(p.id)"
+          [fileName]="'comprobante-' + (p.reference ?? p.id)" (closed)="viewing.set(false)" />
+      }
     }
 
     <app-subscription-pay [subscription]="s" />
@@ -90,6 +97,8 @@ import { STATE_TEXT, STATE_TONE, dayText } from './subscription.rules';
       background: var(--color-info-soft); color: var(--color-info-text); --icon-size: 20px; }
     .received b { display: block; font-size: 14px; }
     .received span { color: var(--color-text-2); }
+    .received > div { flex: 1; }
+    .received .view { flex: none; align-self: center; }
     .price { font-size: 14px; }
     .price b { font-size: 20px; }
     .line { font-size: 13px; opacity: 0.92; }
@@ -108,6 +117,13 @@ import { STATE_TEXT, STATE_TONE, dayText } from './subscription.rules';
 export class SubscriptionSummary {
   readonly subscription = input.required<SubscriptionView>();
   protected readonly data = inject(SubscriptionData);
+  private readonly payments = inject(SubscriptionPayments);
+  /** «Ver comprobante» of the payment in review is open. */
+  protected readonly viewing = signal(false);
+
+  protected proofOf(paymentId: string): () => Promise<Blob> {
+    return () => this.payments.proof(paymentId);
+  }
   protected readonly stateText = STATE_TEXT;
   protected readonly toneOf = STATE_TONE;
 

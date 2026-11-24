@@ -1,0 +1,171 @@
+@use 'mixins';
+
+// «Revisar pago» (mockup web-41, frame 2): what is owed and what was reported on the left, the receipt on the right.
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.back {
+  margin-right: 4px;
+}
+
+.page-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.box {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .spacer {
+    flex: 1;
+  }
+}
+
+dl.kv {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px 16px;
+  font-size: 13.5px;
+
+  dt {
+    color: var(--color-text-muted);
+  }
+
+  dd {
+    text-align: right;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+
+    &.big {
+      font-size: 16px;
+    }
+  }
+}
+
+.cover {
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  line-height: 1.45;
+
+  &.green {
+    background: var(--color-success-soft);
+    color: var(--color-success-text);
+  }
+
+  &.teal {
+    background: var(--color-info-soft);
+    color: var(--color-info-text);
+  }
+
+  &.amber {
+    background: var(--color-warning-soft);
+    color: var(--color-warning-text);
+  }
+
+  &.red {
+    background: var(--color-danger-soft);
+    color: var(--color-danger-text);
+  }
+}
+
+.link {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary-text);
+  cursor: pointer;
+}
+
+.proof {
+  position: sticky;
+  top: 0;
+}
+
+.thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 260px;
+  max-height: 420px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-hover);
+  cursor: zoom-in;
+  font: inherit;
+  color: var(--color-text-muted);
+  --icon-size: 20px;
+
+  img {
+    display: block;
+    max-width: 100%;
+    max-height: 420px;
+    object-fit: contain;
+  }
+
+  &.pdf {
+    cursor: pointer;
+  }
+}
+
+.none {
+  font-size: 13.5px;
+  color: var(--color-text-muted);
+  padding: 24px 0;
+  text-align: center;
+}
+
+.acts {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn--danger-outline {
+  color: var(--color-danger-text);
+  border-color: color-mix(in srgb, var(--color-danger) 45%, transparent);
+}
+
+@include mixins.below-tablet {
+  .cols {
+    grid-template-columns: 1fr;
+  }
+
+  .proof {
+    position: static;
+  }
+}

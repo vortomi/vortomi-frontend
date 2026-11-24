@@ -17,6 +17,9 @@ export const STATE_FILTERS: { id: StateFilter; label: string }[] = [
 ];
 
 const DAY_MS = 86_400_000;
+
+/** The day `days` after `day` («2026-12-05» + 3 → «2026-12-08»). */
+export const addDays = (day: Day, days: number): Day => new Date(Date.parse(`${day}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 const daysBetween = (from: Day, to: Day): number => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS);
 
 /** «En gracia · 1 día»: the days of grace already gone, counting the due day's next one as the first. */

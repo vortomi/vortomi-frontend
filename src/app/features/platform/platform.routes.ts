@@ -66,6 +66,12 @@ export const PLATFORM_ROUTES: Routes = [
         loadComponent: () => import('../payment-methods/payment-method-form.page').then((m) => m.PaymentMethodFormPage),
       },
       {
+        // One payment a company reported, reviewed (mockup web-41, frame 2).
+        path: 'payments/:paymentId',
+        title: 'Revisar pago · Consola',
+        loadComponent: () => import('./subscriptions/payment-review.page').then((m) => m.PaymentReviewPage),
+      },
+      {
         // Vortomi's plans (mockup web-34). "new" before :planId.
         path: 'plans/new',
         canDeactivate: [unsavedChangesGuard],

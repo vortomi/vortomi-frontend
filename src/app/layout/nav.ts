@@ -17,6 +17,8 @@ export interface NavItem {
   salesOnly?: boolean;
   /** Console only: how many critical alerts are open (red count, mockup web-25). */
   criticalAlerts?: boolean;
+  /** Shows how many payments wait for review (console: Suscripciones). */
+  pendingPayments?: boolean;
 }
 
 export interface NavGroup {
@@ -63,7 +65,7 @@ export const PLATFORM_NAV: NavItem[] = [
   { path: '/platform/tenants', icon: 'building', label: 'Empresas' },
   { path: '/platform/alerts', icon: 'alert', label: 'Alertas', criticalAlerts: true },
   { path: '/platform/usage', icon: 'chart', label: 'Uso y salud' },
-  { path: '/platform/subscriptions', icon: 'dollar', label: 'Suscripciones' },
+  { path: '/platform/subscriptions', icon: 'dollar', label: 'Suscripciones', pendingPayments: true },
   { path: '/platform/team', icon: 'users', label: 'Staff' },
   // Vortomi's own settings (mockup web-36): for now, its exchange rate.
   { path: '/platform/settings', icon: 'gear', label: 'Ajustes' },

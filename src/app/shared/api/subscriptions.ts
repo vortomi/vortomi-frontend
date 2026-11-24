@@ -52,6 +52,8 @@ export interface SubscriptionView {
   rate: { bsPerUsd: string; effectiveDate: Day } | null;
   /** The payment the console is reviewing, if any. */
   inReview: SubscriptionPayment | null;
+  /** The balance in favour, in dollar cents: taken from the next charge when it is made. */
+  walletCents: number;
 }
 
 export type PaymentCurrency = 'USD' | 'VES';
@@ -91,6 +93,8 @@ export interface SubscriptionPayment {
   rejectionNote: string | null;
   submittedAt: string;
   reviewedAt: string | null;
+  /** Vortomi's receipt of it, once approved. */
+  receiptNumber: number | null;
 }
 
 /** POST /tenants/:id/subscription/payments (and PUT to correct a rejected one). */
@@ -125,4 +129,43 @@ export interface SubscriptionRow {
   owedCents: number;
   /** 'none': no plan yet. */
   state: BillingState | 'none';
+}
+
+/** The balance in favour and its movements (GET /tenants/:id/subscription/wallet). */
+export interface Wallet {
+  balanceCents: number;
+  movements: { id: Id; kind: 'excess' | 'applied'; amountCents: number; paymentId: Id | null; chargeId: Id | null; createdAt: string }[];
+}
+
+export type PaymentRejectionReason = 'reference_not_found' | 'amount_mismatch' | 'unreadable_proof' | 'wrong_method' | 'other';
+
+/** How a payment compares with what its company owes now. */
+export type Coverage = 'full' | 'partial' | 'extra';
+
+/** A row of Suscripciones → Pagos (GET /platform/subscription-payments). */
+export interface ReviewRow {
+  id: Id;
+  tenantId: Id;
+  tenantName: string;
+  status: SubscriptionPayment['status'];
+  planName: string | null;
+  months: number;
+  methodName: string;
+  reference: string | null;
+  paidOn: Day;
+  submittedAt: string;
+  currency: PaymentCurrency;
+  amount: string;
+  amountUsdCents: number;
+  owedCents: number;
+  coverage: Coverage;
+  receiptNumber: number | null;
+}
+
+/** One payment to review (GET /platform/subscription-payments/:id). */
+export interface ReviewDetail extends ReviewRow {
+  payment: SubscriptionPayment & { receivedAmount: string | null; receivedUsdCents: number | null };
+  charge: { months: number; amountCents: number; paidCents: number; dueOn: Day; discountPercent: number } | null;
+  billingDay: number | null;
+  nextDueOn: Day | null;
 }

@@ -12,6 +12,7 @@
 <div class="page-body">
   <nav class="tabs-line" role="tablist" aria-label="Secciones de suscripciones">
     <button type="button" role="tab" [class.on]="tab() === 'charges'" [attr.aria-selected]="tab() === 'charges'" (click)="showTab('charges')">Cobros</button>
+    <button type="button" role="tab" [class.on]="tab() === 'payments'" [attr.aria-selected]="tab() === 'payments'" (click)="showTab('payments')">Pagos@if (review.pending()) { <span class="tab-count">{{ review.pending() }}</span> }</button>
     <button type="button" role="tab" [class.on]="tab() === 'plans'" [attr.aria-selected]="tab() === 'plans'" (click)="showTab('plans')">Planes</button>
     <button type="button" role="tab" [class.on]="tab() === 'methods'" [attr.aria-selected]="tab() === 'methods'" (click)="showTab('methods')">Métodos de pago</button>
   </nav>
@@ -71,6 +72,8 @@
         </table>
       </div>
     }
+  } @else if (tab() === 'payments') {
+    <app-payment-review-list />
   } @else if (tab() === 'plans') {
     <app-plan-list />
   } @else {

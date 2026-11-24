@@ -1,8 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { Tone } from '../../shared/api/models';
-import type { SubscriptionPayment } from '../../shared/api/subscriptions';
+import type { SubscriptionPayment, Wallet } from '../../shared/api/subscriptions';
 import { formatAmount, formatUsdCents } from '../../shared/format/money';
+import { receiptCode } from '../../shared/format/receipt-code';
+import { FileViewerDialog } from '../../shared/ui/file-viewer.dialog';
 import { Icon } from '../../shared/ui/icon';
 import { Pill } from '../../shared/ui/pill';
 import { Skeleton } from '../../shared/ui/skeleton';
@@ -31,8 +33,23 @@ const REASON: Record<string, string> = {
  */
 @Component({
   selector: 'app-subscription-payments',
-  imports: [Icon, Pill, RouterLink, Skeleton],
+  imports: [FileViewerDialog, Icon, Pill, RouterLink, Skeleton],
   template: `
+    @if (wallet(); as w) {
+      @if (w.balanceCents > 0 || w.movements.length) {
+        <section class="card wallet">
+          <div class="head"><app-icon name="dollar" /><span>Saldo a favor</span><b>{{ usd(w.balanceCents) }}</b><small>Se descuenta solo en tu próximo cobro</small></div>
+          @if (w.movements.length) {
+            <ul>
+              @for (m of w.movements; track m.id) {
+                <li><span>{{ moment(m.createdAt) }} · {{ m.kind === 'excess' ? 'Lo que pagaste de más' : 'Usado en tu cobro' }}</span>
+                  <b [class.plus]="m.amountCents > 0">{{ m.amountCents > 0 ? '+' : '' }}{{ usd(m.amountCents) }}</b></li>
+              }
+            </ul>
+          }
+        </section>
+      }
+    }
     @if (payments.failed()) {
       <div class="form-alert" role="alert"><app-icon name="alert" /><span class="grow">No pudimos cargar tus pagos.</span>
         <button type="button" class="btn btn--sm" (click)="payments.load()"><span>Reintentar</span></button></div>
@@ -54,13 +71,18 @@ const REASON: Record<string, string> = {
                   @if (p.status === 'rejected') { <small>{{ reason(p) }}@if (p.rejectionNote) { · {{ p.rejectionNote }} }</small> }</td>
                 <td class="acts">
                   @if (p.status === 'rejected') { <a class="link" [routerLink]="['/subscription/payments', p.id, 'edit']">Corregir</a> }
-                  @if (p.hasProof) { <button type="button" class="link" (click)="openProof(p)">Comprobante</button> }
+                  @if (p.receiptNumber) { <button type="button" class="link" (click)="downloadReceipt(p)">Recibo</button> }
+                  @if (p.hasProof) { <button type="button" class="link" (click)="viewing.set(p)">Ver comprobante</button> }
                 </td>
               </tr>
             }
           </tbody>
         </table>
       </div>
+    }
+    @if (viewing(); as p) {
+      <app-file-viewer-dialog [open]="true" [title]="'Comprobante · ' + p.methodName + (p.reference ? ' ' + p.reference : '')" [load]="proofOf(p)"
+        [fileName]="'comprobante-' + (p.reference ?? p.id)" (closed)="viewing.set(null)" />
     }
     <p class="note">Un pago <app-pill tone="blue" [dot]="true">En revisión</app-pill> no se puede cambiar. Si te lo rechazamos, verás el motivo y podrás corregirlo y volver a enviarlo.</p>
   `,
@@ -74,6 +96,14 @@ const REASON: Record<string, string> = {
     .acts { white-space: nowrap; text-align: right; }
     .acts .link + .link { margin-left: 12px; }
     .link { border: 0; background: none; padding: 0; font: inherit; font-size: 13px; font-weight: 600; color: var(--color-primary-text); cursor: pointer; }
+    .wallet { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+    .wallet .head { display: flex; align-items: center; gap: 8px; font-size: 14px; --icon-size: 18px; }
+    .wallet .head app-icon { color: var(--color-success); }
+    .wallet .head b { font-size: 17px; }
+    .wallet .head small { margin-left: auto; font-size: 12.5px; color: var(--color-text-muted); }
+    .wallet ul { list-style: none; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--color-border); padding-top: 8px; font-size: 13px; }
+    .wallet li { display: flex; justify-content: space-between; gap: 12px; color: var(--color-text-2); }
+    .wallet li b.plus { color: var(--color-success-text); }
     .note { font-size: 13px; color: var(--color-text-muted); line-height: 1.7; }
     /* Phones: each payment is a card, its data one under the other. */
     @media (max-width: 760px) {
@@ -91,8 +121,16 @@ export class SubscriptionPaymentList {
   private readonly toaster = inject(Toaster);
   protected readonly status = STATUS;
 
+  /** The payment whose «Ver comprobante» is open. */
+  protected readonly viewing = signal<SubscriptionPayment | null>(null);
+  protected readonly wallet = signal<Wallet | null>(null);
+
   constructor() {
     void this.payments.load();
+    this.payments.wallet().then(
+      (w) => this.wallet.set(w),
+      () => this.wallet.set(null),
+    );
   }
 
   protected date(day: string): string {
@@ -111,17 +149,26 @@ export class SubscriptionPaymentList {
     return REASON[p.rejectionReason ?? ''] ?? 'Rechazado';
   }
 
-  /** The receipt in a new tab, fetched with the session (it is private). */
-  protected async openProof(p: SubscriptionPayment): Promise<void> {
-    const tab = window.open('', '_blank');
+  /** «Recibo»: Vortomi's PDF of an approved payment, saved with its number as name. */
+  protected async downloadReceipt(p: SubscriptionPayment): Promise<void> {
     try {
-      const url = URL.createObjectURL(await this.payments.proof(p.id));
-      if (tab) tab.location.href = url;
-      else window.location.href = url;
+      const url = URL.createObjectURL(await this.payments.receipt(p.id));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Recibo-${receiptCode(p.receiptNumber ?? 0)}.pdf`;
+      link.click();
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch {
-      tab?.close();
-      this.toaster.show('No pudimos abrir el comprobante.', 'info');
+      this.toaster.show('No pudimos descargar el recibo.', 'info');
     }
   }
+
+  protected proofOf(p: SubscriptionPayment): () => Promise<Blob> {
+    return () => this.payments.proof(p.id);
+  }
+
+  protected moment(at: string): string {
+    return dayText(at.slice(0, 10), true);
+  }
+
 }

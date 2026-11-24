@@ -55,6 +55,8 @@ const MESSAGES: Record<string, string> = {
   payment_not_editable: 'Solo se puede corregir un pago rechazado.',
   no_subscription: 'Todavía no tienes un plan. Elige tu plan para poder pagarlo.',
   months_fixed: 'Ya hay un pago aprobado de este cobro: sus meses no se pueden cambiar.',
+  payment_not_in_review: 'Ese pago ya fue revisado.',
+  receipt_not_found: 'Ese pago todavía no tiene recibo.',
   mention_not_member: 'Solo puedes mencionar a alguien de tu equipo.',
   service_window_closed: 'Pasaron más de 24 horas desde el último mensaje del cliente. Solo puedes enviarle una plantilla aprobada.',
   send_in_progress: 'Este mensaje ya se está enviando.',

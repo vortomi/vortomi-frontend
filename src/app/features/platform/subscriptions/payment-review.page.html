@@ -1,0 +1,81 @@
+<header class="page-top">
+  <a class="icon-btn back" routerLink="/platform/subscriptions" [queryParams]="{ tab: 'payments' }" aria-label="Volver a Pagos"><app-icon name="back" /></a>
+  <h1>Revisar pago</h1>
+  @if (detail(); as d) { <app-pill [tone]="status[d.status].tone" [dot]="true">{{ status[d.status].text }}</app-pill> }
+</header>
+
+<div class="page-body">
+  @if (failed()) {
+    <div class="form-alert" role="alert"><app-icon name="alert" />No pudimos cargar el pago.</div>
+  } @else if (!detail()) {
+    <app-skeleton kind="detail" />
+  } @else {
+    @let d = detail()!;
+    <div class="cols">
+      <div class="col">
+        <section class="card box">
+          <h2><a class="link" [routerLink]="['/platform/tenants', d.tenantId]">{{ d.tenantName }}</a></h2>
+          <dl class="kv">
+            <dt>Plan</dt><dd>{{ d.planName ?? '—' }}</dd>
+            @if (d.charge; as c) {
+              <dt>Cobro</dt><dd>{{ c.months }} {{ c.months === 1 ? 'mes' : 'meses' }}@if (c.discountPercent) { · −{{ c.discountPercent }} % }</dd>
+              <dt>Debe</dt><dd class="big">{{ money(d.owedCents) }}</dd>
+              <dt>Vence</dt><dd>{{ date(c.dueOn) }} · se suspende el {{ suspends(c.dueOn) }}</dd>
+            } @else {
+              <dt>Debe</dt><dd>Nada · al día</dd>
+              @if (d.nextDueOn) { <dt>Próximo cobro</dt><dd>{{ date(d.nextDueOn) }}</dd> }
+            }
+            <dt>Día de cobro</dt><dd>{{ d.billingDay ? 'Los ' + d.billingDay + ' de cada mes' : 'Lo fija su primer pago' }}</dd>
+          </dl>
+        </section>
+
+        <section class="card box">
+          <h2>Lo que reportó</h2>
+          <dl class="kv">
+            <dt>Método</dt><dd>{{ d.methodName }}</dd>
+            @for (item of payer(); track item.label) { <dt>{{ item.label }}</dt><dd>{{ item.value }}</dd> }
+            @if (d.reference) { <dt>Referencia</dt><dd class="mono">{{ d.reference }}</dd> }
+            <dt>Fecha del pago</dt><dd>{{ date(d.paidOn) }}</dd>
+            <dt>Meses</dt><dd>{{ d.months }}</dd>
+            <dt>Monto</dt><dd class="big">{{ amount(d) }}</dd>
+            @if (d.currency === 'VES' && d.payment.bsPerUsd) { <dt>Tasa del día</dt><dd>{{ rate(d.payment.bsPerUsd) }} → {{ money(d.amountUsdCents) }}</dd> }
+          </dl>
+          @if (d.status === 'in_review' && coverage(); as c) { <p class="cover" [class]="c.tone">{{ c.text }}</p> }
+          @if (d.status === 'approved') {
+            <p class="cover green">Aprobado@if (d.payment.reviewedAt) { el {{ date(d.payment.reviewedAt.slice(0, 10)) }} }@if (d.payment.receivedUsdCents && d.payment.receivedUsdCents !== d.amountUsdCents) { por {{ money(d.payment.receivedUsdCents) }}, lo que llegó }.</p>
+          }
+          @if (d.status === 'rejected') {
+            <p class="cover red"><b>Rechazado: {{ reason() ?? 'sin motivo' }}.</b>@if (d.payment.rejectionNote) { «{{ d.payment.rejectionNote }}» }</p>
+          }
+        </section>
+      </div>
+
+      <section class="card box proof">
+        <h2>Comprobante<span class="spacer"></span>
+          @if (d.payment.hasProof) { <button type="button" class="link" (click)="viewing.set(true)">Ver comprobante</button> }</h2>
+        @if (!d.payment.hasProof) {
+          <p class="none">La empresa no adjuntó comprobante (este método no lo exige).</p>
+        } @else if (proofUrl(); as url) {
+          <button type="button" class="thumb" (click)="viewing.set(true)" aria-label="Ver comprobante en grande"><img [src]="url" alt="Comprobante" /></button>
+        } @else {
+          <button type="button" class="thumb pdf" (click)="viewing.set(true)"><app-icon name="file" />{{ proofIsPdf() ? 'Comprobante en PDF · Ver' : 'Cargando…' }}</button>
+        }
+        <div class="acts">
+          @if (d.status === 'in_review') {
+            <button type="button" class="btn btn--danger-outline" (click)="rejecting.set(true)">Rechazar</button>
+            <button type="button" class="btn btn--primary" (click)="approving.set(true)">Aprobar</button>
+          } @else if (d.status === 'approved' && d.receiptNumber) {
+            <button type="button" class="btn" (click)="downloadReceipt()"><app-icon name="download" /><span>Recibo {{ receiptCode(d.receiptNumber) }}</span></button>
+          }
+        </div>
+      </section>
+    </div>
+
+    <app-approve-payment-dialog [open]="approving()" [detail]="d" [busy]="busy()" [error]="error()" (closed)="approving.set(false)" (approved)="approve($event)" />
+    <app-reject-payment-dialog [open]="rejecting()" [detail]="d" [busy]="busy()" [error]="error()" (closed)="rejecting.set(false)" (rejected)="reject($event)" />
+    @if (viewing()) {
+      <app-file-viewer-dialog [open]="true" [title]="'Comprobante · ' + d.tenantName + (d.reference ? ' · ' + d.reference : '')" [load]="proofLoader"
+        [fileName]="'comprobante-' + (d.reference ?? d.id)" (closed)="viewing.set(false)" />
+    }
+  }
+</div>
