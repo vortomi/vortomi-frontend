@@ -1,31 +1,24 @@
-import { Component, inject, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import type { PaymentMethodType } from '../../shared/api/models';
 import type { PayableMethod } from '../../shared/api/subscriptions';
 import { Icon } from '../../shared/ui/icon';
 import { Toaster } from '../../shared/ui/toaster';
-import { MethodBadge } from '../payment-methods/method-badge';
+import { typeInfo } from '../payment-methods/payment-methods.models';
+import { type MenuOption, SelectMenu } from '../../shared/ui/select-menu';
 
 const CURRENCY_TEXT: Record<PayableMethod['currency'], string> = { USD: 'Dólares', VES: 'Bolívares' };
 
 /**
- * Where to pay (mockups web-39 and web-40): Vortomi's methods to choose from and, for the one
+ * Where to pay (mockups web-39 and web-40): Vortomi's methods in a dropdown and, for the one
  * chosen, its data with a button to copy each, the amount to pay in its currency, and its
  * instructions.
  */
 @Component({
   selector: 'app-pay-method-picker',
-  imports: [Icon, MethodBadge],
+  imports: [Icon, SelectMenu],
   template: `
-    <div class="methods" role="radiogroup" aria-label="Método de pago">
-      @for (method of methods(); track method.id) {
-        <button type="button" role="radio" class="method" [class.on]="method.id === selected()?.id" [attr.aria-checked]="method.id === selected()?.id"
-          (click)="chosen.emit(method)">
-          <app-method-badge [type]="asType(method.type)" />
-          <b>{{ method.name }}</b>
-          <span class="cur">{{ currency[method.currency] }}</span>
-        </button>
-      }
-    </div>
+    <p class="lbl">¿Cómo pagaste?</p>
+    <app-select-menu label="Método de pago" placeholder="Elige cómo pagaste" [options]="options()" [value]="selected()?.id ?? null" (picked)="pick($event)" />
     @if (selected(); as method) {
       <div class="data">
         @for (field of method.fields; track $index) {
@@ -42,12 +35,7 @@ const CURRENCY_TEXT: Record<PayableMethod['currency'], string> = { USD: 'Dólare
   `,
   styles: `
     :host { display: flex; flex-direction: column; gap: 8px; }
-    .methods { display: flex; flex-direction: column; gap: 6px; }
-    .method { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md);
-      background: var(--color-surface); color: var(--color-text); font: inherit; font-size: 14px; cursor: pointer; text-align: left; --badge-size: 28px; }
-    .method:hover { border-color: var(--color-border-strong); }
-    .method.on { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); background: var(--color-primary-softer); }
-    .cur { margin-left: auto; font-size: 12px; color: var(--color-text-muted); }
+    .lbl { font-size: 13px; font-weight: 600; }
     .data { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-muted); }
     .row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
     .row span { color: var(--color-text-muted); min-width: 90px; }
@@ -62,6 +50,8 @@ const CURRENCY_TEXT: Record<PayableMethod['currency'], string> = { USD: 'Dólare
 export class PayMethodPicker {
   readonly methods = input.required<PayableMethod[]>();
   readonly selected = input<PayableMethod | null>(null);
+  /** Methods in this currency cannot be used now (bolívares without Vortomi's rate). */
+  readonly blockedCurrency = input<PayableMethod['currency'] | null>(null);
   /** «92.435,33 Bs», «225,15 $»: what to pay with the method chosen. */
   readonly amountText = input<string | null>(null);
   /** The same amount as a number to paste in the bank's app («92435,33»). */
@@ -69,8 +59,19 @@ export class PayMethodPicker {
   readonly chosen = output<PayableMethod>();
 
   private readonly toaster = inject(Toaster);
-  protected readonly currency = CURRENCY_TEXT;
-  protected readonly asType = (type: string) => type as PaymentMethodType;
+  /** Each method with its coloured mark and its currency; one in a blocked currency cannot be chosen. */
+  protected readonly options = computed<MenuOption[]>(() =>
+    this.methods().map((m) => {
+      const info = typeInfo(m.type as PaymentMethodType);
+      const blocked = m.currency === this.blockedCurrency();
+      return { value: m.id, label: m.name, icon: info.icon, color: info.color, hint: blocked ? 'Sin tasa de hoy' : CURRENCY_TEXT[m.currency], disabled: blocked };
+    }),
+  );
+
+  protected pick(id: string): void {
+    const method = this.methods().find((m) => m.id === id);
+    if (method) this.chosen.emit(method);
+  }
 
   protected copy(text: string): void {
     void navigator.clipboard?.writeText(text).then(

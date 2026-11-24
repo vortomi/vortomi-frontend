@@ -29,9 +29,7 @@
     <div class="pay">
       <div class="col">
         <section class="card owe">
-          <p>{{ data.subscription()!.charge ? 'Debes' : 'Tu próximo período' }}</p>
-          <b>{{ dueText() ?? '—' }}</b>
-          <small>{{ chosenMonths() }} {{ chosenMonths() === 1 ? 'mes' : 'meses' }} del plan {{ data.subscription()!.plan.name }}</small>
+          <p class="head">{{ data.subscription()!.charge ? 'Lo que debes' : 'Tu próximo período' }} · plan {{ data.subscription()!.plan.name }}@if (!monthsEditable()) { · {{ chosenMonths() }} {{ chosenMonths() === 1 ? 'mes' : 'meses' }} }</p>
           @if (monthsEditable()) {
             <div class="months" role="radiogroup" aria-label="Meses a pagar">
               @for (option of periods; track option) {
@@ -41,8 +39,31 @@
               }
             </div>
           }
+          @if (breakdown(); as b) {
+            <!-- The plan's price first; the discount, and what was already paid, at the end (mockup web-50). -->
+            <div class="sum">
+              <p class="row base"><span>Precio del plan</span><span>{{ usd(b.baseCents) }} / mes</span></p>
+              <p class="row"><span>{{ chosenMonths() }} {{ chosenMonths() === 1 ? 'mes' : 'meses' }} × {{ usd(b.baseCents) }}</span><span>{{ usd(b.fullCents) }}</span></p>
+              @if (b.savedCents) {
+                <p class="row off"><span>Descuento −{{ b.discountPercent }} %</span><span>−{{ usd(b.savedCents) }}</span></p>
+              } @else {
+                <p class="row none"><span>Sin descuento</span><span>—</span></p>
+              }
+              @if (b.paidCents) { <p class="row off"><span>Ya pagado</span><span>−{{ usd(b.paidCents) }}</span></p> }
+              <p class="row pay"><span>Total a pagar</span><b>{{ usd(b.dueCents) }}</b></p>
+              @if (rate(); as r) {
+                <p class="row bs"><span>En bolívares<small>tasa de Vortomi de hoy: {{ rateText(r) }}</small></span><b>{{ bsText(b.dueCents, r) }}</b></p>
+              } @else {
+                <p class="row bs"><span>En bolívares<small>Vortomi todavía no publica su tasa</small></span><b class="none">—</b></p>
+              }
+            </div>
+          }
         </section>
-        <app-pay-method-picker [methods]="methods()" [selected]="method()" [amountText]="dueText()" [amountPlain]="duePlain()" (chosen)="chooseMethod($event)" />
+        @if (!rate()) {
+          <p class="form-alert warn" role="note"><app-icon name="info" /><span><b>Vortomi todavía no publica su tasa de hoy.</b> Por ahora paga con un método en dólares.</span></p>
+        }
+        <app-pay-method-picker [methods]="methods()" [selected]="method()" [blockedCurrency]="rate() ? null : 'VES'" [amountText]="dueText()" [amountPlain]="duePlain()"
+          (chosen)="chooseMethod($event)" />
       </div>
 
       <form class="card form" novalidate (submit)="send($event)">

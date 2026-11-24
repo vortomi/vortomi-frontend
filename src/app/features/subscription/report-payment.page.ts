@@ -81,14 +81,32 @@ export class ReportPaymentPage {
     return p ? { reason: REJECTION_TEXT[p.rejectionReason ?? ''] ?? 'Rechazado', note: p.rejectionNote } : null;
   });
 
-  /** The months can change while nothing of the charge is paid. */
-  protected readonly monthsEditable = computed(() => (this.data.subscription()?.charge?.paidCents ?? 0) === 0);
+  /**
+   * The months of a charge were chosen with the plan: here it is paid as it is. Only paying ahead,
+   * with nothing owed, are they chosen.
+   */
+  protected readonly monthsEditable = computed(() => !this.data.subscription()?.charge);
 
   /** What the months chosen cost now, in dollar cents: the open charge, or, with nothing owed, the next period. */
   protected readonly dueCents = computed(() => {
     const s = this.data.subscription();
     if (!s) return 0;
     return s.charge ? amountToPay(s, this.chosenMonths()).dueCents : priceFor(s.plan, this.chosenMonths()).totalCents;
+  });
+  /** What the months chosen come to, as a sum: the plan's price, months × price, the discount, what was paid, the total. */
+  protected readonly breakdown = computed(() => {
+    const s = this.data.subscription();
+    if (!s) return null;
+    const months = this.chosenMonths();
+    const price = s.charge ? amountToPay(s, months) : { ...priceFor(s.plan, months), dueCents: priceFor(s.plan, months).totalCents };
+    return {
+      baseCents: s.charge ? s.charge.basePriceCents : s.plan.priceCents,
+      fullCents: price.totalCents + price.savedCents,
+      discountPercent: price.discountPercent,
+      savedCents: price.savedCents,
+      paidCents: s.charge?.paidCents ?? 0,
+      dueCents: price.dueCents,
+    };
   });
   protected readonly dueText = computed(() => {
     const m = this.method();
@@ -154,8 +172,23 @@ export class ReportPaymentPage {
     return kind as PaymentFieldKind;
   }
 
+  protected usd(cents: number): string {
+    return formatUsdCents(cents);
+  }
+
+  protected bsText(cents: number, rate: string): string {
+    return formatVes(inBolivares(cents, rate));
+  }
+
+  /** «410,55 Bs/$». */
+  protected rateText(rate: string): string {
+    return `${new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(rate))} Bs/$`;
+  }
+
   protected chooseMethod(method: PayableMethod): void {
     if (method.id === this.method()?.id) return;
+    // Without Vortomi's rate a payment in bolívares cannot be converted: the server refuses it.
+    if (method.currency === 'VES' && !this.rate()) return;
     this.method.set(method);
     // Who paid depends on the method: what was typed for another one does not fit.
     // A cédula starts as V: whoever pays is most often a person.
@@ -225,8 +258,9 @@ export class ReportPaymentPage {
         this.editing.set(payment);
         if (payment) this.prefill(payment, methods);
       } else {
+        const charged = PERIODS.find((p) => p === this.data.subscription()?.charge?.months);
         const asked = PERIODS.find((p) => String(p) === this.months());
-        this.chosenMonths.set(asked ?? PERIODS.find((p) => p === this.data.subscription()?.charge?.months) ?? 1);
+        this.chosenMonths.set(charged ?? asked ?? 1);
       }
     } catch {
       this.loadFailed.set(true);

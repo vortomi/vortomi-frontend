@@ -28,6 +28,13 @@ const RATE = (today: string) => ({ bsPerUsd: '410.55000000', effectiveDate: toda
 
 /** What GET /tenants/:id/subscription would answer, for the state «?estado=» asks for. */
 export function previewView(today: string, search: string): CompanySubscriptionView {
+  const view = previewState(today, search);
+  // «?tasa=no»: Vortomi has not published its rate yet.
+  if (new URLSearchParams(search).get('tasa') !== 'no') return view;
+  return { ...view, rate: null, subscription: view.subscription ? { ...view.subscription, rate: null } : null };
+}
+
+function previewState(today: string, search: string): CompanySubscriptionView {
   const asked = new URLSearchParams(search).get('estado') ?? 'trial';
   const state = STATES.find((s) => s === asked);
   if (state) return { subscription: previewSubscription(today, state), trialEndsOn: addDays(today, -20), exemption: null, enforced: true, rate: RATE(today) };

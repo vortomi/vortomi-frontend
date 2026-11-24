@@ -6,6 +6,12 @@ export interface MenuOption {
   value: string;
   label: string;
   icon?: IconName;
+  /** The icon's own colour (white icon on it), as a payment method's mark. */
+  color?: string;
+  /** A short note on the right («Dólares»). */
+  hint?: string;
+  /** Shown but not choosable. */
+  disabled?: boolean;
 }
 
 /** Shared with MultiSelectMenu, so both menus look the same. */
@@ -35,6 +41,11 @@ export const MENU_STYLES = `
     li.on { color: var(--color-primary-text); font-weight: 600; }
     li.on .ic { background: var(--color-primary); color: var(--color-on-primary); }
     .tick { --icon-size: 15px; color: var(--color-primary-text); margin-left: auto; }
+    .ic.colored, li.on .ic.colored { color: #fff; }
+    .hint { margin-left: auto; font-size: 12px; font-weight: 400; color: var(--color-text-muted); white-space: nowrap; }
+    .hint + .tick { margin-left: 8px; }
+    li.disabled { opacity: 0.5; cursor: not-allowed; }
+    li.disabled.active { background: none; }
     .none { color: var(--color-text-muted); cursor: default; }
   `;
 
@@ -51,8 +62,9 @@ export const normalize = (text: string) => text.normalize('NFD').replace(/\p{Dia
   template: `
     <button type="button" class="trigger" [class.open]="open()" [disabled]="disabled()" [attr.aria-label]="label()" aria-haspopup="listbox" [attr.aria-expanded]="open()" (click)="toggle()">
       @if (selected(); as s) {
-        @if (s.icon) { <span class="ic"><app-icon [name]="s.icon" /></span> }
+        @if (s.icon) { <span class="ic" [class.colored]="!!s.color" [style.background]="s.color ?? null"><app-icon [name]="s.icon" /></span> }
         <span class="value">{{ s.label }}</span>
+        @if (s.hint) { <span class="hint">{{ s.hint }}</span> }
       } @else {
         <span class="value placeholder">{{ placeholder() }}</span>
       }
@@ -67,10 +79,11 @@ export const normalize = (text: string) => text.normalize('NFD').replace(/\p{Dia
         }
         <ul role="listbox" [attr.aria-label]="label()" tabindex="-1" (keydown)="onKey($event)">
           @for (option of shown(); track option.value; let i = $index) {
-            <li role="option" [attr.aria-selected]="option.value === value()" [class.on]="option.value === value()" [class.active]="i === active()"
-              (mouseenter)="active.set(i)" (click)="pick(option.value)">
-              @if (option.icon) { <span class="ic"><app-icon [name]="option.icon" /></span> }
+            <li role="option" [attr.aria-selected]="option.value === value()" [attr.aria-disabled]="option.disabled || null" [class.on]="option.value === value()"
+              [class.active]="i === active()" [class.disabled]="!!option.disabled" (mouseenter)="active.set(i)" (click)="pick(option)">
+              @if (option.icon) { <span class="ic" [class.colored]="!!option.color" [style.background]="option.color ?? null"><app-icon [name]="option.icon" /></span> }
               <span class="value">{{ option.label }}</span>
+              @if (option.hint) { <span class="hint">{{ option.hint }}</span> }
               @if (option.value === value()) { <app-icon name="check" class="tick" /> }
             </li>
           } @empty {
@@ -119,8 +132,9 @@ export class SelectMenu {
     this.active.set(0);
   }
 
-  protected pick(value: string): void {
-    this.picked.emit(value);
+  protected pick(option: MenuOption): void {
+    if (option.disabled) return;
+    this.picked.emit(option.value);
     this.close();
   }
 
@@ -130,7 +144,7 @@ export class SelectMenu {
     if (event.key === 'Enter') {
       event.preventDefault();
       const option = this.shown()[this.active()];
-      if (option) this.pick(option.value);
+      if (option) this.pick(option);
       return;
     }
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;

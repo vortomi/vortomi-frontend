@@ -6,9 +6,9 @@ import { PERIODS, type Period } from './subscription.models';
 import { amountToPay, inBolivares, priceFor } from './subscription.rules';
 
 /**
- * «Tu primer pago» (mockup web-37, frame 5): the company chooses how many months it pays (1 by
- * default), and sees the amount in dollars and, at Vortomi's rate, in bolívares, and reports
- * its payment with those months (stage 3, documentations/18 §5).
+ * «Tu primer pago» (mockup web-37, frame 5): what the charge already made comes to (its months were
+ * chosen with the plan and are not asked again), in dollars and, at Vortomi's rate, in bolívares,
+ * and «Reportar pago». Only with nothing owed (paying ahead) are the months chosen here.
  */
 @Component({
   selector: 'app-subscription-pay',
@@ -18,15 +18,19 @@ import { amountToPay, inBolivares, priceFor } from './subscription.rules';
     @let pay = amount();
     <section class="card box">
       <h3>{{ s.billingDay === null ? 'Tu primer pago' : 'Tu próximo pago' }}</h3>
-      <div class="months" role="radiogroup" aria-label="Meses a pagar">
-        @for (option of periods; track option) {
-          @let price = priceOf(option);
-          <button type="button" role="radio" [class.on]="months() === option" [attr.aria-checked]="months() === option" (click)="months.set(option)">
-            <b>{{ option }} {{ option === 1 ? 'mes' : 'meses' }}</b>
-            <small>{{ option === 1 ? money(price.totalCents) : price.discountPercent ? '−' + price.discountPercent + ' %' : money(price.totalCents) }}</small>
-          </button>
-        }
-      </div>
+      @if (s.charge) {
+        <p class="for">{{ months() }} {{ months() === 1 ? 'mes' : 'meses' }} del plan {{ s.plan.name }}</p>
+      } @else {
+        <div class="months" role="radiogroup" aria-label="Meses a pagar">
+          @for (option of periods; track option) {
+            @let price = priceOf(option);
+            <button type="button" role="radio" [class.on]="months() === option" [attr.aria-checked]="months() === option" (click)="months.set(option)">
+              <b>{{ option }} {{ option === 1 ? 'mes' : 'meses' }}</b>
+              <small>{{ option === 1 ? money(price.totalCents) : price.discountPercent ? '−' + price.discountPercent + ' %' : money(price.totalCents) }}</small>
+            </button>
+          }
+        </div>
+      }
       <div class="amounts">
         <div><p>En dólares</p><b>{{ money(pay.dueCents) }}</b>@if (pay.savedCents) { <small>Ahorras {{ money(pay.savedCents) }}</small> }</div>
         <div>
@@ -48,6 +52,7 @@ import { amountToPay, inBolivares, priceFor } from './subscription.rules';
   styles: `
     .box { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
     h3 { font-size: 15px; font-weight: 600; }
+    .for { font-size: 13.5px; color: var(--color-text-muted); margin-top: -6px; }
     .months { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
     .months button { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 4px; border: 1px solid var(--color-border);
       border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); cursor: pointer; font: inherit; }
@@ -71,7 +76,7 @@ import { amountToPay, inBolivares, priceFor } from './subscription.rules';
 export class SubscriptionPay {
   readonly subscription = input.required<SubscriptionView>();
   protected readonly periods = PERIODS;
-  /** Starts at the months the company chose with its plan (1 by default); it may change them here. */
+  /** The charge's months (chosen with the plan); only with nothing owed are they chosen here. */
   protected readonly months = linkedSignal<Period>(() => PERIODS.find((p) => p === this.subscription().charge?.months) ?? 1);
 
   protected readonly amount = computed(() => amountToPay(this.subscription(), this.months()));
