@@ -40,9 +40,17 @@ import { priceFor } from './subscription.rules';
           <article class="card plan" [class.mine]="mine">
             @if (mine) { <span class="mark">Tu plan</span> }
             <h3>{{ plan.name }}</h3>
-            <p class="monthly">{{ money(price.monthlyCents) }} <small>/ mes</small></p>
-            <p class="total">{{ money(price.totalCents) }} por {{ months() }} {{ months() === 1 ? 'mes' : 'meses' }}</p>
-            @if (price.savedCents) { <p class="saved">Ahorras {{ money(price.savedCents) }} (−{{ price.discountPercent }} %)</p> }
+            <!-- The plan's own price first; the discount is applied at the end of the sum, never hidden in it. -->
+            <p class="monthly">{{ money(plan.priceCents) }} <small>/ mes</small></p>
+            <dl class="sum">
+              <dt>{{ months() }} {{ months() === 1 ? 'mes' : 'meses' }} × {{ money(plan.priceCents) }}</dt><dd>{{ money(price.totalCents + price.savedCents) }}</dd>
+              @if (price.savedCents) {
+                <dt class="off">Descuento −{{ price.discountPercent }} %</dt><dd class="off">−{{ money(price.savedCents) }}</dd>
+              } @else {
+                <dt class="none">Sin descuento</dt><dd class="none">—</dd>
+              }
+            </dl>
+            <p class="pay"><span>Pagas</span><span>@if (price.savedCents) { <s>{{ money(price.totalCents + price.savedCents) }}</s> }<b>{{ money(price.totalCents) }}</b></span></p>
             @if (plan.description) { <p class="desc">{{ plan.description }}</p> }
             <ul>
               @for (benefit of plan.benefits; track $index) { <li><app-icon name="check" />{{ benefit }}</li> }
@@ -79,8 +87,14 @@ import { priceFor } from './subscription.rules';
     h3 { font-size: 16px; font-weight: 600; }
     .monthly { font-size: 26px; font-weight: 700; line-height: 1.2; }
     .monthly small { font-size: 13px; font-weight: 500; color: var(--color-text-muted); }
-    .total { font-size: 13px; color: var(--color-text-muted); }
-    .saved { font-size: 13px; font-weight: 600; color: var(--color-success-text); }
+    .sum { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 0; padding: 10px 0 0; margin-top: 2px; border-top: 1px solid var(--color-border);
+      font-size: 13px; color: var(--color-text-2); font-variant-numeric: tabular-nums; }
+    .sum dd { text-align: right; padding-left: 12px; }
+    .sum .off { color: var(--color-success-text); font-weight: 600; }
+    .sum .none { color: var(--color-text-faint); }
+    .pay { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 8px; border-top: 1px dashed var(--color-border);
+      font-size: 14.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .pay s { margin-right: 6px; font-size: 12.5px; font-weight: 500; color: var(--color-text-muted); }
     .desc { font-size: 13.5px; color: var(--color-text-2); line-height: 1.45; margin-top: 4px; }
     ul { list-style: none; display: flex; flex-direction: column; gap: 6px; margin: 6px 0 10px; font-size: 13.5px; color: var(--color-text-2); }
     li { display: flex; align-items: flex-start; gap: 8px; --icon-size: 15px; }
